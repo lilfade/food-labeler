@@ -1,0 +1,161 @@
+name: Release
+
+# Push a tag like v1.0.0 (it must match __version__ in food_labeler/__init__.py),
+# or run this workflow by hand for an existing tag.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release, e.g. v1.0.0"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Check tag matches __version__
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - id: check
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' should look like v1.2.3"
+            exit 1
+          fi
+          VERSION=$(python3 -c "import re; t = open('food_labeler/__init__.py', encoding='utf-8').read(); print(re.search(r'^__version__ = \"([^\"]+)\"', t, re.M).group(1))")
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match __version__ = $VERSION in food_labeler/__init__.py"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: version
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: windows-latest
+            program: FoodLabeler.exe
+          - os: ubuntu-latest
+            program: food-labeler
+    runs-on: ${{ matrix.os }}
+    env:
+      FOOD_LABELER_DRY_RUN: ${{ github.workspace }}/dry-run-jobs
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Tests
+        run: python -m pytest -q
+
+      - name: Build one-file program
+        run: python -m PyInstaller --noconfirm --clean food_labeler.spec
+
+      - name: Self test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # The .exe is a windowed program, so PowerShell would not wait for it
+          # by itself; -Wait -PassThru gives us its exit code.
+          $p = Start-Process -FilePath "dist\FoodLabeler.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw "FoodLabeler.exe --selftest failed with exit code $($p.ExitCode)" }
+          Write-Output "FoodLabeler.exe --selftest OK"
+
+      - name: Self test (Linux)
+        if: runner.os == 'Linux'
+        run: ./dist/food-labeler --selftest
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.program }}
+          path: dist/${{ matrix.program }}
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect files and checksums
+        run: |
+          set -euo pipefail
+          mkdir upload
+          cp artifacts/FoodLabeler.exe/FoodLabeler.exe upload/
+          cp artifacts/food-labeler/food-labeler upload/
+          chmod +x upload/food-labeler
+          cd upload
+          sha256sum FoodLabeler.exe food-labeler > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          awk -v v="$VERSION" '
+            /^## / { if (found) exit; if (index($0, "## " v) == 1) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "**Windows:** download \`FoodLabeler.exe\`. The first time, Windows may say"
+            echo "\"Windows protected your PC\": click **More info**, then **Run anyway**."
+            echo "See the README for step-by-step help."
+          } >> notes.md
+          cat notes.md
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          files=(upload/FoodLabeler.exe upload/food-labeler upload/SHA256SUMS.txt)
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "${files[@]}" --repo "$GITHUB_REPOSITORY" \
+              --verify-tag --title "Food Labeler $VERSION" --notes-file notes.md
+          fi

@@ -1,0 +1,107 @@
+{
+  "format": "food-labeler-printers",
+  "version": 1,
+  "updated": "2026-11-20",
+  "printers": [
+    {
+      "id": "lp610bt-compatible",
+      "name": "LP610BT-compatible label printer",
+      "brands": [
+        "Labelnize",
+        "Flexyva",
+        "Polono"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [
+        "0483:2025"
+      ],
+      "ieee1284": {
+        "MDL": "LP610",
+        "CMD": "TSPL"
+      },
+      "windows": [
+        "LP610",
+        "Polono",
+        "Labelnize",
+        "Flexyva",
+        "4B-",
+        "BAR PRINTER"
+      ],
+      "density": {
+        "default": 8,
+        "small": 9
+      },
+      "speed": {
+        "default": 4,
+        "small": 3,
+        "round": 3
+      },
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "notes": "Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port."
+    },
+    {
+      "id": "zebra-zp450",
+      "name": "Zebra ZP450",
+      "brands": [
+        "Zebra"
+      ],
+      "language": "zpl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [
+        "0a5f:008c"
+      ],
+      "ieee1284": {
+        "MANUFACTURER": "Zebra",
+        "COMMAND SET": "ZPL",
+        "MODEL": "ZP ?450"
+      },
+      "windows": [
+        "ZP ?450",
+        "ZDesigner ZP ?450"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "notes": "203 dpi, 4 in (104 mm) max print width. Supports 4x6."
+    },
+    {
+      "id": "zebra-zpl",
+      "name": "Zebra label printer",
+      "brands": [
+        "Zebra"
+      ],
+      "language": "zpl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [],
+      "ieee1284": {
+        "COMMAND SET": "ZPL"
+      },
+      "windows": [
+        "Zebra",
+        "ZDesigner",
+        "ZPL"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ]
+    }
+  ]
+}

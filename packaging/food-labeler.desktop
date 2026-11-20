@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Food Labeler
+GenericName=Label maker
+Comment=Make and print food labels (by High Thyme Kitchen)
+Exec=food-labeler %f
+Icon=food-labeler
+Terminal=false
+Categories=Office;Utility;
+MimeType=application/x-food-label;
+Keywords=label;food;sticker;printer;
+StartupWMClass=FoodLabeler

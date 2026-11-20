@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      # Belt and braces: the tests already set this, so no job can reach a printer.
+      FOOD_LABELER_DRY_RUN: ${{ github.workspace }}/dry-run-jobs
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Install optional icon tools (allowed to fail, e.g. no Cairo on Windows)
+        continue-on-error: true
+        run: python -m pip install -r requirements-icons.txt
+
+      - name: Pyflakes
+        run: python -m pyflakes food_labeler tests tools food_labeler_main.py
+
+      - name: Tests (headless; the opt-in UI tests stay skipped)
+        run: python -m pytest -q -rs

@@ -1,0 +1,3 @@
+# Optional: only for tools/make_icons.py (rebuild the app icons from assets/seal.svg).
+# Needs the Cairo graphics library (Linux: apt install libcairo2; macOS: brew install cairo).
+cairosvg

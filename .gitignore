@@ -1,0 +1,31 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# PyInstaller outputs (food_labeler.spec itself is tracked)
+build/
+dist/
+*.spec.bak
+*.manifest
+warn-*.txt
+xref-*.html
+
+# Files made while trying the program out
+*.label
+*.prn
+job-*.bin
+dry-run-jobs/
+Food Labeler printer report.txt
+/out/
+/shots/
+
+# Editors and OS clutter
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
