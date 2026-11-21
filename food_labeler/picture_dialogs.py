@@ -28,12 +28,28 @@ from PIL import ImageTk
 
 from . import pictures, printers, printsettings, qrcodes, render, settings as settings_mod
 from . import calibrate, extras, stocks
-from .widgets import (BG, BORDER, GREEN, INK, MUTED, PANEL, WARN, Modal, ScrollFrame, Toggle,
-                      ask, button, tell)
+from .widgets import (BG, BORDER, GREEN, INK, MUTED, PANEL, WARN, FlowFrame, Modal, ScrollFrame,
+                      Toggle, ask, button, tell)
 
 log = logging.getLogger("food_labeler.picture_dialogs")
 
 PREVIEW_W, PREVIEW_H = 520, 300
+
+
+def preview_size(win) -> tuple[int, int]:
+    """The preview in the Picture and QR code windows: smaller on a small screen,
+    so the window fits without scrolling."""
+    return (PREVIEW_W, PREVIEW_H) if win.winfo_screenheight() >= 900 else (440, 230)
+
+
+def show_line(label, text, after):
+    """A warning line that takes no room when there is nothing to say."""
+    label.configure(text=text)
+    if text:
+        if not label.winfo_manager():
+            label.pack(anchor="w", after=after)
+    else:
+        label.pack_forget()
 
 
 def _scale(parent, var, lo, hi, left, right, resolution=1, command=None, length=300):
@@ -131,14 +147,18 @@ class PictureDialog(Modal):
                  fg=INK).pack(anchor="w")
         self.preview = tk.Label(right, bg=BG)
         self.preview.pack(pady=(6, 4))
-        under = tk.Frame(right, bg=BG)
+        # a safety net: say so when the picture would print as a mostly black block
+        self.black_lbl = tk.Label(right, text="", font="ui", bg=BG, fg=WARN,
+                                  wraplength=preview_size(self)[0], justify="left")
+        self.black_lbl.pack(anchor="w")       # shown by _draw only when needed
+        under = self.under = tk.Frame(right, bg=BG)
         under.pack(anchor="w", fill="x", pady=(4, 4))
         self.zoom = tk.Label(under, bg=BG)
         self.zoom.pack(side="left", anchor="n")
         toggles = tk.Frame(under, bg=BG)
         toggles.pack(side="left", anchor="n", padx=(14, 0))
-        self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN, wraplength=PREVIEW_W,
-                            justify="left")
+        self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN,
+                            wraplength=preview_size(self)[0], justify="left")
         self.msg.pack(anchor="w")
         # beside the close-up (not in the left column) so the window fits a laptop screen
         self.invert = Toggle(toggles, "Swap black and white", self._changed, pic["invert"])
@@ -272,12 +292,16 @@ class PictureDialog(Modal):
         cur = pictures.clean(self._current())
         self.doc.picture = cur
         res = render.render(self.doc, self.app.render_ctx(), dpi=self.dpi)
-        img = render.preview(res, PREVIEW_W, PREVIEW_H, highlight=False)
+        img = render.preview(res, *preview_size(self), highlight=False)
         ph = ImageTk.PhotoImage(img)
         self._imgs = [ph]
         self.preview.configure(image=ph)
         zoom = None
+        black = ""
         for (_x, _y, pic) in res.layout.images[:1]:
+            black = pictures.mostly_black_warning(pictures.black_share(pic), cur["mode"]
+                                                  if cur else "logo",
+                                                  bool(cur and cur.get("invert")))
             k = min(1.0, 160 / max(1, pic.width), 160 / max(1, pic.height))
             k = max(k, min(3.0, 160 / max(1, pic.height)))
             zoom = render.scaled(pic, k)
@@ -287,7 +311,8 @@ class PictureDialog(Modal):
             self.zoom.configure(image=zph)
         else:
             self.zoom.configure(image="")
-        self.msg.configure(text=res.message if res.overflow else "")
+        show_line(self.msg, res.message if res.overflow else "", self.under)
+        show_line(self.black_lbl, black, self.preview)
         self.swapped.configure(text="Black and white are swapped: the light parts of "
                                "your picture will print black." if self.invert.value else "")
 
@@ -379,26 +404,28 @@ class QrDialog(Modal):
         tk.Label(left, text="QR code on the label", font="big", bg=BG, fg=INK).pack(anchor="w")
         _heading(left, "What should it hold?")
         self.what = tk.StringVar(value=qr["what"])
-        for k, text in qrcodes.WHAT.items():
-            tk.Radiobutton(left, text=text, variable=self.what, value=k, font="ui", bg=BG,
-                           activebackground=BG, command=self._what_changed).pack(anchor="w")
+        whats = tk.Frame(left, bg=BG)
+        whats.pack(anchor="w")
+        for i, (k, text) in enumerate(qrcodes.WHAT.items()):
+            tk.Radiobutton(whats, text=text, variable=self.what, value=k, font="ui", bg=BG,
+                           activebackground=BG, command=self._what_changed).grid(
+                row=i // 2, column=i % 2, sticky="w", padx=(0, 16))
         self.value = tk.StringVar(value=qr["value"] or self._suggest(qr["what"]))
-        self.value_entry = tk.Entry(left, textvariable=self.value, font="field", width=34,
+        self.value_entry = tk.Entry(left, textvariable=self.value, font="field", width=28,
                                     relief="flat", highlightthickness=2,
                                     highlightbackground=BORDER, highlightcolor=GREEN)
         self.value_entry.pack(anchor="w", fill="x", ipady=4, pady=(6, 0))
         self.value.trace_add("write", lambda *a: self._changed())
         _heading(left, "Words under the code (if you want them)")
         self.caption = tk.StringVar(value=qr["caption"])
-        tk.Entry(left, textvariable=self.caption, font="field", width=34, relief="flat",
+        tk.Entry(left, textvariable=self.caption, font="field", width=28, relief="flat",
                  highlightthickness=2, highlightbackground=BORDER,
                  highlightcolor=GREEN).pack(anchor="w", fill="x", ipady=4)
         self.caption.trace_add("write", lambda *a: self._changed())
-        chips = tk.Frame(left, bg=BG)
-        chips.pack(anchor="w", pady=(4, 0))
+        chips = FlowFrame(left, bg=BG, gap_x=4, gap_y=4)    # as many to a row as fit
+        chips.pack(fill="x", pady=(4, 0))
         for text in ("Scan for our menu", "Scan for ingredients", "Scan to reorder"):
-            button(chips, text, lambda t=text: self.caption.set(t), "chip").pack(
-                side="left", padx=(0, 4))
+            chips.add(button(chips, text, lambda t=text: self.caption.set(t), "chip"))
         _heading(left, "How big?")
         self.size = tk.IntVar(value=qr["size"])
         row = _scale(left, self.size, *qrcodes.SIZE_RANGE, "Smaller", "Bigger",
@@ -418,10 +445,10 @@ class QrDialog(Modal):
         self.preview = tk.Label(right, bg=BG)
         self.preview.pack(pady=(6, 4))
         self.holds = tk.Label(right, text="", font="small", bg=BG, fg=MUTED,
-                              wraplength=PREVIEW_W, justify="left")
+                              wraplength=preview_size(self)[0], justify="left")
         self.holds.pack(anchor="w")
-        self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN, wraplength=PREVIEW_W,
-                            justify="left")
+        self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN,
+                            wraplength=preview_size(self)[0], justify="left")
         self.msg.pack(anchor="w", pady=(6, 0))
         _heading(right, "Where does it go?")
         round_label = stocks.get(self.doc.stock).round
@@ -506,14 +533,14 @@ class QrDialog(Modal):
         else:
             self.size_words.configure(text="")
         res = render.render(self.doc, self.app.render_ctx(), dpi=self.dpi)
-        img = render.preview(res, PREVIEW_W, PREVIEW_H, highlight=False)
+        img = render.preview(res, *preview_size(self), highlight=False)
         ph = ImageTk.PhotoImage(img)
         self._imgs = [ph]
         self.preview.configure(image=ph)
         text = qrcodes.payload(cur)
         self.holds.configure(text=f"The code holds: {text}" if text else
                              "Type what the code should hold.")
-        self.msg.configure(text=res.message if res.overflow else "")
+        show_line(self.msg, res.message if res.overflow else "", self.holds)
 
     def _done(self):
         cur = self._current()

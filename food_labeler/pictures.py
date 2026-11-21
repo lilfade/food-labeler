@@ -515,6 +515,39 @@ def _convert(pic: dict, w: int, h: int) -> Image.Image:
     return Image.composite(white, out, paper.convert("1", dither=Image.Dither.NONE))
 
 
+# ---------------------------------------------------------------------------
+# "This picture will print mostly black" (the Picture window only; nothing
+# here changes what prints)
+# ---------------------------------------------------------------------------
+
+MOSTLY_BLACK = 0.65          # share of black dots above which the window warns
+
+
+def black_share(dots: Image.Image) -> float:
+    """The share (0..1) of a converted picture's dots that print black."""
+    grey = dots.convert("L")
+    n = grey.width * grey.height
+    if not n:
+        return 0.0
+    return sum(grey.histogram()[:128]) / n
+
+
+def mostly_black_warning(share: float, mode: str = "logo", invert: bool = False) -> str:
+    """The gentle line under the Picture window's preview when more than
+    MOSTLY_BLACK of the picture prints black ("" when it doesn't)."""
+    if share <= MOSTLY_BLACK:
+        return ""
+    if mode == "photo":
+        tip = ("This picture will print mostly black. Try moving the slider toward "
+               "Brighter.")
+    else:
+        tip = ("This picture will print mostly black. Try moving the slider toward "
+               "Lighter, or choose Photo (tiny dots).")
+    if invert:
+        return "\u201cSwap black and white\u201d is on: try turning it off first. " + tip
+    return tip
+
+
 def aspect(pic: dict) -> float:
     """Width / height of the stored picture (1.0 if unreadable)."""
     im = decode(pic)
