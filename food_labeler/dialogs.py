@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageTk
 
 from . import APP_NAME, BRAND, __version__
 from . import dates, known, model, printers, render, report, settings as settings_mod, stocks
-from . import templates, usbscan
+from . import btscan, templates, usbscan
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, GREEN_LIGHT, INK, MUTED, PANEL, WARN,
                       WARN_BG, Modal, ScrollFrame, ask, button, tell)
 
@@ -447,6 +447,15 @@ class AdvancedDialog(Modal):
             tk.Checkbutton(b, text="Print through Windows driver (if raw doesn't work)",
                            variable=self.via_driver, font="ui", bg=BG,
                            activebackground=BG).pack(anchor="w", pady=(8, 0))
+        self.bt_channel = tk.StringVar(value=str(
+            app.cfg["printers"].get(p.id, {}).get("bt_channel") or "") if p is not None else "")
+        if p is not None and p.method == "bluetooth":
+            row = tk.Frame(b, bg=BG)
+            row.pack(anchor="w", pady=(8, 0))
+            tk.Label(row, text="Bluetooth channel (1–30; blank = find it by itself)",
+                     font="ui", bg=BG).pack(side="left")
+            tk.Entry(row, textvariable=self.bt_channel, font="ui", width=5).pack(side="left",
+                                                                               padx=8)
         self.printer = p
         self.invert = tk.BooleanVar(value=bool(adv.get("invert")))
         tk.Checkbutton(b, text="Invert colours (if labels print as a black block)",
@@ -510,6 +519,12 @@ class AdvancedDialog(Modal):
             info = self.app.cfg.printer_info(self.printer.id)
             info["via_driver"] = bool(self.via_driver.get())
             set_printer_dpi(info, self.printer, int(self.dpi.get()))
+            if self.printer.method == "bluetooth":
+                ch = printers.bt_channel_or_none(self.bt_channel.get().strip())
+                if ch:
+                    info["bt_channel"] = ch
+                else:
+                    info.pop("bt_channel", None)
         self.app.cfg.save()
         self.app.refresh_printer_combo()          # draws again if the resolution changed
         self.finish(True)
@@ -577,6 +592,16 @@ def pick_kind(parent, name: str) -> str | None:
                   f"What kind of printer is “{name}”?", KIND_CHOICES)
 
 
+# Windows that look for printers on the spot reuse a Bluetooth list this new
+# (seconds): the main window refreshes it every 15 s in the background.
+BT_FRESH_S = 10
+
+
+def bluetooth_help(parent):
+    """How to connect a Bluetooth printer (pairing is done in the system's settings)."""
+    tell(parent, "Connect a Bluetooth printer", printers.BT_HELP)
+
+
 class MyPrintersDialog(Modal):
     """Name, identify ("Which one is it?"), retype, choose or forget printers."""
 
@@ -597,7 +622,7 @@ class MyPrintersDialog(Modal):
         self._draw()
 
     def _rescan(self):
-        self.app.set_found(printers.discover(self.app.known))
+        self.app.set_found(printers.discover(self.app.known, bt_max_age=BT_FRESH_S))
         self._draw()
 
     def _draw(self):
@@ -733,14 +758,19 @@ class SetupWizard(Modal):
         tk.Label(self.frame, text="Connect the printer to this computer with its USB cable. "
                  "Switch it on and put a roll of labels in it.", font="ui", bg=BG, fg=INK,
                  wraplength=740, justify="left").pack(anchor="w")
+        tk.Label(self.frame, text="Bluetooth printer? Pair it in the computer's Bluetooth "
+                 "settings first. (Bluetooth is new and not tested yet.)", font="ui", bg=BG,
+                 fg=MUTED, wraplength=740, justify="left").pack(anchor="w", pady=(8, 0))
         row = tk.Frame(self.frame, bg=BG)
         row.pack(fill="x", pady=(20, 0))
         button(row, "Next ▶", self.step2, "primary").pack(side="right")
         button(row, "Cancel", self.cancel, "quiet").pack(side="left")
+        button(row, "How to connect a Bluetooth printer", lambda: bluetooth_help(self),
+               "quiet").pack(side="left", padx=8)
 
     def step2(self):
         self._clear(2, "Pick your printer")
-        found = printers.discover(self.app.known)
+        found = printers.discover(self.app.known, bt_max_age=BT_FRESH_S)
         self.app.set_found(found)
         found = self.app.found
         self.lb = tk.Listbox(self.frame, font="ui", height=min(8, max(3, len(found))),
@@ -844,7 +874,13 @@ class UsbDevicesDialog(Modal):
                  fg=INK).pack(anchor="w")
         tk.Label(b, text="Tip: unplug the printer, wait a moment, then plug it back in. "
                  "It will show up here marked “This just appeared”.", font="ui",
-                 bg=BG, fg=MUTED, wraplength=760, justify="left").pack(anchor="w", pady=(4, 8))
+                 bg=BG, fg=MUTED, wraplength=760, justify="left").pack(anchor="w", pady=(4, 0))
+        brow = tk.Frame(b, bg=BG)
+        brow.pack(fill="x", pady=(2, 8))
+        tk.Label(brow, text="Bluetooth printer? It isn't listed here.", font="ui", bg=BG,
+                 fg=MUTED).pack(side="left")
+        button(brow, "How to connect a Bluetooth printer", lambda: bluetooth_help(self),
+               "link").pack(side="left", padx=4)
         self.sf = ScrollFrame(b, bg=BG)
         self.sf.configure(width=800, height=min(460, parent.winfo_screenheight() - 300))
         self.sf.pack_propagate(False)
@@ -927,7 +963,7 @@ class UsbDevicesDialog(Modal):
 
     def _use(self, d):
         app = self.app
-        found = printers.discover(app.known)
+        found = printers.discover(app.known, bt_max_age=BT_FRESH_S)
         app.set_found(found)
         found = app.found
         p = None
@@ -980,6 +1016,7 @@ class ReportDialog(Modal):
         super().__init__(parent, "Get help with my printer")
         self.app = app
         self.devs = usbscan.scan(app.known)
+        self.bt_devs = btscan.scan_cached(app.known, BT_FRESH_S)
         tk.Label(self.body, text="This is your printer report. It only has facts about the "
                  "computer and printers — nothing you wrote on your labels. Share it when "
                  "you ask for help, so we can see what's going on.", font="ui",
@@ -1011,7 +1048,8 @@ class ReportDialog(Modal):
         """Build the report (with or without the other USB devices) and show it."""
         self.text = report.build(self.app.found, self.devs, self.app.cfg.nicknames(),
                                  settings_mod.data_dir() / "food-labeler.log", self.app.known,
-                                 everything=bool(self.everything.get()))
+                                 everything=bool(self.everything.get()),
+                                 bt_devices=self.bt_devs)
         t = self.report_box
         t.configure(state="normal")
         t.delete("1.0", "end")

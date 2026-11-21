@@ -1220,7 +1220,7 @@ class App:
             return True
         self.cfg.printer_info(p.id)["alpha_ok"] = True
         self.cfg.save()
-        return bool(ask(self.root, "Not tested yet", printers.ALPHA_NOTICE,
+        return bool(ask(self.root, "Not tested yet", printers.alpha_notice(p),
                         [("OK, print", True, "primary"), ("Cancel", False, "normal")]))
 
     def _highlight_printer_box(self):
@@ -1315,6 +1315,7 @@ class App:
         # Sending can block for seconds (spooler, USB, network): do it on a
         # thread and report back through self._q, polled from the Tk loop.
         self._printing = True
+        self._print_cfg = pcfg
         self.print_btn.configure(state="disabled", text="Printing\u2026")
         self.flash(f"Printing {n} label{'s' if n != 1 else ''}\u2026", 60000)
 
@@ -1340,10 +1341,28 @@ class App:
         self.print_btn.configure(state="normal", text="PRINT")
         if kind == "ok":
             self.flash(text, 10000)
+            self._remember_bt_channel(getattr(self, "_print_cfg", None))
         else:
             self.flash("")
             tell(self.root, "Printing didn't work", text)
         self.refresh_status()
+
+    def _remember_bt_channel(self, pcfg):
+        """After a Bluetooth print, keep the channel that worked for next time."""
+        if not pcfg or pcfg.get("method") != "bluetooth":
+            return
+        try:
+            addr, _ = printers.parse_bt_target(pcfg.get("target", ""))
+        except printers.PrinterError:
+            return
+        ch = printers.LEARNED_CHANNELS.get(addr)
+        p = next((x for x in self.found if x.method == "bluetooth"
+                  and x.target.upper().startswith(addr)), None)
+        if ch and p is not None:
+            info = self.cfg.printer_info(p.id)
+            if info.get("bt_channel_found") != ch:
+                info["bt_channel_found"] = ch
+                self.cfg.save()
 
     def refresh_status(self):
         """Update the line under the printer menu (ready / not connected / offline…)."""

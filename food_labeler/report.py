@@ -16,6 +16,12 @@ interface, Windows class "Printer", or a USB id / name of a known printer
 model). Everything else plugged in (phones, keyboards, storage…) is only
 counted, unless the person ticks "Also list everything else plugged in";
 even then their serial numbers are never included.
+
+Bluetooth devices follow the same rule: paired printers are listed (name,
+device class, Serial Port Profile yes/no, paired/connected), everything
+else (phones, headphones…) is only counted, and with the tick box listed
+by class only, never by name. A Bluetooth address is never written out in
+full: only its last two bytes ("…3F:A2"), anywhere in the report.
 """
 from __future__ import annotations
 
@@ -40,8 +46,23 @@ PRINTER_TEMPLATE = "printer-not-working.yml"   # .github/ISSUE_TEMPLATE/<this>
 ISSUE_TITLE = "My printer isn't working"
 
 
+MAC_RE = re.compile(r"(?<![0-9A-Fa-f])(?<![0-9A-Fa-f][:-])(?:[0-9A-Fa-f]{2}[:-]){4}"
+                    r"([0-9A-Fa-f]{2})[:-]([0-9A-Fa-f]{2})(?![:-]?[0-9A-Fa-f])")
+# Windows Bluetooth PnP ids carry the address as 12 hex digits ("DEV_898F10A1B2C3",
+# "…&898F10A1B2C3_C00000000"): keep the last 4.
+PNP_ADDR_RE = re.compile(r"(?i)(?<=DEV_)[0-9A-F]{8}(?=[0-9A-F]{4}(?![0-9A-F]))"
+                         r"|(?<=&)[0-9A-F]{8}(?=[0-9A-F]{4}_)")
+
+
+def hide_addresses(text: str) -> str:
+    """Bluetooth (and other MAC-style) addresses down to their last two bytes."""
+    text = MAC_RE.sub(lambda m: f"\u2026{m.group(1)}:{m.group(2)}".upper(), text)
+    return PNP_ADDR_RE.sub("\u2026", text)
+
+
 def _scrub(text: str) -> str:
-    """Replace the home folder with ~ and hide the login name."""
+    """Replace the home folder with ~, hide the login name and Bluetooth addresses."""
+    text = hide_addresses(text)
     home = str(Path.home())
     if home and len(home) > 3:
         text = text.replace(home, "~")
@@ -79,11 +100,12 @@ def is_printer_device(d) -> bool:
 
 
 def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
-          log_path=None, known=None, everything: bool = False) -> str:
-    """Build the report. Pass only printer/USB facts — never the label document.
+          log_path=None, known=None, everything: bool = False, bt_devices=()) -> str:
+    """Build the report. Pass only printer/USB/Bluetooth facts — never the label document.
 
     ``everything``: also list USB devices that aren't printers (without their
-    serial numbers); by default they are only counted."""
+    serial numbers) and Bluetooth devices that aren't printers (by class
+    only, without their names); by default they are only counted."""
     out = [f"{APP_NAME} printer report", "=" * 30,
            f"Program: {APP_NAME} {__version__}" + (" (installed)" if getattr(sys, "frozen", False)
                                                    else " (from source)"),
@@ -120,6 +142,8 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
         n = len(others)
         out.append(f"  ({n} other USB device{'s' if n != 1 else ''} plugged in, not listed)")
     out.append("")
+    out.extend(_bluetooth_lines(bt_devices, everything))
+    out.append("")
     out.append("Printers:")
     if not printers_found:
         out.append("  (none found)")
@@ -139,6 +163,38 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
     out.append("Recent problems from the log:")
     out.extend(f"  {x}" for x in probs) if probs else out.append("  (none)")
     return _scrub("\n".join(out)) + "\n"
+
+
+def _yn(v) -> str:
+    return "yes" if v else "?" if v is None else "no"
+
+
+def _bluetooth_lines(devs, everything: bool) -> list[str]:
+    """The "Bluetooth printers" part: printers in full (address shortened),
+    other devices only counted, or with the tick box listed without names."""
+    devs = list(devs or ())
+    printers_ = [d for d in devs if d.is_printer]
+    others = [d for d in devs if not d.is_printer]
+    out = ["Bluetooth printers (paired):" if not everything else "Bluetooth devices (paired):"]
+    if not printers_ and not (everything and others):
+        out.append("  (none found)")
+    for d in printers_:
+        title = getattr(d.family, "display_name", "") or d.name or "Unnamed Bluetooth printer"
+        out.append(f"  - {title}")
+        out.append(f"      says: {d.name or '-'}  address {d.short or '?'}  class "
+                   f"{d.class_text()}  SPP {'yes' if d.spp else 'no'}")
+        line = f"      paired {_yn(d.paired)}  connected {_yn(d.connected)}"
+        if d.com_port:
+            line += f"  port {d.com_port}"
+        out.append(line + f"  matched {getattr(d.family, 'id', '-')}")
+    if everything:
+        for d in others:
+            out.append(f"  - (not a printer; name not shown)  class {d.class_text()}  "
+                       f"SPP {'yes' if d.spp else 'no'}")
+    elif others:
+        n = len(others)
+        out.append(f"  ({n} other Bluetooth device{'s' if n != 1 else ''} paired, not listed)")
+    return out
 
 
 def mailto(report: str, to: str = "") -> str:
