@@ -4,6 +4,36 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.4.0 — unreleased
+
+Help through GitHub, and more printers.
+
+- **Asking for help.** The printer report window (**Settings → Get help
+  with my printer…**, or **My printer isn't in the list → Ask for help on
+  GitHub**) now has a big **Ask for help on GitHub** button. It copies the
+  report and opens a short help form on GitHub: paste the report into the
+  box (right-click → Paste) and say what happened. **Copy** and **Save to
+  Desktop** are still there, and **Or email it instead** if you'd rather
+  not use GitHub. The report is never put in the web address.
+- There are help forms for *My printer isn't working*, *Add my printer*,
+  *Something's wrong or confusing* and *My state's cottage food wording is
+  wrong*. It's free to make a GitHub account; email still works if you're
+  stuck.
+- **More printers.** Food Labeler now knows about more label printers
+  (MUNBYN, Rollo, iDPRT and HPRT, Polono PL60 and PL70e-BT, Nelko, Phomemo,
+  Jadens and Beeprt, Xprinter, Arkscan). See [Printers we know about](docs/printer-list.md).
+- **Tested or alpha.** Only LP610BT-type printers and the Zebra ZP450 have
+  been tested on paper. Every other printer has *(alpha — not tested yet)*
+  after its name, and the first time you print to one, Food Labeler says so
+  once and asks **OK, print** or **Cancel**. If it doesn't work, please tell
+  us on GitHub.
+- Printers that only work through their maker's own driver now print
+  through that driver on Windows by themselves. On Linux, Food Labeler says
+  plainly that the printer needs its maker's driver instead of sending
+  something it can't print.
+- [Why we made this](docs/why.md): a few words about why Food Labeler is
+  free and works with many printers.
+
 ## 1.3.2 — 2026-11-21
 
 Safety fixes.
