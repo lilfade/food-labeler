@@ -63,6 +63,22 @@ def feed_job() -> bytes:
     return b"~PH\n"
 
 
+def calibrate_job(stock: Stock, media: str | None = None) -> bytes:
+    """Set-up job for a new roll.
+
+    Gaps (default) / black marks: set the media type (^MNW / ^MNM) and then
+    ~JC, which makes the printer feed labels to measure them (the head must be
+    closed with the roll loaded). Continuous (^MNN): nothing to measure, so
+    only the label length is set (^PW/^LL). ^JUS is never sent, so nothing is
+    saved in the printer for good. Only sent from a button after the person
+    has said yes (calibrate.send_setup).
+    """
+    if media == "continuous":
+        return f"^XA^MNN^PW{stock.w}^LL{stock.h}^XZ\n".encode("ascii")
+    mn = "M" if media == "mark" else "W"
+    return f"^XA^MN{mn}^XZ\n~JC\n".encode("ascii")
+
+
 def decode_gfa(job: bytes) -> Image.Image:
     """Turn a ^GFA job back into a picture (used by the tests and --selftest).
 

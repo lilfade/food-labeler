@@ -40,7 +40,8 @@ Save files as UTF-8 (with or without a byte-order mark).
       "density": {"default": 8, "small": 9},
       "speed": {"default": 4, "small": 3, "round": 3},
       "stocks": ["small", "medium", "large", "round", "xl"],
-      "notes": "free text for us"
+      "notes": "free text for us",
+      "calibrate_by_hand": "Put at least 4 labels in the printer and close the lid. Hold the feed button down for about 3 seconds, until the printer starts feeding, then let go."
     }
   ]
 }
@@ -65,6 +66,7 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `speed` | no | TSPL `SPEED`: same shape as `density` |
 | `stocks` | no | label sizes the printer takes: `small`, `medium`, `large`, `round`, `xl` (default: all). Printing another size asks "Print anyway?" |
 | `notes` | no | free text, ignored by the program |
+| `calibrate_by_hand` | no | how to set up a new roll with the printer's own button, in plain words (text, at most 600 characters). Shown in *Set up a new roll* under "If it still isn't right:". Without it a general instruction is shown. Check it against the printer's own guide. |
 
 Label size ids: `small` 32×25 mm, `medium` 3×2 in, `large` 4×2 in,
 `round` 2 in circle, `xl` 4×6 in.

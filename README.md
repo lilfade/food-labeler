@@ -237,6 +237,35 @@ Details for helpers: [docs/cottage-rules.md](docs/cottage-rules.md).
   *Sharp (300 dpi)* if your printer (or its box) says 300 dpi. Your labels
   stay the same size either way; at 300 dpi the writing is just crisper.
 
+#### New roll? Set it up
+
+Each time you put a new roll in the printer, set it up once, so the
+printing lands on the labels and not across the gaps between them.
+
+1. Press **Print settings…** (under the printer list), then
+   **New roll? Set it up…**.
+2. **Put the new roll in.** Pull out a few labels past the front and close
+   the lid.
+3. **Say what is on the roll:** the label size (your label's size is already
+   picked) and the kind of roll: *Labels with gaps* (most rolls), *Labels
+   with black marks* (black lines on the back) or *Continuous roll* (one long
+   strip, no gaps).
+4. Press **Set it up**. Food Labeler asks first, because the printer feeds
+   2–4 blank labels to measure them. A continuous roll needs no setting up;
+   this only tells the printer the size, and no labels are used.
+5. If you like, press **Print one test label**. It has a box just inside
+   the edges and an arrow pointing to the end that comes out first. If the
+   box sits on the label, press **Looks right**. If not, press **It's off —
+   help me** for what to try.
+
+The window also says how to set up a roll with the printer's own feed
+button, in case that is ever needed. Food Labeler remembers which roll you
+set up on each printer. When you pick a different label size, a short line
+under the printer asks *"New roll in the … printer? Set it up"*; press
+**Set up**, or **No, same roll** if you didn't change the roll. Nothing is
+ever sent to the printer until you press **Set it up** and say OK.
+(**Settings → Advanced… → Feed / calibrate…** opens the same window.)
+
 ---
 
 ## Something not right?
@@ -253,6 +282,12 @@ towards *Darker* or *Lighter*, then **Save**. Not sure which is best? Press
 **The printing is not in the middle of the label, or comes out upside down.**
 **Print settings…** → *Nudge the print* moves it left, right, up or down;
 *Print upside down* turns it round.
+
+**Labels print across the gap, or the printer skips labels.**
+The printer doesn't know where each label starts on this roll. Set up the
+roll: **Print settings…** → **New roll? Set it up…** (see *New roll? Set it
+up* above). Check the label size and the kind of roll match what is in the
+printer.
 
 **My printer isn't found.**
 1. Check the printer is switched on and its cable is plugged in.

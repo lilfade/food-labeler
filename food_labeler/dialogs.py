@@ -514,28 +514,8 @@ class AdvancedDialog(Modal):
         self.finish(True)
 
     def _calibrate(self):
-        p = self.app.current_printer()
-        if p is None:
-            tell(self, "No printer", "Pick a printer first.")
-            return
-        cfgp = self.app.printer_config(p)
-        if cfgp["kind"] != "tspl":
-            tell(self, "Not needed", "Zebra printers calibrate from their own button "
-                 "(hold the feed button until it flashes twice).")
-            return
-        if not ask(self, "Feed / calibrate",
-                   "The printer will feed a few blank labels to measure them. "
-                   "This uses up 2–4 labels. Go ahead?",
-                   [("Yes, calibrate", True, "primary"), ("Cancel", False, "normal")]):
-            return
-        from . import tspl
-        gap = self.app.cfg["advanced"]["gap"].get(self.stock.id)
-        data = tspl.calibrate_job(self.stock, gap)
-        try:
-            printers.send(cfgp, data)
-            tell(self, "Done", "Sent. The printer should feed a few labels and stop.")
-        except printers.PrinterError as e:
-            tell(self, "Didn't work", str(e))
+        """A shortcut to "New roll? Set it up…" (the same window as in Print settings)."""
+        self.app.setup_roll(self)
 
     def _logs(self):
         open_folder(settings_mod.data_dir())

@@ -1,7 +1,8 @@
 """Command-line entry point: ``python -m food_labeler [--selftest | --version | FILE]``.
 
 ``--selftest`` renders every template on every label size it allows (and one
-label at 300 dpi, one with a picture and a QR code), builds
+label at 300 dpi, one with a picture and a QR code), checks the new-roll
+set-up jobs and line-up label, builds
 TSPL and ZPL jobs from the pictures and checks they decode back to the same
 bits — without opening a window or touching any printer. It exits 0 if all
 is well; the build scripts and the release workflow run it on the finished
@@ -86,6 +87,15 @@ def selftest() -> int:
     assert bakery.load_starter(), "starter ingredients missing"
     k = known.KnownPrinters()
     assert k.match({}, "0483:2025") is not None
+    # setting up a new roll: the jobs and the line-up label (nothing is sent)
+    from . import calibrate
+    assert calibrate.setup_job("tspl", stocks.get("large")) == (
+        b"SIZE 101.6 mm,50.8 mm\r\nGAP 3 mm,0 mm\r\nGAPDETECT\r\n")
+    assert calibrate.setup_job("zpl", stocks.get("large")) == b"^XA^MNW^XZ\n~JC\n"
+    assert all(d.calibrate_by_hand for d in k.all()), "printer set-up help missing"
+    for dpi in (203, 300):
+        st = stocks.get("large", dpi)
+        assert calibrate.lineup_label_image(st).size == (st.w, st.h)
     # Make sure the GUI toolkit is bundled. Importing tkinter never opens a
     # window; only creating tk.Tk() would.
     import tkinter

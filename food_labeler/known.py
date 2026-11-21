@@ -4,7 +4,7 @@ optional user file of updates that High Thyme Kitchen can send.
 A Definition says how to recognise a model (IEEE 1284 id, USB vid:pid, or
 Windows/CUPS name patterns), which language it speaks (TSPL or ZPL) and its
 preferred darkness/speed per label size, its print head's resolution (203 or
-300 dpi) and how wide it can print. Files are validated strictly:
+300 dpi), how wide it can print and how to set up a new roll by hand. Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
 the program half-configured.
 
@@ -27,13 +27,15 @@ VERSION = 1
 USER_FILE_NAME = "known_printers.json"
 
 ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "max_width_dots", "media", "usb",
-                "ieee1284", "windows", "density", "speed", "stocks", "notes"}
+                "ieee1284", "windows", "density", "speed", "stocks", "notes",
+                "calibrate_by_hand"}
 DPI_VALUES = (203, 300)        # print head resolutions Food Labeler lays out for
 MAX_WIDTH_RANGE = (64, 4000)   # sane print head widths, in the printer's own dots
 STOCK_IDS = {"small", "medium", "large", "round", "xl"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 VIDPID_RE = re.compile(r"^[0-9a-f]{4}:[0-9a-f]{4}$")
 MAX_ENTRIES = 200
+MAX_BY_HAND = 600             # "calibrate_by_hand": a few sentences, shown as they are
 
 
 class DefinitionError(Exception):
@@ -57,6 +59,7 @@ class Definition:
     speed: dict = field(default_factory=dict)
     stocks: list = field(default_factory=list)
     notes: str = ""
+    calibrate_by_hand: str = ""  # how to set up a new roll with the printer's own button
 
     @property
     def display_name(self) -> str:
@@ -181,6 +184,10 @@ def validate_entry(e) -> Definition:
     notes = e.get("notes", "")
     if not isinstance(notes, str):
         raise DefinitionError(f"Printer “{name}” has bad notes.")
+    by_hand = e.get("calibrate_by_hand", "")
+    if not isinstance(by_hand, str) or len(by_hand) > MAX_BY_HAND or "\x00" in by_hand:
+        raise DefinitionError(f"Printer “{name}” has a bad “calibrate_by_hand” (it should be "
+                              f"a few plain sentences, at most {MAX_BY_HAND} letters).")
     return Definition(
         id=pid, name=name.strip(), language=lang,
         brands=str_list("brands"), dpi=int(dpi), max_width_dots=width, media=media,
@@ -189,6 +196,7 @@ def validate_entry(e) -> Definition:
         windows=str_list("windows", check_re),
         density=_int_map(e.get("density"), "density"), speed=_int_map(e.get("speed"), "speed"),
         stocks=stocks_ or sorted(STOCK_IDS), notes=notes,
+        calibrate_by_hand=by_hand.strip(),
     )
 
 
@@ -223,6 +231,8 @@ def _to_json(d: Definition) -> dict:
            "stocks": d.stocks, "notes": d.notes}
     if d.max_width_dots:
         out["max_width_dots"] = d.max_width_dots
+    if d.calibrate_by_hand:
+        out["calibrate_by_hand"] = d.calibrate_by_hand
     return out
 
 

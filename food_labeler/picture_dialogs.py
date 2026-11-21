@@ -10,9 +10,12 @@
 * ``PrintSettingsDialog`` — darkness, speed, nudging, upside down, gap,
   media, what happens after printing, per printer; "Feed one blank label"
   and "Darkness test" (only on click, after saying what it will use).
+* ``RollSetupDialog`` — "New roll? Set it up…": put the roll in, say what is
+  on it, set it up (only after "This feeds 2–4 blank labels. OK?"), then an
+  optional line-up label and help if it's off. Result: the size set up.
 
 The work (conversion, layout, printer commands) is in pictures.py,
-qrcodes.py, extras.py and printsettings.py; these classes only collect
+qrcodes.py, extras.py, printsettings.py and calibrate.py; these classes only collect
 choices and show previews.
 """
 from __future__ import annotations
@@ -24,7 +27,7 @@ from tkinter import filedialog
 from PIL import ImageTk
 
 from . import pictures, printers, printsettings, qrcodes, render, settings as settings_mod
-from . import stocks
+from . import calibrate, stocks
 from .widgets import (BG, BORDER, GREEN, INK, MUTED, PANEL, WARN, Modal, ScrollFrame, Toggle,
                       ask, button, tell)
 
@@ -488,6 +491,11 @@ class PrintSettingsDialog(Modal):
                  bg=BG, fg=INK, wraplength=640, justify="left").pack(anchor="w")
         tk.Label(b, text="Remembered for this printer. If you are not sure, leave them as "
                  "they are.", font="small", bg=BG, fg=MUTED).pack(anchor="w")
+        roll = tk.Frame(b, bg=BG)
+        roll.pack(anchor="w", pady=(10, 0))
+        button(roll, "New roll? Set it up\u2026", self._new_roll, "primary").pack(side="left")
+        tk.Label(roll, text="  Do this after putting in a new roll, so labels line up.",
+                 font="small", bg=BG, fg=MUTED).pack(side="left")
 
         # two columns, so the window fits a laptop screen
         cols = tk.Frame(b, bg=BG)
@@ -609,6 +617,16 @@ class PrintSettingsDialog(Modal):
         except printers.PrinterError as e:
             tell(self, "Didn't work", str(e))
 
+    def _new_roll(self):
+        """The same set-up window as "Feed / calibrate…" in Advanced. It keeps the
+        kind of roll it set up; show that here too (other changes stay unsaved)."""
+        if self.app.setup_roll(self, self.p):
+            stored = printsettings.clean(self.app.cfg["printers"].get(self.p.id, {})
+                                         .get("print"))
+            if "media" in stored:
+                self.old["media"] = stored["media"]
+                self.media.set(stored["media"])
+
     def _feed(self):
         data = printers.feed_job(self.stock, self.app.printer_config(self.p), self.adv,
                                  self.collect())
@@ -630,3 +648,152 @@ class PrintSettingsDialog(Modal):
         self._send(data, f"Sent. Pick the label you like best ({nums}) and move the "
                          "Darkness slider to its number.")
 
+
+
+# ---------------------------------------------------------------------------
+# new roll (calibration)
+# ---------------------------------------------------------------------------
+
+class RollSetupDialog(Modal):
+    """"New roll? Set it up…": three plain steps, then an optional line-up label.
+
+    Nothing is sent until "Set it up" is pressed *and* the person says OK to
+    "This feeds 2–4 blank labels" (calibrate.send_setup). Result: the label
+    size id that was set up, or None.
+    """
+
+    def __init__(self, parent, app, printer):
+        super().__init__(parent, "Set up a new roll")
+        self.app = app
+        self.p = printer
+        self.dpi = app.printer_dpi(printer)
+        self.kind = app.printer_config(printer)["kind"]
+        self.ps = app.print_settings_for(printer)
+        self.done_stock = None
+        fam = printer.family
+        b = self.body
+        tk.Label(b, text=f"Set up a new roll in the {app.printer_name(printer)}", font="big",
+                 bg=BG, fg=INK, wraplength=680, justify="left").pack(anchor="w")
+        tk.Label(b, text="Do this each time you put in a new roll, so the printing lines up "
+                 "with the labels.", font="small", bg=BG, fg=MUTED, wraplength=680,
+                 justify="left").pack(anchor="w")
+
+        cols = tk.Frame(b, bg=BG)
+        cols.pack(fill="x")
+        left = tk.Frame(cols, bg=BG)
+        left.pack(side="left", anchor="n", padx=(0, 30))
+        right = tk.Frame(cols, bg=BG)
+        right.pack(side="left", anchor="n")
+
+        for text, pady in (("1.  " + calibrate.STEP1, (14, 2)),
+                           ("2.  " + calibrate.STEP2, (12, 2))):
+            tk.Label(left, text=text, font="ui_bold", bg=BG, fg=INK, wraplength=340,
+                     justify="left").pack(anchor="w", pady=pady)
+        tk.Label(left, text="Label size", font="ui", bg=BG, fg=MUTED).pack(anchor="w")
+        self.stock = tk.StringVar(value=app.doc.stock if app.doc.stock in stocks.STOCKS
+                                  else stocks.DEFAULT_STOCK)
+        for sid in stocks.ORDER:
+            tk.Radiobutton(left, text=stocks.STOCKS[sid].name, variable=self.stock, value=sid,
+                           font="ui", bg=BG, activebackground=BG).pack(anchor="w")
+        tk.Label(left, text="Kind of roll", font="ui", bg=BG, fg=MUTED).pack(anchor="w",
+                                                                             pady=(8, 0))
+        self.media = tk.StringVar(value=calibrate.clean_media(self.ps.get("media")))
+        for k, text in calibrate.MEDIA.items():
+            tk.Radiobutton(left, text=text, variable=self.media, value=k, font="ui", bg=BG,
+                           activebackground=BG, command=self._media_changed).pack(anchor="w")
+
+        _heading(right, "3.  " + calibrate.STEP3, pady=(14, 2))
+        self.note = tk.Label(right, text="", font="ui", bg=BG, fg=INK, wraplength=360,
+                             justify="left")
+        self.note.pack(anchor="w")
+        self.go = button(right, "Set it up", self._setup, "primary", font="big")
+        self.go.pack(anchor="w", pady=(8, 0))
+        # shown once the roll has been set up
+        self.after_frame = tk.Frame(right, bg=BG)
+        tk.Label(self.after_frame, text="Want to check it? A test label shows a box just "
+                 "inside the edges; the arrow points to the end that comes out first.",
+                 font="small", bg=BG, fg=MUTED, wraplength=360, justify="left").pack(
+            anchor="w", pady=(12, 4))
+        button(self.after_frame, "Print one test label", self._lineup, "chip").pack(anchor="w")
+        row = tk.Frame(self.after_frame, bg=BG)
+        row.pack(anchor="w", pady=(8, 0))
+        button(row, "Looks right", lambda: self.finish(self.done_stock), "primary").pack(
+            side="left", padx=(0, 8))
+        button(row, "It's off — help me", self._help, "warn").pack(side="left")
+
+        self.fallback = tk.Label(b, text=calibrate.still_not_right(fam), font="small", bg=BG,
+                                 fg=MUTED, wraplength=680, justify="left")
+        self.fallback.pack(anchor="w", pady=(16, 0))
+        row = tk.Frame(b, bg=BG)
+        row.pack(fill="x", pady=(14, 0))
+        button(row, "Close", self._close, "quiet").pack(side="right")
+        self._media_changed()
+
+    def _stock(self):
+        return stocks.get(self.stock.get(), self.dpi)
+
+    def _media_changed(self):
+        m = self.media.get()
+        if m == "continuous":
+            self.note.configure(text=calibrate.CONTINUOUS_NOTE)
+            self.go.configure(text="Set the size")
+        else:
+            text = "The printer feeds 2–4 blank labels to find where each one starts."
+            if m == "mark" and self.kind != "zpl":
+                text += "\n\n" + calibrate.MARK_UNVERIFIED
+            self.note.configure(text=text)
+            self.go.configure(text="Set it up")
+
+    def _keep_media(self, media):
+        """The kind of roll also goes into Print settings, so labels print to match."""
+        info = self.app.cfg.printer_info(self.p.id)
+        ps = printsettings.clean(info.get("print"))
+        if media != "gap" or "media" in ps:
+            ps["media"] = media
+        if ps:
+            info["print"] = ps
+        self.ps = ps
+
+    def _setup(self):
+        stock, media = self._stock(), self.media.get()
+        cfgp = self.app.printer_config(self.p)
+        try:
+            data = calibrate.setup_job_for(stock, cfgp, self.app.cfg["advanced"], media,
+                                           self.ps, self.p.family)
+            sent = calibrate.send_setup(
+                cfgp, data, lambda: ask(self, "Set up the roll", calibrate.confirm_text(media),
+                                        [("Yes, set it up", True, "primary"),
+                                         ("Cancel", False, "normal")]))
+        except printers.PrinterError as e:
+            tell(self, "Didn't work", str(e))
+            return
+        if not sent:
+            return
+        info = self.app.cfg.printer_info(self.p.id)
+        calibrate.remember_roll(info, stock.id, media)
+        self._keep_media(media)
+        self.app.cfg.save()
+        self.done_stock = stock.id
+        self.after_frame.pack(anchor="w", fill="x")
+        tell(self, "Sent", "Sent. The printer feeds a few labels and stops." if
+             calibrate.uses_labels(media) else "Sent. The printer now knows the size.")
+
+    def _lineup(self):
+        stock = self._stock()
+        cfgp = self.app.printer_config(self.p)
+        try:
+            data = calibrate.lineup_label_job(stock, cfgp, self.app.cfg["advanced"],
+                                              self.p.family, self.ps)
+            printers.send(cfgp, data)
+        except printers.PrinterError as e:
+            tell(self, "Didn't work", str(e))
+            return
+        tell(self, "Sent", "Sent one test label. Is the box just inside the edges of the "
+             "label?")
+
+    def _help(self):
+        tell(self, "Let's fix it", calibrate.help_text(self.p.family, self.kind,
+                                                       self.media.get()))
+
+    def _close(self):
+        self.finish(self.done_stock)

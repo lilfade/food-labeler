@@ -4,6 +4,38 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.3.0 — unreleased
+
+New roll? Set it up.
+
+- **Print settings… → New roll? Set it up…** walks through setting up a
+  new roll in three plain steps: put the roll in, say what is on it (label
+  size and *labels with gaps / black marks / continuous roll*), and
+  **Set it up**. It asks first ("This feeds 2–4 blank labels. OK?") and
+  only then sends anything. **Settings → Advanced… → Feed / calibrate…**
+  opens the same window.
+- After setting up: **Print one test label** (a box 1 mm inside the edges,
+  the size's name and an arrow pointing to the end that comes out first),
+  printed with the printer's own print settings, then **Looks right** or
+  **It's off — help me** (nudge the print, set it up again, or use the
+  printer's own button).
+- LP610BT-type printers: gaps use `GAPDETECT` exactly as before; black marks
+  use `BLINE` + `BLINEDETECT` (not yet tried on these clones, so the window
+  also shows how to do it with the printer's button); a continuous roll only
+  sends the size. Zebra printers: `^MNW` / `^MNM` then `~JC`; a continuous
+  roll only sets the label length. Settings are never saved in the printer
+  for good (no `^JUS`). Printers of an unknown model get the job for their
+  language and the general by-hand steps.
+- Each printer remembers the roll last set up (size, kind, date). When you
+  pick another label size for that printer, a short line under the printer
+  offers to set up the new roll, with **No, same roll** to hide it for that
+  size. It is only a line on the screen: nothing is sent without a click.
+- The kind of roll chosen there is also kept in **Print settings**.
+- Printer update files may now give `"calibrate_by_hand"`: how to set up a
+  roll with that printer's own button, shown in the window. The built-in
+  LP610BT-compatible, Zebra ZP450 and Zebra entries have it.
+- `--selftest` also checks the set-up jobs and the test label.
+
 ## 1.2.0 — 2026-11-21
 
 Lettering: choose the fonts on your labels.

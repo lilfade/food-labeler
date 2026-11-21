@@ -22,7 +22,7 @@ from tkinter import filedialog, ttk
 from PIL import Image, ImageTk
 
 from . import APP_NAME, BRAND, dates, known, model, printers, render, settings as settings_mod, stocks
-from . import bakery, cottage, printsettings, templates
+from . import bakery, calibrate, cottage, printsettings, templates
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, WARN_BG,
                       CalendarDialog, ScrollFrame, Toggle, ask, button, tell)
 
@@ -262,6 +262,16 @@ class App:
             side="left", padx=(0, 6))
         button(prow2, "My printer isn't in the list", self.usb_devices, "quiet").pack(
             side="left")
+        # "New roll in the …? Set it up" — a gentle one-line notice, never a popup,
+        # shown only when the label size differs from the roll last set up here
+        self.roll_notice = tk.Frame(pp, bg=WARN_BG, padx=8, pady=4)
+        self.roll_lbl = tk.Label(self.roll_notice, text="", font="ui", bg=WARN_BG, fg=INK,
+                                 anchor="w", justify="left", wraplength=420)
+        self.roll_lbl.pack(side="left", fill="x", expand=True)
+        button(self.roll_notice, "No, same roll", self._same_roll, "quiet").pack(
+            side="right", padx=(6, 0))
+        button(self.roll_notice, "Set up", self._roll_notice_clicked, "chip").pack(
+            side="right")
 
         # --- bottom: copies + PRINT
         bottom = tk.Frame(r, bg=BG, padx=14, pady=8)
@@ -352,6 +362,7 @@ class App:
             self._loading = False
         self._update_title()
         self.schedule_render()
+        self.refresh_roll_notice()
 
     def _autosave_tick(self):
         # Runs every AUTOSAVE_MS; writes only when document, path or dirty flag
@@ -1078,6 +1089,7 @@ class App:
             text = "Pick your printer here"
         self.printer_btn.configure(text=text + "  \u25BE")
         self.refresh_status()
+        self.refresh_roll_notice()
         self._rerender_if_dpi_changed()
 
     def _menu_picked(self, pid):
@@ -1106,6 +1118,56 @@ class App:
                        "so I picked that size.", 8000)
         self.refresh_printer_combo()
 
+    # ------------------------------------------------------------------ new roll
+    def refresh_roll_notice(self):
+        """Show "New roll in the …? Set it up" under the printer when the label size
+        differs from the roll last set up on it (see calibrate.show_notice). This
+        only shows words and buttons; nothing is ever sent from here."""
+        if not hasattr(self, "roll_notice"):
+            return
+        p = self.current_printer()
+        info = self.cfg["printers"].get(p.id, {}) if p is not None else {}
+        if p is not None and calibrate.show_notice(info, self.doc.stock):
+            self.roll_lbl.configure(text=calibrate.notice_text(self.printer_name(p)))
+            self.roll_notice.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+        else:
+            self.roll_notice.grid_remove()
+
+    def _same_roll(self):
+        p = self.current_printer()
+        if p is not None:
+            calibrate.dismiss_notice(self.cfg.printer_info(p.id), self.doc.stock)
+            self.cfg.save()
+        self.refresh_roll_notice()
+
+    def _roll_notice_clicked(self):
+        p = self.current_printer()
+        if p is not None:
+            self.setup_roll(self.root, p)
+
+    def setup_roll(self, parent, p=None):
+        """Open "Set up a new roll" for printer ``p`` (default: the chosen one).
+
+        Only the window's own "Set it up" button, after its OK question, sends
+        anything. If a different label size was set up and this kind of label
+        allows it, the label switches to that size. Returns the size set up or None.
+        """
+        p = p or self.current_printer()
+        if p is None:
+            self._highlight_printer_box()
+            tell(parent, "Which printer?", "Pick your printer first, then set up its roll.")
+            return None
+        from .picture_dialogs import RollSetupDialog
+        got = RollSetupDialog(parent, self, p).run()
+        if got and got != self.doc.stock and got in templates.ALLOWED_STOCKS[self.doc.template]:
+            self.doc.stock = got
+            self._sync_ui_from_doc()
+            self._snapshot()
+            self.flash(f"Your label is now \u201c{stocks.get(got).name}\u201d, to match the "
+                       "roll.", 8000)
+        self.refresh_roll_notice()
+        return got
+
     def print_settings_for(self, p) -> dict:
         """This printer's print settings ({} = normal)."""
         return printsettings.clean(self.cfg["printers"].get(p.id, {}).get("print"))
@@ -1120,6 +1182,7 @@ class App:
             return
         from .picture_dialogs import PrintSettingsDialog
         PrintSettingsDialog(self.root, self, p).run()
+        self.refresh_roll_notice()
 
     def pick_picture(self):
         """Kind bar → Picture: add, change or take off the label's picture."""

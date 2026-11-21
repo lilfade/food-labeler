@@ -8,7 +8,9 @@ experts, so the guiding rules are:
 - **The preview is the printout.** Everything that prints goes through
   `render.render()`; never draw printer-only content elsewhere.
 - **Never print by surprise.** Only a button press sends anything to a printer
-  (test labels, calibration and "Which one is it?" included).
+  (test labels, calibration and "Which one is it?" included). Anything that
+  uses up labels (setting up a roll, the darkness test) asks first and says
+  how many. `tests/test_calibrate.py` checks no automatic path can send.
 - **Never lose work.** Writes are atomic; the session is autosaved.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit.
@@ -126,7 +128,9 @@ format and matching rules are in
    the same hardware, list them all in `brands` — never claim one brand for a
    shared USB id.
 3. Set `language` (`tspl` or `zpl`) and, if needed, `density`/`speed` per
-   label size and the `stocks` it takes.
+   label size and the `stocks` it takes. Add `calibrate_by_hand`: how to set
+   up a new roll with the printer's own button, in plain words, checked
+   against the printer's own guide (it is shown in *Set up a new roll*).
 4. Validate: `.venv/bin/python -c "from food_labeler import known; print(known.parse_file_text(open('food_labeler/known_printers.json', encoding='utf-8').read()))"`
 5. Add a test in `tests/test_known.py` or `tests/test_printers.py` that the
    model is matched (see the existing LP610BT and ZP450 tests).

@@ -46,7 +46,8 @@
         "round",
         "xl"
       ],
-      "notes": "203 dpi, 812 dots (4 in) max print width. Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port."
+      "notes": "203 dpi, 812 dots (4 in) max print width. Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port.",
+      "calibrate_by_hand": "Put at least 4 labels in the printer and close the lid. Hold the feed button down for about 3 seconds, until the printer starts feeding, then let go. It feeds a few labels and stops by itself."
     },
     {
       "id": "zebra-zp450",
@@ -77,7 +78,8 @@
         "round",
         "xl"
       ],
-      "notes": "203 dpi (its 1284 id says ZP 450-200dpi), 4.09 in (104 mm) = 832 dots max print width. Supports 4x6."
+      "notes": "203 dpi (its 1284 id says ZP 450-200dpi), 4.09 in (104 mm) = 832 dots max print width. Supports 4x6.",
+      "calibrate_by_hand": "Load the roll and close the lid, with the printer switched on. Hold the feed button down until the green light flashes, and let go after it flashes twice quickly (one flash, then two quick flashes). The printer feeds a few labels by itself. It is done when one label comes out each time you press the feed button."
     },
     {
       "id": "zebra-zpl",
@@ -103,7 +105,8 @@
         "large",
         "round",
         "xl"
-      ]
+      ],
+      "calibrate_by_hand": "Load the roll and close the lid, with the printer switched on. Hold the feed button down until the light flashes, then let go. The printer feeds a few labels by itself. If that doesn't work, look up \"media calibration\" in the printer's own guide."
     }
   ]
 }

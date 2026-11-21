@@ -105,12 +105,24 @@ def feed_job(stock: Stock, gap_mm: float | None = None, media: str | None = None
     return header(stock, gap_mm=gap_mm, media=media) + b"FORMFEED" + CRLF
 
 
-def calibrate_job(stock: Stock, gap_mm: float | None = None) -> bytes:
-    """GAPDETECT job: the printer feeds a few labels to measure label + gap.
+def calibrate_job(stock: Stock, gap_mm: float | None = None, media: str | None = None) -> bytes:
+    """Set-up job for a new roll: the printer feeds a few labels to measure them.
 
-    Only ever sent when the user presses "Feed / calibrate" (it uses up labels).
+    media "gap" (or None, as before): SIZE + GAP + GAPDETECT (measures label +
+    gap; accepted by LP610BT-type clones, feeds 2–3 labels). "mark": SIZE +
+    BLINE + BLINEDETECT. "continuous": SIZE + GAP 0 only — nothing to measure,
+    so nothing is fed. Only ever sent from a button, after the person has said
+    yes to "this feeds a few blank labels" (calibrate.send_setup).
     """
     g = stock.gap_mm if gap_mm is None else float(gap_mm)
-    lines = [f"SIZE {mm(stock.w_mm)} mm,{mm(stock.h_mm)} mm", f"GAP {mm(g)} mm,0 mm",
-             "GAPDETECT"]
+    lines = [f"SIZE {mm(stock.w_mm)} mm,{mm(stock.h_mm)} mm"]
+    if media == "mark":
+        # Unverified on LP610BT clones: the TSPL2 manual has BLINEDETECT, but it
+        # has not been tried on one of these units (only GAPDETECT has). The
+        # window always shows the printer's by-hand set-up alongside.
+        lines += [f"BLINE {mm(g)} mm,0 mm", "BLINEDETECT"]
+    elif media == "continuous":
+        lines += ["GAP 0 mm,0 mm"]
+    else:
+        lines += [f"GAP {mm(g)} mm,0 mm", "GAPDETECT"]
     return b"".join(x.encode("ascii") + CRLF for x in lines)

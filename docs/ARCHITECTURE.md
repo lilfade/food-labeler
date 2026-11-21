@@ -22,6 +22,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `qrcodes.py` | QR codes: what they hold (link / phone / email / text), segno matrix, whole-dot module sizes, minimum size |
 | `extras.py` | places a picture and/or QR code on a label (above, left, right, corners; inside the circle on round labels), text flowing around them, the Picture label, shrinking them before the wording |
 | `printsettings.py` | per-printer print settings (darkness, speed, nudge, upside down, gap, media, after printing) → TSPL/ZPL values; nudging/turning the picture |
+| `calibrate.py` | setting up a new roll: set-up jobs per language and kind of roll, the line-up label, by-hand instructions, the per-printer "last roll" and the *New roll?* notice logic |
 | `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
@@ -36,7 +37,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `app.py` | main window: form, preview, printer menu, PRINT |
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
 | `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
-| `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings windows |
+| `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings, Set up a new roll windows |
 | `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell`, calendar, toggles |
 
 Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py`, `picture_dialogs.py` and `widgets.py` imports Tk, so
@@ -156,6 +157,38 @@ them, so with nothing set every job is byte-identical to earlier versions.
 Nudge and upside down change the picture (`adjust_image`), not printer
 commands. *Darkness test* (three labels in one job) and *Feed one blank
 label* (`FORMFEED` / `~PH`) are only sent from their buttons.
+
+### Setting up a new roll (calibration)
+
+*Print settings → New roll? Set it up…* (and *Advanced → Feed / calibrate…*,
+both via `App.setup_roll`) opens `RollSetupDialog`. `calibrate.setup_job`
+builds the job:
+
+| roll | TSPL | ZPL |
+|------|------|-----|
+| gaps | `SIZE` + `GAP g mm,0 mm` + `GAPDETECT` (byte-identical to 1.2.0) | `^XA^MNW^XZ` + `~JC` |
+| black marks | `SIZE` + `BLINE b mm,0 mm` + `BLINEDETECT` (unverified on LP610BT clones) | `^XA^MNM^XZ` + `~JC` |
+| continuous | `SIZE` + `GAP 0 mm,0 mm` (nothing fed) | `^XA^MNN^PW^LL^XZ` (nothing fed) |
+
+The gap / mark height comes from the printer's print settings, then
+Advanced, then the label size. `^JUS` is never sent. The language is the
+printer's Type, so a printer with no known model still gets the right job.
+`calibrate.send_setup` sends only when its `confirm` callback returns True
+(the "This feeds 2–4 blank labels. OK?" question). The line-up label
+(`lineup_label_image`: box 1 mm inside the edges, or a circle on round
+labels, the size's name and an arrow to the top edge, which comes out
+first) goes through `printsettings.adjust_image` and `printers.build_job`
+like any label. The by-hand steps come from the model's `calibrate_by_hand`
+in `known_printers.json`, else `GENERIC_BY_HAND`.
+
+After a set-up, `printers[<id>]["roll"] = {"stock", "media", "date",
+"same"}` is saved and the kind of roll is written to the print settings.
+`App.refresh_roll_notice` (run when the label, its size or the printer list
+changes) shows the one-line *New roll in the …?* notice when
+`calibrate.show_notice` says the size differs from that roll and the person
+hasn't pressed *No, same roll* for this size (`same`, emptied by the next
+set-up). Nothing sends from the notice; `tests/test_calibrate.py` checks
+that no method that runs by itself can reach a send.
 
 ### Layout auto-shrink
 
@@ -284,7 +317,8 @@ fsync + rename).
 | `food-labeler.log` | data folder | text log, rotated at 512 kB (3 files) |
 
 `settings.json` keeps per printer (`printers[<id>]`) the nickname, Type,
-last label size, resolution choice (`"dpi"`) and print settings (`"print"`).
+last label size, resolution choice (`"dpi"`), print settings (`"print"`) and
+the last roll set up (`"roll"`, see *Setting up a new roll*).
 It also keeps the last lettering per kind of label
 (`"lettering": {"simple": {"name", "other"}, ...}`) as the default for new
 labels.

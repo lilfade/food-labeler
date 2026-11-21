@@ -39,7 +39,8 @@ DEFAULTS = {
     # {"nickname": str, "kind": "" | "tspl" | "zpl", "stock": str,
     #  "manual": bool, "method": str, "target": str,   (manual = network, added by hand)
     #  "dpi": 203 | 300,   (only when the user chose a resolution other than the detected one)
-    #  "print": {...}}      (Print settings…: darkness, speed, nudge, … see printsettings.py)
+    #  "print": {...},      (Print settings…: darkness, speed, nudge, … see printsettings.py)
+    #  "roll": {"stock", "media", "date", "same": [...]}}  (last roll set up, see calibrate.py)
     "printers": {},
     "selected": "",              # id of the printer chosen in the dropdown
     "advanced": {
