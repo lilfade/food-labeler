@@ -46,6 +46,20 @@ account; or email hello@highthymekitchen.com if you're stuck.
 Many of these are the same printer sold under different names, so a
 printer with another name on the box may still be matched as one of these.
 
+## Bluetooth
+
+| Printer | Bluetooth | Tested on paper over Bluetooth |
+|---|---|---|
+| LP610BT-type label printers | yes (Classic Bluetooth, the same TSPL as over USB) | no (alpha) |
+| Other printers with *BT* in the name (PL70e-BT, PM-241-BT, JD-268BT…) | probably, if they use Classic Bluetooth | no (alpha) |
+| Zebra ZP450 | no (USB only) | — |
+
+Printing over Bluetooth is alpha for every printer, including the ones
+tested over USB. Pair the printer in the computer's Bluetooth settings first;
+see [Bluetooth printers](printer.md#bluetooth-printers-alpha). Printers that
+only use Bluetooth Low Energy, or only work with their maker's phone app,
+can't be reached this way.
+
 ## What we couldn't confirm
 
 - USB ids for the Rollo, Polono PL60, PL70e-BT, Arkscan 2054A, HPRT models,

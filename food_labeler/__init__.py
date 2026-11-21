@@ -8,7 +8,8 @@ Package layout (see docs/ARCHITECTURE.md for the full picture):
     fontget    "Get more fonts": Google Fonts from GitHub, or a font file
     render     draws the fitted layout as the exact 1-bit picture that prints
     tspl, zpl  turn that picture into a job in the printer's own language
-    printers   finds printers and sends jobs to them
+    printers   finds printers and sends jobs to them (USB, network, Bluetooth)
+    btscan     lists paired Bluetooth printers, without connecting to them
     known      printer models we recognise (known_printers.json + user updates)
     calibrate  setting up a new roll: jobs, the line-up label, the "New roll?" notice
     cottage    cottage food state rules, the user's own edits, the Label check
@@ -23,4 +24,4 @@ PyInstaller Windows version resource and the release workflow all read it.
 APP_NAME = "Food Labeler"
 APP_ID = "food-labeler"
 BRAND = "High Thyme Kitchen"
-__version__ = "1.4.0"
+__version__ = "1.5.0"

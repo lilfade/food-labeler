@@ -1,6 +1,12 @@
 # Bluetooth printing and phones: research notes
 
-Status: research only, nothing here is built yet. Written November 2026.
+Status: written November 2026 as research. **Desktop Bluetooth (part A)
+was built in 1.5.0**: Linux prints over an RFCOMM socket and Windows over the
+Bluetooth COM port, as recommended below. It is **not tested on paper yet**,
+so Bluetooth printers are marked alpha (see
+[Bluetooth printers](printer.md#bluetooth-printers-alpha) and
+[ARCHITECTURE](ARCHITECTURE.md#bluetooth-alpha)). macOS was left out. The
+phone part (B) is still research only.
 
 ## Summary
 
@@ -28,7 +34,8 @@ Status: research only, nothing here is built yet. Written November 2026.
 
 ## Recommendation
 
-1. **Now (about 1 week):** add a `bluetooth` transport to the desktop app. On
+1. **Now (about 1 week), built in 1.5.0 (Linux and Windows; untested on
+   paper):** add a `bluetooth` transport to the desktop app. On
    Linux use an RFCOMM socket. On macOS, and on Windows when no driver is
    installed, use a serial port. Document "install the driver on the Bluetooth
    COM port" for Windows. This is low risk, reuses every byte we already
@@ -102,6 +109,13 @@ own thread with an asyncio loop, kept off the Tk thread. Start with Classic
 only. Add `bleak` only if a printer we support turns out to be BLE-only.
 
 ### Transport design that fits `food_labeler/printers.py`
+
+As built in 1.5.0 this is mostly what happened, with a few changes: the
+connect timeout is 8 seconds; channels 1, 2 and 3 are tried in turn when
+none is known, and the one that worked is remembered; the Windows COM port is
+written with the standard library (no `pyserial`); Windows discovery reads
+the Bluetooth COM ports from Plug and Play (`BTHENUM`) entries; and macOS is
+not supported.
 
 The module already dispatches on `cfg["method"]` (`windows_raw`, `windows_driver`,
 `cups`, `device`, `network`) to a small `send_*(target, data)` function with an

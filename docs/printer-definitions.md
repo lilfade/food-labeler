@@ -60,6 +60,9 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `max_width_dots` | no | widest the head can print, in dots at this entry's `dpi` (LP610BT-type 812, Zebra ZP450 832 = 4.09 in). Labels wider than this are refused with a plain message. Leave it out if not known. |
 | `max_width_mm` | no | the same in mm (e.g. `104`), when the maker gives the width in mm; turned into dots at `dpi` (rounded down). If both are given, `max_width_dots` wins. |
 | `verified_on_paper` | no | `true` only when we have printed real labels on this model. Default `false`: the printer is shown as *alpha — not tested yet* and the first print to it shows a one-time notice. Only the LP610BT-compatible and Zebra ZP450 entries are `true`. |
+| `verified_bluetooth` | no | `true` only when we have also printed real labels on this model **over Bluetooth**. Default `false`: reached over Bluetooth, the printer is *alpha* even if `verified_on_paper` is `true`. Only counts together with `verified_on_paper`. |
+| `bt_chunk` | no | how many bytes to send at a time over Bluetooth, 64–65536 (default 4096). Cheap printers have small buffers; LP610BT-type printers use 2048. |
+| `bt_delay_ms` | no | pause between those pieces in milliseconds, 0–1000 (default 20; LP610BT-type 30). |
 | `media` | no | `"gap"` (default), `"continuous"`, `"black-mark"` (informational for now) |
 | `usb` | no | list of `"vvvv:pppp"` USB vendor:product ids (hex) |
 | `ieee1284` | no | map of IEEE 1284 device-id keys to name patterns (see *Name patterns* below); **all** must match. Keys as the printer reports them, e.g. `MFG`, `MDL`, `CMD`, `MANUFACTURER`, `MODEL`, `COMMAND SET`. |
@@ -100,6 +103,13 @@ after it in the printer list, *My printers*, the USB devices window and the
 if it doesn't, please tell us on GitHub" (**OK, print** / **Cancel**). The
 answer is remembered for that printer (`"alpha_ok"` in its settings). The
 printer report says `tested` or `alpha (not tested yet)` for each printer.
+
+Bluetooth counts separately. A printer reached over Bluetooth is alpha
+unless its entry has both `"verified_on_paper": true` and
+`"verified_bluetooth": true`, and its one-time notice says that printing over
+Bluetooth hasn't been tested yet. A Bluetooth printer has its own id
+(`bt:<address>`), so the notice is shown once for it even if the same
+printer was already used over USB. No entry has `verified_bluetooth` yet.
 
 ## Driver-only printers
 

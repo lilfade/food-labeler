@@ -26,7 +26,8 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
-| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network), resolution detection, sending jobs, status |
+| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network; adds paired Bluetooth printers from `btscan.py`), resolution detection, sending jobs (spooler, CUPS, device file, TCP, Bluetooth RFCOMM socket, COM port), status |
+| `btscan.py` | lists paired Bluetooth devices without connecting (`bluetoothctl devices`/`info` on Linux, PnP `BTHENUM` entries on Windows) and turns the printers among them into `Printer`s |
 | `known.py` | known printer models: bundled `known_printers.json` + the user's update file |
 | `cottage.py` | cottage food state rules (bundled `cottage_rules.json` < imported update < the user's own edits), "Label check", net quantity wording |
 | `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* |
@@ -282,12 +283,47 @@ LP610BT clones share USB vid:pid `0483:2025` *and* the serial number, and
 physical USB port path (`usb:1-1.4`). On Windows each unit is its own spooler
 printer on its own port, so the id is `win:<printer name>|<port>`. A CUPS
 queue that points at a detected device is merged into that device's entry.
+A Bluetooth printer is `bt:<address>` on both systems (`bt:<COM port>` on
+Windows if the address can't be read): LP610BT units all have the same
+Bluetooth name, so the address is what tells them apart. Lists show only
+its last two bytes ("Bluetooth (…3F:A2)"), and the printer report never has
+more than that.
+
+### Bluetooth (alpha)
+
+Classic Bluetooth printers (Serial Port Profile) take the same TSPL bytes as
+over USB, so Bluetooth is only another way to deliver `build_job`'s bytes.
+Pairing is always done in the system's settings; the program only reads
+which devices are paired and never pairs or connects to look.
+
+- **Linux:** method `bluetooth`, target the address. `send_bluetooth` opens
+  an `AF_BLUETOOTH` / `BTPROTO_RFCOMM` socket (standard library, 8 s connect
+  timeout), sends the job in `bt_chunk`-byte pieces `bt_delay_ms` apart
+  (per model, defaults 4096 and 20), waits half a second and closes. The
+  channel is the one chosen in Advanced (`bt_channel`), else the one that
+  worked last time (`bt_channel_found`), else 1, 2, 3; a refused channel
+  moves on at once. Errors become plain messages: Bluetooth switched off
+  (also read from `/sys/class/rfkill` before connecting), not paired, not
+  answering (off or out of range), not allowed.
+- **Windows:** pairing an SPP printer makes an outgoing virtual COM port.
+  Method `serial`, target `COM5`: `send_serial` writes to `\\.\COM5` in
+  the same pieces (only `COM1`–`COM999` are accepted). If the maker's driver
+  is installed on that port, the spooler printer is used (`windows_raw`) and
+  only marked as Bluetooth. Python's own RFCOMM sockets also exist on
+  Windows, and `send_bluetooth` works there, but discovery uses the COM port.
+- **macOS:** not supported.
+- `Printer.bluetooth` makes a printer alpha unless its model has
+  `verified_bluetooth` as well as `verified_on_paper`; `status()` never
+  connects. `auto_pick` prefers a cable over Bluetooth.
 
 ### Background work
 
 Tk may only be used from the main thread. Printer discovery (every 15 s and
-on request), USB scans and sending jobs run on daemon threads and hand their
-results back through a `queue.Queue` that the window polls with `after()`.
+on request, including the `bluetoothctl` calls, each with a 3 s timeout and
+8 s for the whole Bluetooth scan), USB scans and sending jobs run on daemon
+threads and hand their results back through a `queue.Queue` that the window
+polls with `after()`. Windows that look for printers on the spot reuse the
+last Bluetooth list if it is less than 10 s old.
 
 ### Autosave and session restore
 

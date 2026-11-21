@@ -10,10 +10,14 @@ iDPRT, Phomemo, Jadens, Xprinter and more) should work too, but are
 it, and the first time you print to one, Food Labeler says so once. See
 [Printers we know about](printer-list.md), and please tell us how it goes.
 
+Printers connect with a **USB** cable, or over **Bluetooth (alpha)**: see
+[Bluetooth printers](#bluetooth-printers-alpha).
+
 - [Picking your printer](#picking-your-printer)
 - [Print settings](#print-settings)
 - [Sharpness: 203 or 300 dpi](#sharpness-203-or-300-dpi)
 - [New roll? Set it up](#new-roll-set-it-up)
+- [Bluetooth printers (alpha)](#bluetooth-printers-alpha)
 - [My printer isn't in the list](#my-printer-isnt-in-the-list)
 - [Getting help](#getting-help)
 
@@ -83,6 +87,53 @@ under the printer asks *"New roll in the … printer? Set it up"*; press
 ever sent to the printer until you press **Set it up** and say OK.
 (**Settings → Advanced… → Feed / calibrate…** opens the same window.)
 
+## Bluetooth printers (alpha)
+
+LP610BT-type printers with Bluetooth can print without the cable. This is
+new and **hasn't been tested on paper yet**: a Bluetooth printer has
+*(alpha — not tested yet)* after its name, even if the same printer is
+tested over USB, and the first time you print to it over Bluetooth Food
+Labeler says so once. If it doesn't work, use the USB cable, and please tell
+us on GitHub.
+
+Food Labeler never pairs with a printer by itself. You pair it once in the
+computer's own Bluetooth settings:
+
+**Windows**
+
+1. Switch the printer on, close to the computer.
+2. Open **Settings → Bluetooth & devices → Add device → Bluetooth**, and
+   pick the printer (LP610BT-type printers are called *LP610BT*). If it asks
+   for a PIN, try **0000** or **1234**.
+3. In Food Labeler, press **Look for printers again**. The printer shows up
+   as, for example, *… — Bluetooth COM5 (…3F:A2)*.
+
+If you installed the printer maker's driver on the Bluetooth port, the
+printer is an ordinary Windows printer and works the same way as over USB.
+
+**Linux**
+
+1. Switch the printer on, close to the computer.
+2. Pair it in your desktop's **Bluetooth** settings (or ask your helper to
+   use `bluetoothctl`: `pair`, then `trust`). If it asks for a PIN, try
+   **0000** or **1234**.
+3. In Food Labeler, press **Look for printers again**. The printer shows up
+   as, for example, *… — Bluetooth (…3F:A2)*.
+
+**Two printers with the same name?** Both of ours are called *LP610BT*.
+The end of the Bluetooth address (*…3F:A2*) tells them apart. Open **My
+printers…**, press **Which one is it?** next to one of them (it prints a
+small label on that printer) and give it a name, such as *White label
+printer*.
+
+If printing says the printer isn't answering, check that it is switched on
+and close by, and that it is still paired. If it says *Bluetooth is switched
+off on this computer*, switch Bluetooth on in the computer's settings. A
+helper can pick the Bluetooth channel in **Settings → Advanced…** (most
+printers use channel 1, and Food Labeler tries 1, 2 and 3 by itself).
+
+Mac computers aren't supported.
+
 ## My printer isn't in the list
 
 1. Check the printer is switched on and its cable is plugged in.
@@ -97,6 +148,12 @@ ever sent to the printer until you press **Set it up** and say OK.
    happened, and we'll try to help. It only lists the printers plugged in. If
    we ask you to, tick **Also list everything else plugged in** to add the
    other USB things (their names only, never their serial numbers).
+
+A Bluetooth printer isn't in the USB list: press **How to connect a
+Bluetooth printer** in the same window, or see
+[Bluetooth printers](#bluetooth-printers-alpha). The report lists paired
+Bluetooth printers with only the end of their address; other Bluetooth
+things (phones, headphones) are only counted.
 
 ## Getting help
 

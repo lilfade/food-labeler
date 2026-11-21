@@ -115,6 +115,36 @@ the data and labels folders at a temporary directory, sets
 connection fail the test. Printer discovery is tested against a fake Linux
 `/sys` tree and fake `win32print`/`lpstat` objects.
 
+Bluetooth is never used by the tests either: `conftest.py` removes
+`socket.AF_BLUETOOTH` (as on a Python built without Bluetooth, which is
+also what Windows CI may have) and replaces the Bluetooth scan with an empty
+one. `tests/test_bluetooth.py` feeds the scanner recorded `bluetoothctl` and
+PowerShell output and sends jobs to fake sockets and fake COM port files.
+
+### Testing Bluetooth with a real printer
+
+Only by hand, on your own computer, never in CI. Food Labeler never pairs,
+so pair first:
+
+1. Switch the printer on next to the computer. On Linux, pair it in the
+   desktop's Bluetooth settings, or with `bluetoothctl`: `scan on`, wait
+   for the printer's address, `scan off`, `pair <address>` (PIN 0000 or
+   1234 if asked), `trust <address>`. On Windows use **Settings → Bluetooth
+   & devices → Add device**.
+2. Start Food Labeler (or, to see the job without printing,
+   `FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler`) and
+   press **Look for printers again**. The printer appears as
+   *… — Bluetooth (…3F:A2)* (Windows: *… — Bluetooth COM5 (…3F:A2)*), marked
+   *(alpha — not tested yet)*.
+3. Put a roll in, pick that printer and print **one** label (a test label
+   from **My printers → Which one is it?** is enough). The first time, the
+   *not tested over Bluetooth yet* notice asks **OK, print**.
+4. Check the log (**Settings → Advanced → Open log folder**) for the channel
+   used. If it printed correctly, add `"verified_bluetooth": true` to the
+   model in `known_printers.json`, and say which printer and system in the
+   commit. If pieces of the label are missing, try a smaller `bt_chunk` or a
+   longer `bt_delay_ms` for that model.
+
 The window layout tests in `tests/test_ui_layout.py` are opt-in because they
 need a display. Only run them on a throwaway X server, never on a desktop
 someone is using:

@@ -4,6 +4,37 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.5.0 — unreleased
+
+Bluetooth printing (alpha).
+
+- **Print over Bluetooth.** LP610BT-type printers with Bluetooth can now
+  print without the USB cable, on Windows and Linux. Pair the printer once
+  in the computer's own Bluetooth settings (the PIN is often 0000 or 1234),
+  then press **Look for printers again**. It shows up as, for example,
+  *… — Bluetooth (…3F:A2)*. Food Labeler never pairs by itself. See
+  [Bluetooth printers](docs/printer.md#bluetooth-printers-alpha).
+- **Alpha — not tested yet.** Printing over Bluetooth hasn't been tested on
+  paper. Bluetooth printers have *(alpha — not tested yet)* after their name,
+  even models that are tested over USB, and the first print to one says so
+  once. If it doesn't work, use the USB cable, and please tell us on GitHub.
+- **Two printers with the same name.** Both LP610BT units are called
+  *LP610BT* over Bluetooth. The end of the address tells them apart; use
+  **My printers → Which one is it?** and give each one a name.
+- **How to connect a Bluetooth printer** is explained in *Set up my
+  printer* and in the *My printer isn't in the list* window.
+- On Windows, a Bluetooth printer is reached through the COM port Windows
+  makes when you pair it. If you installed the maker's driver on that port,
+  it prints through Windows as before.
+- The printer report lists paired Bluetooth printers with only the end of
+  their address. Other Bluetooth things (phones, headphones) are only
+  counted, and never named.
+- For helpers: **Settings → Advanced…** can set a Bluetooth printer's
+  channel. Printer update files can say how to pace Bluetooth jobs
+  (`bt_chunk`, `bt_delay_ms`) and when a model is tested over Bluetooth
+  (`verified_bluetooth`); see
+  [printer definitions](docs/printer-definitions.md).
+
 ## 1.4.0 — 2026-11-21
 
 Help through GitHub, and more printers.
