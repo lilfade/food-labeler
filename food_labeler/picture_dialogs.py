@@ -401,8 +401,18 @@ class QrDialog(Modal):
                 side="left", padx=(0, 4))
         _heading(left, "How big?")
         self.size = tk.IntVar(value=qr["size"])
-        _scale(left, self.size, *qrcodes.SIZE_RANGE, "Smaller", "Bigger",
-               command=self._changed).pack(anchor="w")
+        row = _scale(left, self.size, *qrcodes.SIZE_RANGE, "Smaller", "Bigger",
+                     command=self._changed)
+        row.pack(anchor="w")
+        # the slider only goes from the smallest size that still scans to the biggest
+        # that leaves room for the writing (extras.qr_size_range), so neither end
+        # can be a size that doesn't print
+        self.size_scale = next(w for w in row.winfo_children() if isinstance(w, tk.Scale))
+        self.size_words = tk.Label(left, text="", font="small", bg=BG, fg=MUTED,
+                                   wraplength=420, justify="left")
+        self.size_words.pack(anchor="w")
+        self._range_key = None
+        self._range = None
         tk.Label(right, text="This is exactly what prints", font="ui_bold", bg=BG,
                  fg=INK).pack(anchor="w")
         self.preview = tk.Label(right, bg=BG)
@@ -460,10 +470,41 @@ class QrDialog(Modal):
             self.after_cancel(self._job)
         self._job = self.after(150, self._draw)
 
+    def _update_range(self, cur):
+        """Limit the slider to the sizes that print for what the code holds now."""
+        key = (qrcodes.payload(cur), cur["place"], cur["caption"])
+        if key == self._range_key:
+            return
+        self._range_key = key
+        stock = stocks.get(self.doc.stock, self.dpi)
+        rng = extras.qr_size_range(self.doc, stock, self.app.render_ctx())
+        self._range = rng
+        lo, hi = rng if rng else qrcodes.SIZE_RANGE
+        self.size_scale.configure(from_=lo, to=max(lo, hi),
+                                  state="normal" if rng and hi > lo else "disabled")
+        v = int(self.size.get())
+        if rng and not lo <= v <= hi:
+            self.size.set(max(lo, min(hi, v)))
+            cur["size"] = int(self.size.get())
+            self.doc.qr = cur
+
     def _draw(self):
         self._job = None
         cur = self._current()
         self.doc.qr = cur
+        if qrcodes.payload(cur):
+            self._update_range(cur)
+            stock = stocks.get(self.doc.stock, self.dpi)
+            if self._range is None:
+                words = ("This is too much for a QR code on this label. Shorten what it "
+                         "holds, or pick a bigger label.")
+            else:
+                words = extras.qr_size_words(self.doc, stock, int(self.size.get()))
+                if self._range[0] == self._range[1]:
+                    words += ". This is the only size that fits on this label."
+            self.size_words.configure(text=words)
+        else:
+            self.size_words.configure(text="")
         res = render.render(self.doc, self.app.render_ctx(), dpi=self.dpi)
         img = render.preview(res, PREVIEW_W, PREVIEW_H, highlight=False)
         ph = ImageTk.PhotoImage(img)

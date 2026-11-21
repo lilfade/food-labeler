@@ -412,3 +412,89 @@ def _picture_label(doc, stock, blocks, pic, qr, text) -> Layout:
         out.overflow, out.overflow_key, out.message = True, "qr", qrcodes.TOO_SMALL
     _attach(out, items, None, text, None)
     return out
+
+
+# ---------------------------------------------------------------------------
+# how big a QR code may be (the "How big?" slider)
+# ---------------------------------------------------------------------------
+
+MAX_QR_WITH_WORDS = 60          # % of the text area's height when there is writing too
+
+
+def _has_words(doc, stock, ctx) -> bool:
+    from . import templates
+    blocks, _valign, _qr = templates.build_blocks(doc, stock, ctx or {})
+    return any(str(b.text).strip() for b in blocks)
+
+
+def qr_size_range(doc, stock: stocks.Stock, ctx: dict | None = None):
+    """(smallest, biggest) size for the label's QR code, in the slider's % of the
+    text area's height, or None when what it holds is too much for this label.
+
+    Smallest: the first size whose squares are at least the readable minimum
+    (qrcodes.min_module) for what the code holds, at this label size and
+    printer resolution, and that the layout doesn't have to shrink. Biggest:
+    the last size at which the code still prints at the size asked for and
+    everything else on the label still fits (the wording is never made smaller
+    than its minimum to make room). With writing on the label the code also
+    stays under MAX_QR_WITH_WORDS %, so it never takes over the label; a QR
+    code alone, or on the Picture label, may fill the label inside its margins.
+    """
+    from . import templates
+    qr = qrcodes.clean(getattr(doc, "qr", None))
+    text = qrcodes.payload(qr)
+    if not text:
+        return (qrcodes.SIZE_RANGE[0], qrcodes.SIZE_RANGE[1])
+    n = len(qrcodes.matrix(text))
+    region = region_for(stock)
+    need = qrcodes.box_side(n, qrcodes.min_module(stock.dpi))
+    lo = max(qrcodes.SIZE_RANGE[0], math.ceil(100.0 * need / region.height - 1e-9))
+    while lo <= 100 and not qrcodes.module_for(region.height * lo / 100.0, n, stock.dpi):
+        lo += 1                                     # rounding: the first size that works
+    if lo > 100:
+        return None
+
+    def works(size, strict=True) -> bool:
+        d = doc.copy()
+        d.qr = dict(qr, size=size)
+        lay = templates.layout(d, stock, ctx or {})
+        want = qrcodes.module_for(region.height * size / 100.0, n, stock.dpi)
+        if not want or lay.qr is None or lay.qr[2] < want:
+            return False                            # shrunk to make room, or refused
+        if lay.overflow and lay.message == qrcodes.TOO_SMALL:
+            return False                            # had to be shrunk below readable
+        return not (strict and lay.overflow)
+
+    if not works(lo, strict=False):
+        return None                                 # too big for the room it would get
+    hi_cap = 100
+    if doc.template != "picture" and _has_words(doc, stock, ctx):
+        hi_cap = max(lo, MAX_QR_WITH_WORDS)
+    if not works(lo):
+        return (lo, lo)                             # the writing needs the room already
+    a, b = lo, hi_cap                               # works(a) is True
+    if works(b):
+        return (lo, b)
+    while b - a > 1:
+        m = (a + b) // 2
+        if works(m):
+            a = m
+        else:
+            b = m
+    return (lo, a)
+
+
+def qr_size_words(doc, stock: stocks.Stock, size: int) -> str:
+    """The code's printed size in plain words: "About 2.5 cm (1 inch) across"."""
+    qr = qrcodes.clean(getattr(doc, "qr", None))
+    text = qrcodes.payload(qr)
+    if not text:
+        return ""
+    n = len(qrcodes.matrix(text))
+    m = qrcodes.module_for(region_for(stock).height * size / 100.0, n, stock.dpi)
+    if not m:
+        return ""
+    mm = qrcodes.box_side(n, m) * 25.4 / stock.dpi
+    inches = mm / 25.4
+    frac = f"{inches:.1f}".rstrip("0").rstrip(".")
+    return f"About {mm / 10:.1f} cm ({frac} inch{'es' if inches >= 1.05 else ''}) across"
