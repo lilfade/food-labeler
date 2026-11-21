@@ -505,11 +505,11 @@ class App:
             ways.grid(row=2, column=1, columnspan=2, sticky="w", padx=8, pady=(8, 0))
             now = self.doc.effective_orientation()
             self._way_icons = []
-            for way, words in (("wide", "Wide"), ("tall", "Tall")):
+            for way, words in (("wide", "Wide (landscape)"), ("tall", "Tall (portrait)")):
                 icon = ImageTk.PhotoImage(way_icon(way, way == now))
                 self._way_icons.append(icon)
                 wb = button(ways, words, lambda w=way: self.set_orientation(w),
-                           "primary" if way == now else "chip")
+                            "primary" if way == now else "chip")
                 wb.configure(image=icon, compound="left", padx=10)
                 wb.pack(side="left", padx=(0, 6))
         tk.Label(kb, text="Lettering:", font="ui", bg=PANEL, fg=MUTED).grid(
