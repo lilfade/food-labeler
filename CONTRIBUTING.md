@@ -60,8 +60,9 @@ FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler
 ```
 
 `tools/render_samples.py` redraws `docs/samples/*.png` (the exact printer
-bitmaps for every template and size) — run it after changing a template and
-look at the result.
+bitmaps for every template and size, the fonts sheet and
+`dpi-203-vs-300.png`) — run it after changing a template and look at the
+result.
 
 ## Building the programs
 
@@ -129,8 +130,14 @@ For a user who can't wait for a release, put just the new entries in their
 own file (same format) and send it to them; they add it with *Settings → Add
 printer update file…*.
 
-Only 203 dpi printers are supported for now: every layout is computed in
-203 dpi dots.
+Printers are 203 or 300 dpi (`"dpi"`, default 203); add `"max_width_dots"`
+when you know the print width. Layout numbers in `templates.py`/`render.py`
+are written in 203 dpi dots and must go through `stock.d()` (or
+`stocks.dots()`), so they scale for 300 dpi and stay byte-identical at 203.
+`tests/test_dpi.py` compares 130 labels at 203 dpi with hashes from before
+300 dpi support (`tests/data/render_baseline_203.json`); if a change is
+*meant* to alter 203 dpi output, regenerate it on purpose with
+`python tests/render_cases.py --write` and say so in the commit.
 
 ## Adding a bundled font
 

@@ -6,7 +6,10 @@ and shrink together, step by step, but never below their minimum. If the text
 still doesn't fit we say so (and which field is the culprit) instead of cutting
 anything off. Wrapping uses real Pillow measurements of the bundled font.
 
-Sizes are in printer dots (203 dpi), so a 24-dot font is 3 mm tall on paper.
+Sizes are in printer dots of the stock's resolution. Fixed numbers (minimum
+font sizes, margins, QR sizes) are written for 203 dpi, where a 24-dot font is
+3 mm tall on paper, and go through ``stock.d()`` so a 300 dpi label is the same
+physical size, only sharper (and 203 dpi output never changes).
 Round labels lay text out inside a circle: every line gets the width of the
 circle at its height (Region.span), so lines near the top and bottom are
 shorter.
@@ -167,7 +170,7 @@ def region_for(stock: stocks.Stock) -> Region:
     m = stock.margin
     if stock.round:
         cx, cy = stock.circle_center
-        r = stock.circle_dia / 2.0 - 14       # stay well inside the printable circle
+        r = stock.circle_dia / 2.0 - stock.d(14)   # stay well inside the printable circle
         return Region(cx - r, cy - r, cx + r, cy + r, circle=(cx, cy, r))
     return Region(m, m, stock.w - m, stock.h - m)
 
@@ -367,8 +370,9 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
     region = region_for(stock)
     base = _base(region)
     style = ctx.get("date_style", "us")
-    small = stock.w < 400
-    mn = 12 if small else 13
+    d = stock.d                     # 203 dpi dots -> this printer's dots
+    mn203 = 12 if stock.small else 13
+    mn = d(mn203)
 
     if doc.template == "package":
         best = dates.fmt(dates.parse(f.get("best_by")), "dmy")
@@ -379,15 +383,15 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
         ingr = _s(f.get("ingredients"))
         contains = _s(f.get("contains"))
         blocks = [
-            Block("product", _s(f.get("product")), base * 0.2, 20, True, "center", 0, True),
+            Block("product", _s(f.get("product")), base * 0.2, d(20), True, "center", 0, True),
             Block("net", f"Net {net}" if net else "", base * 0.09, mn, False, "center", 0.15),
             Block("ingredients", f"INGREDIENTS: {ingr}" if ingr else "", base * 0.078, mn, False, "left", 0.45),
             Block("contains", f"CONTAINS: {contains}" if contains else "", base * 0.078, mn, True, "left", 0.3),
-            Block("cross_contact", _s(f.get("cross_contact")), base * 0.062, 12, False, "left", 0.3),
+            Block("cross_contact", _s(f.get("cross_contact")), base * 0.062, d(12), False, "left", 0.3),
             Block("lot", lotline, base * 0.075, mn, True, "left", 0.45),
             Block("business", _s(f.get("business")), base * 0.075, mn, True, "left", 0.45),
-            Block("address", _s(f.get("address")), base * 0.065, 12, False, "left", 0.1),
-            Block("disclaimer", _s(f.get("disclaimer")), base * 0.056, 12, False, "left", 0.4),
+            Block("address", _s(f.get("address")), base * 0.065, d(12), False, "left", 0.1),
+            Block("disclaimer", _s(f.get("disclaimer")), base * 0.056, d(12), False, "left", 0.4),
         ]
         return blocks, "top", _s(f.get("qr"))
 
@@ -407,7 +411,7 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
         return blocks, "center", ""
 
     if doc.template == "free":
-        return [Block("text", str(f.get("text") or "").strip("\n"), base * 0.22, 14, True,
+        return [Block("text", str(f.get("text") or "").strip("\n"), base * 0.22, d(14), True,
                       "center", 0, True)], "center", ""
 
     # simple food label
@@ -417,9 +421,9 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
     made_by = _s(f.get("made_by"))
     kitchen = _s(ctx.get("kitchen_name")) if f.get("kitchen") else ""
     blocks = [
-        Block("food", _s(f.get("food")), base * 0.26, 22, True, "center", 0, True),
+        Block("food", _s(f.get("food")), base * 0.26, d(22), True, "center", 0, True),
         Block("made_on", f"Made on {made}" if made else "", base * 0.115, mn, False, "center", 0.35),
-        Block("use_by", f"Use by {use}" if use else "", base * 0.14, mn + 1, True, "center", 0.2),
+        Block("use_by", f"Use by {use}" if use else "", base * 0.14, d(mn203 + 1), True, "center", 0.2),
         Block("contains", f"Contains: {contains}" if contains else "", base * 0.10, mn, True, "center", 0.3),
         Block("note", _s(f.get("note")), base * 0.10, mn, False, "center", 0.25),
         Block("made_by", f"Made by {made_by}" if made_by else "", base * 0.09, mn, False, "center", 0.25),
@@ -439,11 +443,14 @@ def cottage_ctx(ctx: dict) -> dict:
             "profile": dict(bakery.PROFILE_DEFAULTS)}
 
 
-def statement_min_dots(st: dict) -> int:
-    """Smallest font size (dots) a legal statement may print at."""
+def statement_min_dots(st: dict, dpi: int = stocks.BASE_DPI) -> int:
+    """Smallest font size (dots of a ``dpi`` printer) a legal statement may print at:
+    the state's minimum in points converted with the real resolution, and never
+    below the general 12-dot (203 dpi) minimum."""
     from .cottage import pt_to_dots
     mp = st.get("min_pt")
-    return max(12, pt_to_dots(mp, stocks.DPI)) if mp else 12
+    floor = stocks.dots(12, dpi)
+    return max(floor, pt_to_dots(mp, dpi)) if mp else floor
 
 
 def _cottage_blocks(doc, stock, ctx, base, mn):
@@ -453,6 +460,7 @@ def _cottage_blocks(doc, stock, ctx, base, mn):
     the kitchen's cross-contact notice. Legal statements never shrink below the
     state's minimum size (their Block.min)."""
     from . import bakery, cottage
+    d = stock.d
     f = doc.fields
     cc = cottage_ctx(ctx)
     rule, prof = cc["rule"], cc["profile"]
@@ -486,7 +494,7 @@ def _cottage_blocks(doc, stock, ctx, base, mn):
         produced = f"Produced by: {biz}" + (f" \u00b7 {legal}" if legal else "")
     blocks = [
         Block("brand", biz, base * 0.055, mn, True, "center", 0),
-        Block("product", _s(f.get("product")), base * 0.15, 20, True, "center", 0.15, True),
+        Block("product", _s(f.get("product")), base * 0.15, d(20), True, "center", 0.15, True),
         Block("net", net, base * 0.07, mn, False, "center", 0.15),
         Block("ingredients", f"INGREDIENTS: {ingr}" if ingr else "", base * 0.058, mn, False,
               "left", 0.4),
@@ -495,16 +503,16 @@ def _cottage_blocks(doc, stock, ctx, base, mn):
         Block("storage", _s(f.get("storage")), base * 0.055, mn, True, "left", 0.3),
         Block("dates", dateline, base * 0.055, mn, True, "left", 0.3),
         Block("produced", produced, base * 0.05, mn, False, "left", 0.4),
-        Block("address", "\n".join(addr), base * 0.048, 12, False, "left", 0.1),
-        Block("contact", "  \u00b7  ".join(contact), base * 0.048, 12, False, "left", 0.1),
-        Block("permit", permit_line, base * 0.048, 12, False, "left", 0.1),
+        Block("address", "\n".join(addr), base * 0.048, d(12), False, "left", 0.1),
+        Block("contact", "  \u00b7  ".join(contact), base * 0.048, d(12), False, "left", 0.1),
+        Block("permit", permit_line, base * 0.048, d(12), False, "left", 0.1),
     ]
     for st in rule.get("statements", []):
         text, _empty = cottage.fill_placeholders(st["text"], prof)
-        lo = statement_min_dots(st)
+        lo = statement_min_dots(st, stock.dpi)
         blocks.append(Block("statement:" + st["id"], text, max(lo, base * 0.05), lo, False,
                             "left", 0.35))
-    blocks.append(Block("cross_contact", _s(prof.get("cross_contact")), base * 0.044, 12, False,
+    blocks.append(Block("cross_contact", _s(prof.get("cross_contact")), base * 0.044, d(12), False,
                         "left", 0.3))
     return blocks
 
@@ -513,8 +521,8 @@ def cottage_overflow_message(doc, stock: stocks.Stock, ctx: dict) -> str:
     """Friendly "doesn't fit" for cottage labels: never shrink the law, go bigger."""
     rule = cottage_ctx(ctx)["rule"]
     sizes = [st.get("min_pt") for st in rule.get("statements", []) if st.get("min_pt")]
-    bigger = [stocks.get(s) for s in ALLOWED_STOCKS["cottage"]
-              if stocks.get(s).w * stocks.get(s).h > stock.w * stock.h]
+    bigger = [stocks.get(s, stock.dpi) for s in ALLOWED_STOCKS["cottage"]
+              if stocks.get(s, stock.dpi).w * stocks.get(s, stock.dpi).h > stock.w * stock.h]
     tip = (f" Try a bigger label, like {bigger[-1].name}, or use fewer words."
            if bigger else " Try fewer words in the ingredients, or split the product "
                           "into a second label.")
@@ -543,16 +551,16 @@ def layout(doc, stock: stocks.Stock, ctx: dict | None = None) -> Layout:
     lettering.apply(blocks, doc.template, getattr(doc, "lettering", None))
     region = region_for(stock)
     qr = None
-    if qr_text and not stock.round and stock.w >= 600:
+    if qr_text and not stock.round and stock.w >= stock.d(600):
         matrix = qr_matrix(qr_text)
         n = len(matrix)
-        target = min(region.height * 0.42, 200)
-        module = max(2, int(target // n))
+        target = min(region.height * 0.42, stock.d(200))
+        module = max(stock.d(2), int(target // n))
         side = module * n
         qx = region.right - side
         qy = region.top
         qr = (qx, qy, module, matrix)
-        region.exclusions.append((qx - 16, qy, region.right, qy + side + 8))
+        region.exclusions.append((qx - stock.d(16), qy, region.right, qy + side + stock.d(8)))
     out = fit(blocks, region, valign)
     out.qr = qr
     if out.overflow and doc.template == "cottage":

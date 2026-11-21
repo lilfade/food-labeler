@@ -1,6 +1,7 @@
 """Command-line entry point: ``python -m food_labeler [--selftest | --version | FILE]``.
 
-``--selftest`` renders every template on every label size it allows, builds
+``--selftest`` renders every template on every label size it allows (and one
+label at 300 dpi), builds
 TSPL and ZPL jobs from the pictures and checks they decode back to the same
 bits — without opening a window or touching any printer. It exits 0 if all
 is well; the build scripts and the release workflow run it on the finished
@@ -40,6 +41,18 @@ def selftest() -> int:
             back = zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h))
             assert back.tobytes() == res.image.tobytes()
             count += 1
+    # a 300 dpi printer: same label, more dots, same physical size
+    doc = model.LabelDoc("cottage", "large", model.default_fields("cottage"))
+    doc.fields["product"] = "Selftest Soup"
+    res = render.render(doc, {}, dpi=300)
+    st = stocks.get("large", 300)
+    assert res.image.size == (st.w, st.h) == (1200, 600) and not res.overflow
+    job = tspl.build_job(res.image, st, 1)
+    assert job.startswith(b"SIZE 101.6 mm,50.8 mm") and b"BITMAP 0,0,150,600," in job
+    zjob = zpl.build_job(res.image, st, 1)
+    assert b"^PW1200\n^LL600\n" in zjob
+    assert zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h)).tobytes() == res.image.tobytes()
+    count += 1
     # every bundled font is there, draws, and has a real bold where it should
     from . import lettering
     for face in lettering.BUNDLED:

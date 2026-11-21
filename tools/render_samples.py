@@ -3,7 +3,9 @@
 ``--fonts`` only redraws docs/samples/fonts-contact-sheet.png: every bundled
 font as the name of the food on a simple label (with the matching body font
 where the font may be used for everything else), plus a cottage label to show
-the required wording staying in a readable sans.
+the required wording staying in a readable sans. ``--dpi`` only redraws
+docs/samples/dpi-203-vs-300.png: the same label for a 203 dpi and a 300 dpi
+printer, whole and as a zoomed crop of the same spot on paper.
 """
 import sys
 from pathlib import Path
@@ -128,9 +130,48 @@ def fonts_sheet():
     sheet.save(out / "fonts-contact-sheet.png")
 
 
+def dpi_sheet():
+    """docs/samples/dpi-203-vs-300.png: one label at 203 and at 300 dpi."""
+    out = ROOT / "docs" / "samples"
+    rules = cottage.CottageRules()
+    doc = model.LabelDoc("cottage", "large", model.default_fields("cottage"))
+    doc.fields.update(SAMPLE["cottage"])
+    zoom_w, zoom_h = 640, 320            # on-screen size of the zoomed crop
+    crop_mm = (2.5, 25.5, 26.5, 37.5)    # left, top, right, bottom on the paper (mm)
+    cols = []
+    for dpi in (203, 300):
+        res = render.render(doc, cottage_ctx(rules, "NE"), dpi=dpi)
+        whole = render.preview(res, zoom_w, 340, highlight=False)
+        k = dpi / 25.4
+        box = tuple(int(round(v * k)) for v in crop_mm)
+        # whole-number zoom (3x and 2x: about the same size on screen) so every
+        # printer dot stays a sharp square of equal size
+        z = {203: 3, 300: 2}[dpi]
+        crop = res.image.crop(box).convert("L")
+        crop = crop.resize((crop.width * z, crop.height * z), Image.NEAREST)
+        col = Image.new("RGB", (zoom_w, 340 + 30 + zoom_h + 10), "white")
+        col.paste(whole, (0, 0))
+        col.paste(crop.convert("RGB"), (0, 370))
+        d = ImageDraw.Draw(col)
+        d.text((8, 4), f"{dpi} dpi: {res.stock.w} x {res.stock.h} dots (4 x 2 in)",
+               fill=(0, 0, 0))
+        d.text((8, 348), f"{dpi} dpi, zoomed: {crop_mm[2] - crop_mm[0]:g} x "
+               f"{crop_mm[3] - crop_mm[1]:g} mm of the label = {box[2] - box[0]} x "
+               f"{box[3] - box[1]} dots, each dot shown {z} x {z}", fill=(0, 0, 0))
+        cols.append(col)
+        print(f"dpi {dpi}: overflow={res.overflow}")
+    sheet = Image.new("RGB", (2 * zoom_w + 20, cols[0].height), "white")
+    sheet.paste(cols[0], (0, 0))
+    sheet.paste(cols[1], (zoom_w + 20, 0))
+    sheet.save(out / "dpi-203-vs-300.png")
+
+
 if __name__ == "__main__":
     if "--fonts" in sys.argv[1:]:
         fonts_sheet()
+    elif "--dpi" in sys.argv[1:]:
+        dpi_sheet()
     else:
         main()
         fonts_sheet()
+        dpi_sheet()

@@ -58,6 +58,7 @@ class App:
         self.field_frames: dict[str, tk.Widget] = {}
         self.field_setters: dict = {}
         self.last_result: render.RenderResult | None = None
+        self._rendered_dpi = stocks.BASE_DPI   # resolution of the last render
         self._photo = None
         self.known = known.KnownPrinters(settings_mod.data_dir())
         self.found: list[printers.Printer] = []
@@ -737,7 +738,9 @@ class App:
     def render_now(self):
         """Render the printer bitmap, show the preview, mark an overflowing field."""
         self._render_job = None
-        res = render.render(self.doc, self.render_ctx())
+        dpi = self.current_dpi()
+        res = render.render(self.doc, self.render_ctx(), dpi=dpi)
+        self._rendered_dpi = dpi
         self.last_result = res
         cw, ch = max(50, self.canvas.winfo_width()), max(50, self.canvas.winfo_height())
         img = render.preview(res, cw, ch)
@@ -978,6 +981,26 @@ class App:
         sel = self.cfg["selected"]
         return next((p for p in self.found if p.id == sel), None)
 
+    def printer_dpi(self, p) -> int:
+        """A printer's resolution: the user's choice in My printers, else detected."""
+        return printers.printer_dpi(p, self.cfg["printers"].get(p.id, {}))
+
+    def current_dpi(self) -> int:
+        """Resolution the label is drawn at: the selected printer's (a chosen but
+        unplugged printer keeps the user's choice for it); no printer: 203."""
+        sel = self.cfg["selected"]
+        if not sel:
+            return stocks.BASE_DPI
+        p = self.current_printer()
+        if p is not None:
+            return self.printer_dpi(p)
+        return printers.printer_dpi(None, self.cfg["printers"].get(sel, {}))
+
+    def _rerender_if_dpi_changed(self):
+        """Printer changed to one with another resolution: draw the label again."""
+        if self.current_dpi() != self._rendered_dpi:
+            self.schedule_render()
+
     def refresh_printer_combo(self):
         """Rebuild the printer menu above PRINT. A chosen but unplugged printer stays
         listed as "not connected" so the choice isn't silently lost."""
@@ -1018,6 +1041,7 @@ class App:
             text = "Pick your printer here"
         self.printer_btn.configure(text=text + "  \u25BE")
         self.refresh_status()
+        self._rerender_if_dpi_changed()
 
     def _menu_picked(self, pid):
         if pid:
@@ -1095,15 +1119,26 @@ class App:
                               f"Print {n} labels? That's quite a lot.",
                               [(f"Yes, print {n}", True, "primary"), ("No", False, "normal")]):
             return
-        stock = stocks.get(self.doc.stock)
+        stock = res.stock
+        if stock.dpi != self.printer_dpi(p):     # printer changed since the last render
+            res = self.render_now()
+            stock = res.stock
         fam = p.family
+        wide = printers.too_wide_message(stock, fam)
+        if wide:
+            tell(self.root, "Label too wide", wide)
+            return
         if fam is not None and stock.id not in fam.stocks:
             if not ask(self.root, "Label size",
                        f"This printer might not take \u201c{stock.name}\u201d labels. Print anyway?",
                        [("Print anyway", True, "primary"), ("Cancel", False, "normal")]):
                 return
-        data = printers.build_job(res.image, stock, self.printer_config(p),
-                                  self.cfg["advanced"], n, family=fam)
+        try:
+            data = printers.build_job(res.image, stock, self.printer_config(p),
+                                      self.cfg["advanced"], n, family=fam)
+        except printers.PrinterError as e:
+            tell(self.root, "Printing didn't work", str(e))
+            return
         self.cfg.printer_info(p.id)["stock"] = stock.id
         self.cfg.save()
         self._start_print(self.printer_config(p), data, res.image, n,
@@ -1113,10 +1148,14 @@ class App:
     def print_text_label(self, p, lines, stock_id=None):
         """Test / identify labels (only ever on a click)."""
         stock = stocks.get(stock_id or self.cfg["printers"].get(p.id, {}).get("stock")
-                           or self.doc.stock)
+                           or self.doc.stock, self.printer_dpi(p))
         img = render.render_text_label(lines, stock)
-        data = printers.build_job(img, stock, self.printer_config(p), self.cfg["advanced"], 1,
-                                  family=p.family)
+        try:
+            data = printers.build_job(img, stock, self.printer_config(p), self.cfg["advanced"],
+                                      1, family=p.family)
+        except printers.PrinterError as e:
+            tell(self.root, "Printing didn't work", str(e))
+            return
         self._start_print(self.printer_config(p), data, img, 1,
                           f"\u2714 Sent a test label to {self.printer_name(p)}.")
 

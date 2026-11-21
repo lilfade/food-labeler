@@ -3,7 +3,8 @@ optional user file of updates that High Thyme Kitchen can send.
 
 A Definition says how to recognise a model (IEEE 1284 id, USB vid:pid, or
 Windows/CUPS name patterns), which language it speaks (TSPL or ZPL) and its
-preferred darkness/speed per label size. Files are validated strictly:
+preferred darkness/speed per label size, its print head's resolution (203 or
+300 dpi) and how wide it can print. Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
 the program half-configured.
 
@@ -25,8 +26,10 @@ FORMAT = "food-labeler-printers"
 VERSION = 1
 USER_FILE_NAME = "known_printers.json"
 
-ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "media", "usb", "ieee1284",
-                "windows", "density", "speed", "stocks", "notes"}
+ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "max_width_dots", "media", "usb",
+                "ieee1284", "windows", "density", "speed", "stocks", "notes"}
+DPI_VALUES = (203, 300)        # print head resolutions Food Labeler lays out for
+MAX_WIDTH_RANGE = (64, 4000)   # sane print head widths, in the printer's own dots
 STOCK_IDS = {"small", "medium", "large", "round", "xl"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 VIDPID_RE = re.compile(r"^[0-9a-f]{4}:[0-9a-f]{4}$")
@@ -45,6 +48,7 @@ class Definition:
     language: str
     brands: list = field(default_factory=list)
     dpi: int = 203
+    max_width_dots: int = 0      # widest print in this model's own dots; 0 = not known
     media: str = "gap"
     usb: list = field(default_factory=list)
     ieee1284: dict = field(default_factory=dict)
@@ -60,6 +64,21 @@ class Definition:
         if len(self.brands) > 1:
             return f"{self.name} ({' / '.join(self.brands)}…)"
         return self.name
+
+    @property
+    def max_width_mm(self) -> float:
+        """Widest print in mm (0 = not known)."""
+        return self.max_width_dots * 25.4 / self.dpi if self.max_width_dots else 0.0
+
+    def fits(self, stock) -> bool:
+        """True if a label of this size (a stocks.Stock at any dpi) fits the print head.
+
+        The head width is converted to the stock's resolution, so a 203 dpi
+        model overridden to 300 dpi keeps the same physical width."""
+        if not self.max_width_dots:
+            return True
+        allowed = int(self.max_width_dots * stock.dpi / self.dpi + 0.5)
+        return stock.w <= allowed
 
     def density_for(self, stock_id: str):
         """TSPL DENSITY for this size, the model's default, or None."""
@@ -148,9 +167,14 @@ def validate_entry(e) -> Definition:
     if set(stocks_) - STOCK_IDS:
         raise DefinitionError(f"Printer “{name}” mentions an unknown label size.")
     dpi = e.get("dpi", 203)
-    if dpi != 203:
-        raise DefinitionError(f"Printer “{name}” isn't 203 dpi; this version only "
-                              "supports 203 dpi printers.")
+    if isinstance(dpi, bool) or dpi not in DPI_VALUES:
+        raise DefinitionError(f"Printer “{name}” must be 203 or 300 dpi; this version only "
+                              "supports 203 dpi and 300 dpi printers.")
+    width = e.get("max_width_dots", 0)
+    if (isinstance(width, bool) or not isinstance(width, int)
+            or not (width == 0 or MAX_WIDTH_RANGE[0] <= width <= MAX_WIDTH_RANGE[1])):
+        raise DefinitionError(f"Printer “{name}” has a bad “max_width_dots” (it should be "
+                              "the print width in dots, like 832).")
     media = e.get("media", "gap")
     if media not in ("gap", "continuous", "black-mark"):
         raise DefinitionError(f"Printer “{name}” has an unknown media type.")
@@ -159,7 +183,7 @@ def validate_entry(e) -> Definition:
         raise DefinitionError(f"Printer “{name}” has bad notes.")
     return Definition(
         id=pid, name=name.strip(), language=lang,
-        brands=str_list("brands"), dpi=dpi, media=media,
+        brands=str_list("brands"), dpi=int(dpi), max_width_dots=width, media=media,
         usb=[x.lower() for x in str_list("usb", check_vidpid)],
         ieee1284={k.upper(): v for k, v in i1284.items()},
         windows=str_list("windows", check_re),
@@ -193,10 +217,13 @@ def parse_file_text(text: str) -> list[Definition]:
 
 def _to_json(d: Definition) -> dict:
     """Definition back to its file form (for writing the merged user file)."""
-    return {"id": d.id, "name": d.name, "brands": d.brands, "language": d.language,
-            "dpi": d.dpi, "media": d.media, "usb": d.usb, "ieee1284": d.ieee1284,
-            "windows": d.windows, "density": d.density, "speed": d.speed,
-            "stocks": d.stocks, "notes": d.notes}
+    out = {"id": d.id, "name": d.name, "brands": d.brands, "language": d.language,
+           "dpi": d.dpi, "media": d.media, "usb": d.usb, "ieee1284": d.ieee1284,
+           "windows": d.windows, "density": d.density, "speed": d.speed,
+           "stocks": d.stocks, "notes": d.notes}
+    if d.max_width_dots:
+        out["max_width_dots"] = d.max_width_dots
+    return out
 
 
 class KnownPrinters:

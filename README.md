@@ -198,6 +198,10 @@ Details for helpers: [docs/cottage-rules.md](docs/cottage-rules.md).
 - **My printers…** lets you give printers names like *White label printer*.
   **Which one is it?** prints a tiny label saying which printer it is.
 - **Look for printers again** if you just plugged one in.
+- **Sharpness** (in **My printers…**): most label printers are *Normal
+  (203 dpi)*, and Food Labeler picks that for you. Only change it to
+  *Sharp (300 dpi)* if your printer (or its box) says 300 dpi. Your labels
+  stay the same size either way; at 300 dpi the writing is just crisper.
 
 ---
 

@@ -62,17 +62,20 @@ def draw_layout(lay: Layout, w: int, h: int) -> Image.Image:
     return img
 
 
-def render(doc, ctx: dict | None = None) -> RenderResult:
+def render(doc, ctx: dict | None = None, dpi: int = stocks.BASE_DPI) -> RenderResult:
     """Lay out and draw a LabelDoc. ctx: settings that affect the label
-    (``date_style``, ``kitchen_name``; see Settings.render_ctx)."""
-    stock = stocks.get(doc.stock)
+    (``date_style``, ``kitchen_name``; see Settings.render_ctx). dpi: the
+    chosen printer's resolution (203 or 300); the label keeps its physical
+    size and only gets more dots. It is never stored in the document."""
+    stock = stocks.get(doc.stock, dpi)
     lay = templates.layout(doc, stock, ctx or {})
     return RenderResult(draw_layout(lay, stock.w, stock.h), lay, stock)
 
 
 def render_text_label(lines: list[str], stock: stocks.Stock) -> Image.Image:
     """Simple centred text label (used for the printer test)."""
-    blocks = [templates.Block("", t, 60 if i == 0 else 40, 12, i == 0, "center", 0.3, True)
+    blocks = [templates.Block("", t, 60 if i == 0 else 40, stock.d(12), i == 0, "center", 0.3,
+                              True)
               for i, t in enumerate(lines)]
     region = templates.region_for(stock)
     base = templates._base(region)
@@ -113,7 +116,7 @@ def preview(res: RenderResult, max_w: int, max_h: int, highlight: bool = True) -
     out = Image.new("RGB", (W, H), BACK)
     x0, y0 = (W - lab.width) // 2, (H - lab.height) // 2
     d = ImageDraw.Draw(out)
-    rad = max(4, int(3 * 8 * scale))  # ~3 mm corner radius
+    rad = max(4, int(3 * 8 * st.scale * scale))  # ~3 mm corner radius
     if st.round:
         box = (x0, y0, x0 + lab.width - 1, y0 + lab.height - 1)
         d.ellipse((box[0] + 5, box[1] + 6, box[2] + 5, box[3] + 6), fill=SHADOW)
@@ -153,7 +156,12 @@ def _dashed_circle(d, cx, cy, r, color):
 
 
 def export_png(res: RenderResult, path, scale: int = 2) -> None:
-    """Save the printable bitmap as a PNG ("Save as picture"), enlarged without blur."""
+    """Save the printable bitmap as a PNG ("Save as picture"), enlarged without blur.
+
+    The picture is the label at the printer's resolution (each printer dot
+    becomes scale x scale pixels) and its dpi metadata is the printer's dpi
+    times ``scale``, so it prints at the label's real size."""
     img = res.image.convert("L").resize((res.image.width * scale, res.image.height * scale),
                                         Image.NEAREST)
-    img.save(path, dpi=(stocks.DPI * scale, stocks.DPI * scale))
+    d = res.stock.dpi * scale
+    img.save(path, dpi=(d, d))

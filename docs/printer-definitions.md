@@ -13,7 +13,8 @@ several updates add up. If the user file is ever damaged it is ignored and
 the built-in list keeps working.
 
 Files are checked strictly. Anything in a printer entry that doesn't match
-this format (unknown keys, bad ids, bad patterns, non-203-dpi printers…)
+this format (unknown keys, bad ids, bad patterns, a resolution other than
+203 or 300 dpi…)
 rejects the whole file with a plain message, and nothing is saved. Extra
 top-level keys (such as `"updated": "2026-11-20"`) are allowed and ignored.
 Save files as UTF-8 (with or without a byte-order mark).
@@ -31,6 +32,7 @@ Save files as UTF-8 (with or without a byte-order mark).
       "brands": ["Labelnize", "Flexyva", "Polono"],
       "language": "tspl",
       "dpi": 203,
+      "max_width_dots": 812,
       "media": "gap",
       "usb": ["0483:2025"],
       "ieee1284": {"MDL": "LP610", "CMD": "TSPL"},
@@ -53,7 +55,8 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `name` | yes | what the user sees (max 80 chars) |
 | `brands` | no | brand names sold with this hardware. With 2+ brands the name is shown as `name (A / B / C…)` because clones share USB ids — never claim one brand. |
 | `language` | yes | `"tspl"` (LP610BT and clones) or `"zpl"` (Zebra) |
-| `dpi` | no | must be 203 (the only resolution this version lays out for) |
+| `dpi` | no | print head resolution: `203` (default) or `300`. 600 dpi and anything else is refused. Labels are laid out in mm, so the same label prints the same size at either resolution, only sharper at 300. |
+| `max_width_dots` | no | widest the head can print, in dots at this entry's `dpi` (LP610BT-type 812, Zebra ZP450 832 = 4.09 in). Labels wider than this are refused with a plain message. Leave it out if not known. |
 | `media` | no | `"gap"` (default), `"continuous"`, `"black-mark"` (informational for now) |
 | `usb` | no | list of `"vvvv:pppp"` USB vendor:product ids (hex) |
 | `ieee1284` | no | map of IEEE 1284 device-id keys to regular expressions; **all** must match (case-insensitive search). Keys as the printer reports them, e.g. `MFG`, `MDL`, `CMD`, `MANUFACTURER`, `MODEL`, `COMMAND SET`. |
@@ -73,6 +76,13 @@ Label size ids: `small` 32×25 mm, `medium` 3×2 in, `large` 4×2 in,
 2. **USB id** (`usb`).
 3. **Names** (`windows` patterns; longer patterns are tried first, so a
    specific entry such as `ZP ?450` beats a generic `Zebra`).
+
+The printer *resolution* is, in order: the user's own choice for that printer
+(*My printers… → Sharpness*, or *Advanced*), else `300` if the 1284
+`MODEL`/`MDL` or the Windows printer/driver name says so (`300dpi`,
+`300 dpi` or `-300`, e.g. Zebra *ZD421-300dpi*; `200dpi`/`203dpi` means
+203), else the matched entry's `dpi`, else 203. It is never stored in
+`.label` files, so a label prints right on any printer.
 
 The printer *language* comes from the 1284 `CMD`/`COMMAND SET` if present
 (TSPL → TSPL, ZPL → ZPL), else from the matched entry, else from name

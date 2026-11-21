@@ -31,6 +31,14 @@ Some drivers don't pass RAW data through. For those, the per-printer
 "Print through Windows driver" switch (Advanced) uses "windows_driver": the
 1-bit picture is drawn on the printer's GDI device context and the driver
 converts it, losing exact darkness/speed control but usually working.
+
+Resolution
+----------
+The print head's resolution (203 or 300 dpi) belongs to the printer. Its
+default comes from the matched model in known_printers.json, unless the 1284
+model or the Windows printer/driver name says "300dpi" (Zebra names its
+300 dpi models "ZD421-300dpi"); ``printer_dpi`` lets the user's own choice in
+My printers / Advanced win. Unknown printers are 203 dpi.
 """
 from __future__ import annotations
 
@@ -91,6 +99,7 @@ class Printer:
     manual: bool = False     # added by hand (network)
     vidpid: str = ""         # USB vendor:product, e.g. "0483:2025"
     family: object = None    # known.Definition this printer matched, if any
+    dpi: int = 203           # print head resolution as detected (see printer_dpi)
 
     def default_name(self) -> str:
         """A friendly name when the user hasn't given one."""
@@ -153,16 +162,51 @@ def model_from_1284(info: dict) -> str:
     return info.get("MDL") or info.get("MODEL") or ""
 
 
+DPI_CHOICES = (203, 300)
+DPI_LABELS = {203: "Normal (203 dpi) — most label printers",
+              300: "Sharp (300 dpi) — only if your printer says 300 dpi"}
+DPI_300_RE = re.compile(r"300\s*-?\s*dpi|-300(?![0-9])", re.I)
+DPI_203_RE = re.compile(r"20[03]\s*-?\s*dpi|-20[03](?![0-9])", re.I)
+
+
+def dpi_from_text(text: str) -> int | None:
+    """Resolution named in a model / printer / driver name: "ZD421-300dpi" -> 300,
+    "ZTC ZP 450-200dpi" -> 203, nothing said -> None. Best effort only."""
+    t = text or ""
+    if DPI_300_RE.search(t):
+        return 300
+    if DPI_203_RE.search(t):
+        return 203
+    return None
+
+
+def printer_dpi(p: "Printer | None", info: dict | None = None) -> int:
+    """The resolution to lay labels out for: the user's choice for this printer
+    (settings ``"dpi"``), else what was detected, else 203. No printer: 203."""
+    want = (info or {}).get("dpi")
+    if want in DPI_CHOICES and not isinstance(want, bool):
+        return int(want)
+    if p is None:
+        return 203
+    return p.dpi if p.dpi in DPI_CHOICES else 203
+
+
 def classify(p: "Printer", known=None, info: dict | None = None, text: str = "") -> None:
-    """Fill in family (known model) and kind (printer language) for a printer."""
+    """Fill in family (known model), kind (printer language) and dpi for a printer."""
+    text = text or f"{p.model} {p.target} {p.detail}"
     if known is not None:
-        p.family = known.match(info or {}, p.vidpid, text or f"{p.model} {p.target} {p.detail}")
+        p.family = known.match(info or {}, p.vidpid, text)
+    named = dpi_from_text(" ".join([model_from_1284(info or {}), p.model, text]))
+    if named is not None:
+        p.dpi = named
+    elif p.family is not None:
+        p.dpi = p.family.dpi
     if not p.kind and info:
         p.kind = kind_from_1284(info)
     if not p.kind and p.family is not None:
         p.kind = p.family.language
     if not p.kind:
-        p.kind = kind_from_text(text or f"{p.model} {p.target} {p.detail}")
+        p.kind = kind_from_text(text)
 
 
 def kind_from_text(text: str) -> str:
@@ -389,13 +433,28 @@ def auto_pick(found: list[Printer]) -> Printer | None:
 # jobs
 # ---------------------------------------------------------------------------
 
+def too_wide_message(stock: Stock, family) -> str:
+    """Friendly refusal when a label is wider than the printer can print ("" if it fits)."""
+    if family is None or family.fits(stock):
+        return ""
+    mm = family.max_width_mm
+    return (f"“{stock.name}” labels are wider than this printer can print "
+            f"(it prints up to {mm:.0f} mm, about {mm / 25.4:.1f} inches, across). "
+            "Pick a narrower label size.")
+
+
 def build_job(img, stock: Stock, printer_cfg: dict, advanced: dict, copies: int,
               family=None) -> bytes:
     """printer_cfg: {"kind", "method", "target"} (see Printer.config).
 
-    Density/speed: Advanced setting for this size, else the printer model's
-    default from known_printers.json, else the label size default.
+    ``img`` and ``stock`` must be at the printer's resolution. Density/speed:
+    Advanced setting for this size, else the printer model's default from
+    known_printers.json, else the label size default. Raises PrinterError if
+    the label is wider than the model's print head.
     """
+    wide = too_wide_message(stock, family)
+    if wide:
+        raise PrinterError(wide)
     if printer_cfg.get("kind") == "zpl":
         return zpl.build_job(img, stock, copies, darkness=advanced.get("zpl_darkness"))
     dens = advanced.get("density", {}).get(stock.id)

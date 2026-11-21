@@ -14,14 +14,14 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `food_labeler_main.py` | tiny entry script used by PyInstaller and the Linux menu entry |
 | `model.py` | `LabelDoc` (template, size, fields, copies), `.label` JSON load/save, atomic writes |
 | `dates.py` | date parsing, quick "use by" offsets, date formats |
-| `stocks.py` | label sizes (`Stock`) in dots and mm, per-size printer defaults |
+| `stocks.py` | label sizes (`Stock`) in mm and in dots at 203 or 300 dpi, `dots()` scaling, per-size printer defaults |
 | `templates.py` | per-template text blocks and the auto-fit layout engine |
 | `lettering.py` | font registry (bundled + user fonts), font loading (variable fonts too), which block gets which font, per-font minimum sizes, legal-text rule |
 | `fontget.py` | *Get more fonts*: find and download a Google Fonts family from github.com/google/fonts, add a local font file, install/remove user fonts |
 | `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
-| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network), sending jobs, status |
+| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network), resolution detection, sending jobs, status |
 | `known.py` | known printer models: bundled `known_printers.json` + the user's update file |
 | `cottage.py` | cottage food state rules (bundled `cottage_rules.json` < imported update < the user's own edits), "Label check", net quantity wording |
 | `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* |
@@ -44,8 +44,9 @@ everything else is tested headless.
    │
    ▼
  LabelDoc (model.py)              template + stock id + fields (dates as ISO strings)
-   │
+   │                              + the selected printer's dpi (203 or 300; not in the doc)
    ▼
+ stocks.get(stock, dpi)           the label in that printer's dots
  templates.build_blocks()         fields → text Blocks with preferred/minimum sizes
  lettering.apply()                each Block gets its font (doc.lettering); minimums × font's
                                   min_scale; required wording forced to a readable sans
@@ -72,6 +73,36 @@ everything else is tested headless.
 
 `FOOD_LABELER_DRY_RUN=<folder>` short-circuits `printers.send()`: jobs are
 written to files in that folder instead. The tests always set it.
+
+### Resolution (203 / 300 dpi)
+
+The print head's resolution is a property of the printer (`printers.printer_dpi`:
+the user's choice in *My printers → Sharpness* or *Advanced*, else "300dpi"
+in the 1284 model / Windows driver name, else the model's `dpi` in
+`known_printers.json`, else 203). `App.current_dpi()` is the selected
+printer's (203 when none is selected) and is passed to `render.render(doc,
+ctx, dpi=…)`; picking a printer with another resolution draws the label
+again. Nothing about dpi is stored in `.label` files.
+
+The label is laid out in physical units: `stocks.get(id, dpi)` gives the same
+mm size in that printer's dots (`SIZES_DOTS`: the 203 dpi numbers are the
+historic ones, every row equals round(mm × dpi / 25.4)). Every other fixed
+number — margins, minimum font sizes, the round label's inner margin and
+circle, QR module/target/gaps, the test label — is written in 203 dpi dots
+and goes through `stock.d()`, which returns it unchanged at 203 and scales it
+by dpi/203 otherwise; preferred sizes are already fractions of the label.
+Cottage statement minimums convert points with the real dpi. So 203 dpi
+output is byte-identical to earlier versions (`tests/test_dpi.py` checks 130
+labels against stored hashes) and a 300 dpi label looks the same, only
+sharper (`docs/samples/dpi-203-vs-300.png`).
+
+TSPL `SIZE`/`GAP` stay in mm; `BITMAP` and ZPL `^PW`/`^LL`/`^GFA` come from
+the image, so they are in the printer's dots; ZPL `^LT` is scaled. A model's
+`max_width_dots` is converted to the label's dpi and wider labels are refused
+before anything is sent (`printers.too_wide_message`). *Save as picture*
+writes the printer's dots (each as 2 × 2 pixels) with the PNG dpi set to
+dpi × 2, so it prints at the real size. The preview scales the bitmap to the
+window, so it looks the same at either resolution.
 
 ### Layout auto-shrink
 

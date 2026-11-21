@@ -368,20 +368,27 @@ class AdvancedDialog(Modal):
         super().__init__(parent, "Advanced printer settings")
         self.app = app
         adv = app.cfg["advanced"]
-        st = stocks.get(app.doc.stock)
         p = app.current_printer()
+        st = stocks.get(app.doc.stock, app.current_dpi())
         b = self.body
         tk.Label(b, text="Advanced (for helpers)", font="big", bg=BG, fg=INK).pack(anchor="w")
         tk.Label(b, text=(f"Label size: {st.name} = {st.w} × {st.h} dots at "
-                          f"{stocks.DPI} DPI ({st.w_mm} × {st.h_mm} mm), gap "
+                          f"{st.dpi} DPI ({st.w_mm} × {st.h_mm} mm), gap "
                           f"{adv['gap'].get(st.id, st.gap_mm)} mm"),
                  font="ui", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(anchor="w")
         if p is not None:
             info = app.cfg["printers"].get(p.id, {})
             tk.Label(b, text=(f"Printer: {p.id} via {p.method} → {p.target}; language "
                               f"{(info.get('kind') or p.kind or 'tspl').upper()}; "
-                              f"model {p.model or '?'}; USB {p.vidpid or '?'}"),
+                              f"model {p.model or '?'}; USB {p.vidpid or '?'}; detected "
+                              f"{p.dpi} dpi"),
                      font="ui", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(anchor="w")
+            tk.Label(b, text="Print sharpness (resolution of this printer)", font="ui_bold",
+                     bg=BG, fg=INK).pack(anchor="w", pady=(14, 0))
+            self.dpi = tk.IntVar(value=app.printer_dpi(p))
+            for v in printers.DPI_CHOICES:
+                tk.Radiobutton(b, text=printers.DPI_LABELS[v], variable=self.dpi, value=v,
+                               font="ui", bg=BG, activebackground=BG).pack(anchor="w")
 
         fam = p.family if p is not None else None
         d0 = adv["density"].get(st.id)
@@ -479,8 +486,11 @@ class AdvancedDialog(Modal):
             pass
         adv["invert"] = bool(self.invert.get())
         if self.printer is not None:
-            self.app.cfg.printer_info(self.printer.id)["via_driver"] = bool(self.via_driver.get())
+            info = self.app.cfg.printer_info(self.printer.id)
+            info["via_driver"] = bool(self.via_driver.get())
+            set_printer_dpi(info, self.printer, int(self.dpi.get()))
         self.app.cfg.save()
+        self.app.refresh_printer_combo()          # draws again if the resolution changed
         self.finish(True)
 
     def _calibrate(self):
@@ -543,6 +553,23 @@ def import_update(parent, app):
 # printers
 # ---------------------------------------------------------------------------
 
+def set_printer_dpi(info: dict, p, dpi) -> None:
+    """Remember the user's resolution for a printer; the detected one needs no entry."""
+    if dpi in printers.DPI_CHOICES and dpi != p.dpi:
+        info["dpi"] = int(dpi)
+    else:
+        info.pop("dpi", None)
+
+
+def pick_dpi(parent, name: str, detected: int) -> int | None:
+    """Ask how sharp a printer prints, in plain words. Returns 203/300 or None."""
+    return choose(parent, "How sharp does it print?",
+                  f"How sharp does “{name}” print? Leave it on Normal unless the printer "
+                  "(or its box) says 300 dpi. Food Labeler thinks it is "
+                  f"{'Sharp (300 dpi)' if detected == 300 else 'Normal (203 dpi)'}.",
+                  [(printers.DPI_LABELS[v], v) for v in printers.DPI_CHOICES])
+
+
 def pick_kind(parent, name: str) -> str | None:
     """Ask which language a printer speaks, in plain words. Returns "tspl"/"zpl"/None."""
     return choose(parent, "What kind of printer?",
@@ -595,6 +622,9 @@ class MyPrintersDialog(Modal):
                      justify="left").grid(row=0, column=0,
                                                                           sticky="w")
             sub = f"{p.port}  •  {'Zebra' if kind == 'zpl' else 'Label printer (LP610BT type)'}"
+            if here:
+                sharp = printers.printer_dpi(p, info)
+                sub += "  •  " + ("Sharp (300 dpi)" if sharp == 300 else "Normal (203 dpi)")
             tk.Label(fr, text=sub, font="ui", bg=PANEL, fg=MUTED, wraplength=380,
                      justify="left").grid(row=1, column=0,
                                                                        sticky="w")
@@ -607,6 +637,8 @@ class MyPrintersDialog(Modal):
                 button(btns, "Which one is it?", lambda p=p: self._identify(p), "chip").pack(
                     side="left", padx=2)
                 button(btns, "Type", lambda p=p, n=name: self._kind(p, n), "chip").pack(
+                    side="left", padx=2)
+                button(btns, "Sharpness", lambda p=p, n=name: self._dpi(p, n), "chip").pack(
                     side="left", padx=2)
                 if p.id != app.cfg["selected"]:
                     button(btns, "Use this one", lambda p=p: self._use(p), "primary").pack(
@@ -644,6 +676,14 @@ class MyPrintersDialog(Modal):
         if k:
             self.app.cfg.printer_info(p.id)["kind"] = k
             self.app.cfg.save()
+            self._draw()
+
+    def _dpi(self, p, name):
+        v = pick_dpi(self, name, p.dpi)
+        if v:
+            set_printer_dpi(self.app.cfg.printer_info(p.id), p, v)
+            self.app.cfg.save()
+            self.app.refresh_printer_combo()      # draws again at the new resolution
             self._draw()
 
     def _use(self, p):

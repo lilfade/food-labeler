@@ -13,6 +13,7 @@
       ],
       "language": "tspl",
       "dpi": 203,
+      "max_width_dots": 812,
       "media": "gap",
       "usb": [
         "0483:2025"
@@ -45,7 +46,7 @@
         "round",
         "xl"
       ],
-      "notes": "Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port."
+      "notes": "203 dpi, 812 dots (4 in) max print width. Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port."
     },
     {
       "id": "zebra-zp450",
@@ -55,6 +56,7 @@
       ],
       "language": "zpl",
       "dpi": 203,
+      "max_width_dots": 832,
       "media": "gap",
       "usb": [
         "0a5f:008c"
@@ -75,7 +77,7 @@
         "round",
         "xl"
       ],
-      "notes": "203 dpi, 4 in (104 mm) max print width. Supports 4x6."
+      "notes": "203 dpi (its 1284 id says ZP 450-200dpi), 4.09 in (104 mm) = 832 dots max print width. Supports 4x6."
     },
     {
       "id": "zebra-zpl",

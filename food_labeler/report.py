@@ -84,7 +84,8 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
     nick = nicknames or {}
     for p in printers_found:
         out.append(f"  - {p.display(nick.get(p.id, ''))}")
-        out.append(f"      id {p.id}  language {p.kind or '?'}  via {p.method} {p.target}")
+        out.append(f"      id {p.id}  language {p.kind or '?'}  dpi {p.dpi}  "
+                   f"via {p.method} {p.target}")
         out.append(f"      model {p.model or '?'}  usb {p.vidpid or '?'}  "
                    f"matched {getattr(p.family, 'id', '-')}")
         if p.detail:

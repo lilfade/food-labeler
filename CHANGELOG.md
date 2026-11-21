@@ -28,6 +28,24 @@ Lettering: choose the fonts on your labels.
 - Label files from earlier versions open unchanged; the file format is still
   version 1.
 
+Sharper printing on 300 dpi printers.
+
+- Each printer now has a **Sharpness** (in **My printers…** and
+  **Settings → Advanced…**): *Normal (203 dpi) — most label printers* or
+  *Sharp (300 dpi) — only if your printer says 300 dpi*. Food Labeler picks
+  it for you: 300 dpi when the printer's name says so (for example Zebra
+  *ZD421-300dpi*), otherwise 203 dpi.
+- Labels keep their real size in millimetres and inches, so a label looks
+  the same at either setting, only crisper at 300 dpi. The state's required
+  wording keeps its minimum size in points at both.
+- Labels printed on 203 dpi printers are exactly the same as before.
+- A label size wider than the printer can print is refused with a plain
+  message instead of being cut off.
+- **Save as picture** saves the label at the printer's resolution and
+  records it in the picture, so it prints at the right size.
+- Printer update files may now say `"dpi": 300` and give the print width
+  (`"max_width_dots"`). Nothing about resolution is saved in label files.
+
 ## 1.1.1 — 2026-11-20
 
 - The cottage food form no longer squeezes the label preview and printer
