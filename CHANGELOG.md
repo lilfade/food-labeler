@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.1.0 — unreleased
+## 1.1.0 — 2026-11-20
 
 Labels for home bakers selling under their state's cottage food law.
 
