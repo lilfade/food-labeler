@@ -69,11 +69,9 @@ def responsibility(parent, rule: cottage.StateRule, bg=BG):
     """The "these are suggestions" note with the state's source link."""
     fr = tk.Frame(parent, bg=bg)
     _label(fr, cottage.RESPONSIBILITY, font="ui_bold", fg=INK, bg=bg).pack(anchor="w")
-    if rule.id != cottage.CUSTOM_ID:
-        status = ("Checked against the official source on " + rule.checked_on
-                  if rule.verified and rule.checked_on else
-                  "Unverified — check with your state.")
-        _label(fr, status, font="small", fg=MUTED if rule.verified else WARN, bg=bg).pack(
+    status, warn = cottage.check_status(rule)
+    if status:
+        _label(fr, status, font="small", fg=WARN if warn else MUTED, bg=bg).pack(
             anchor="w", pady=(2, 0))
     if rule.source_url:
         link(fr, rule.source_url, "Source: " + rule.source_url, bg=bg).pack(anchor="w")
@@ -106,6 +104,8 @@ def state_choices(rules: cottage.CottageRules) -> list[tuple[str, str]]:
         if r.id != cottage.CUSTOM_ID:
             if r.sales_allowed is False:
                 tag = "  (home baked goods: not allowed, see notes)"
+            elif r.from_update:
+                tag = "  (from an update file you imported)"
             elif not r.verified:
                 tag = "  (unverified)"
         out.append((r.id, r.name + tag))

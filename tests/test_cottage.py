@@ -530,3 +530,65 @@ def test_cottage_renders_on_every_allowed_size_without_context():
         res = render.render(cottage_doc(sid), {})
         st = stocks.get(sid)
         assert res.image.size == (st.w, st.h) and not res.overflow
+
+
+# ---------------------------------------------------------------------------
+# who checked the rules
+# ---------------------------------------------------------------------------
+
+def test_only_bundled_rules_say_checked_against_the_official_source(tmp_path):
+    from food_labeler import bakery_dialogs
+    builtin = rules_file(tmp_path, [state(text="Bundled words.", checked="2026-01-01")],
+                         name="bundled.json")
+    data = tmp_path / "data"
+    r = cottage.CottageRules(data, builtin)
+    text, warn = cottage.check_status(r.base("ZZ"))
+    assert text == "Checked against the official source on 2026-01-01" and not warn
+    assert dict(bakery_dialogs.state_choices(r))["ZZ"] == "Testland"
+    # an imported file claims to be verified and checked
+    r.import_file(rules_file(tmp_path, [state(text="Updated words.", checked="2026-06-01",
+                                              verified=True)]))
+    rule = r.effective("ZZ").rule
+    assert rule.verified and rule.from_update
+    text, warn = cottage.check_status(rule)
+    assert text == ("From an update file you imported (checked 2026-06-01 by whoever "
+                    "made it).") and warn
+    assert "official" not in text
+    about = "\n".join(cottage.about_source_lines(rule))
+    assert "official" not in about and "From an update file you imported" in about
+    assert "Source named in the update file: https://example.gov/cottage" in about
+    assert "imported" in dict(bakery_dialogs.state_choices(r))["ZZ"]
+    # the same after a restart (from_update is never read from the file itself)
+    r = cottage.CottageRules(data, builtin)
+    assert r.base("ZZ").from_update
+    assert "from_update" not in json.loads((data / cottage.USER_RULES_NAME).read_text())[
+        "states"][0]
+    # the user's own wording on top doesn't make it official either
+    r.set_statement("ZZ", "main", "My words.")
+    assert cottage.check_status(r.effective("ZZ").rule)[0].startswith("From an update file")
+    # once Food Labeler ships newer rules, those are used and are official again
+    newer = rules_file(tmp_path, [state(text="Autumn words.", checked="2026-10-01")],
+                       name="b2.json")
+    r2 = cottage.CottageRules(data, newer)
+    assert cottage.check_status(r2.base("ZZ"))[0].startswith("Checked against the official")
+
+
+def test_update_file_cannot_claim_from_bundled(tmp_path):
+    # "from_update" isn't a key a rules file may contain
+    with pytest.raises(cottage.RulesError, match="doesn't understand"):
+        cottage.parse_rules_text(json.dumps({"format": cottage.FORMAT, "version": 1,
+                                             "updated": "2026-11-20",
+                                             "states": [state(from_update=False)]}))
+
+
+def test_unverified_and_undated_update_wording(tmp_path):
+    builtin = rules_file(tmp_path, [state(sid="AA", name="Aland")], name="bundled.json")
+    r = cottage.CottageRules(tmp_path / "data", builtin)
+    r.import_file(rules_file(tmp_path, [state(verified=False, checked="")]))
+    text, warn = cottage.check_status(r.base("ZZ"))
+    assert text == ("From an update file you imported (not dated by whoever made it). "
+                    "Unverified — check with your state.") and warn
+    bundled_unverified = cottage.StateRule(id="QQ", name="Q", verified=False)
+    assert cottage.check_status(bundled_unverified) == ("Unverified — check with your state.",
+                                                        True)
+    assert cottage.check_status(cottage.custom_rule()) == ("", False)

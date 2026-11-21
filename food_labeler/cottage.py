@@ -101,6 +101,11 @@ class StateRule:
     source_url: str = ""
     extra_sources: list = field(default_factory=list)
     checked_on: str = ""
+    # True when this preset came from an update file the user imported (not from
+    # the rules shipped with Food Labeler). Never written to a file: whoever made
+    # an update file can set "verified" and "checked_on", but only we can say
+    # where it came from. See check_status().
+    from_update: bool = field(default=False, compare=False)
 
     def to_json(self) -> dict:
         return {"id": self.id, "name": self.name, "sales_allowed": self.sales_allowed,
@@ -307,6 +312,41 @@ class Effective:
                                for s in self.statements if s.text.strip()]}
 
 
+def check_status(rule: StateRule) -> tuple[str, bool]:
+    """Who checked a state's rules, in plain words, and whether to show it as a warning.
+
+    Only the rules shipped with Food Labeler may say "Checked against the
+    official source": an imported update file's own "verified"/"checked_on"
+    are shown as that file's claim. Custom rules have no status ("", False)."""
+    if rule.id == CUSTOM_ID:
+        return "", False
+    if rule.from_update:
+        when = (f"checked {rule.checked_on} by whoever made it" if rule.checked_on
+                else "not dated by whoever made it")
+        text = f"From an update file you imported ({when})."
+        if not rule.verified:
+            text += " Unverified — check with your state."
+        return text, True
+    if rule.verified and rule.checked_on:
+        return "Checked against the official source on " + rule.checked_on, False
+    return "Unverified — check with your state.", True
+
+
+def about_source_lines(rule: StateRule) -> list[str]:
+    """The source and check lines for "About <state>'s rules"."""
+    status, _ = check_status(rule)
+    out = []
+    if rule.source_url:
+        if rule.from_update:
+            out.append("Source named in the update file: " + rule.source_url)
+        else:
+            out.append("Source: " + rule.source_url
+                       + (f" (checked {rule.checked_on})" if rule.checked_on else ""))
+    if status and (rule.from_update or not rule.verified):
+        out.append(status)
+    return out
+
+
 def fill_placeholders(text: str, profile: dict) -> tuple[str, list[str]]:
     """Fill {business_name}, {permit_number}, {county} from My bakery.
     Returns (text, names of blanks still empty); empty blanks stay as "____"."""
@@ -412,6 +452,8 @@ class CottageRules:
         if self.update_path and self.update_path.is_file():
             try:
                 _, rules = parse_rules_text(_read_update(self.update_path))
+                for r in rules:
+                    r.from_update = True
                 self.updates = {r.id: r for r in rules}
             except (OSError, UnicodeDecodeError, RulesError):
                 log.exception("cottage rules update unreadable; ignoring it")

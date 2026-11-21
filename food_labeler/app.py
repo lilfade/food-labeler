@@ -1509,9 +1509,9 @@ class App:
             tk.Label(fr, text="The public guidance we found says home-baked goods can't be "
                      "sold this way here. Please check with your state.", font="ui", bg=PANEL,
                      fg=WARN, wraplength=520, justify="left").pack(anchor="w")
-        elif rule.id != cottage.CUSTOM_ID and not rule.verified:
-            tk.Label(fr, text="Unverified — check with your state.", font="ui", bg=PANEL,
-                     fg=WARN).pack(anchor="w")
+        elif cottage.check_status(rule)[1]:
+            tk.Label(fr, text=cottage.check_status(rule)[0], font="ui", bg=PANEL,
+                     fg=WARN, wraplength=520, justify="left").pack(anchor="w")
         tk.Label(fr, text=cottage.RESPONSIBILITY, font="small", bg=PANEL, fg=MUTED,
                  wraplength=520, justify="left").pack(anchor="w", pady=(4, 0))
         button(fr, f"About {rule.name}'s rules…", self.about_rules, "quiet").pack(anchor="w")
@@ -1523,9 +1523,7 @@ class App:
         parts = ["What the label needs:\n" + "\n".join(
             ("✔ " if i.ok else "✘ ") + i.label for i in items)]
         parts.append(rule.notes or "No notes.")
-        if rule.source_url:
-            parts.append("Source: " + rule.source_url
-                         + (f" (checked {rule.checked_on})" if rule.checked_on else ""))
+        parts.extend(cottage.about_source_lines(rule))
         parts.append(cottage.RESPONSIBILITY)
         tell(self.root, f"{rule.name}: cottage food rules", "\n\n".join(parts))
 

@@ -59,7 +59,7 @@ UTF-8 JSON (a byte-order mark is fine):
 | `id` | two capital letters (`NE`, `DC`), or `custom` |
 | `name` | shown in the state list |
 | `sales_allowed` | `true`, `false` (home-baked goods can't be sold this way; the app warns) or `null` (not known) |
-| `verified` | `true` only when the wording and items were checked against an official source (state agency, statute or administrative code). Otherwise the app shows "Unverified — check with your state". |
+| `verified` | `true` only when the wording and items were checked against an official source (state agency, statute or administrative code). Otherwise the app shows "Unverified — check with your state". Only the bundled file is shown as "Checked against the official source on …": a state that comes from an imported update file is shown as "From an update file you imported (checked … by whoever made it)", whatever `verified` says. |
 | `statements` | up to 8. `text` is copied **word for word** from the source. `min_pt` is the smallest type size in points the source allows (or `null`). `kind`: `label` (printed), `alternative` (other wording the state allows; the baker can switch to it), `optional` (needed only for some foods, e.g. foods kept cold; the baker can add it), `sign` (for a sign where you sell; shown, never printed). |
 | `required`, `optional` | label items, from: `product_name`, `net_quantity`, `ingredients`, `allergens`, `business_name`, `address` (street, city, state and ZIP), `city_state_zip`, `phone`, `email`, `permit_number`, `date_made`, `sell_by`, `storage` |
 | `min_statement_pt` | smallest size for every statement that has no `min_pt` of its own |
