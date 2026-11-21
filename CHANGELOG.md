@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.3.1 — unreleased
+## 1.3.1 — 2026-11-21
 
 - 3 × 2 and 4 × 2 labels are drawn 50.0 mm tall instead of 50.8 mm. "2 inch"
   die-cut labels are really about 50 mm, so the bottom row of the picture
