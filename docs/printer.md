@@ -88,3 +88,6 @@ ever sent to the printer until you press **Set it up** and say OK.
 4. If that doesn't work, press **Send this to High Thyme Kitchen**. It makes a
    short report about the computer and printer (never what is on your labels)
    that you can e-mail to us at hello@highthymekitchen.com, and we will help.
+   It only lists the printers plugged in. If we ask you to, tick
+   **Also list everything else plugged in** to add the other USB things
+   (their names only, never their serial numbers).

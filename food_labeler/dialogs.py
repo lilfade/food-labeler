@@ -957,23 +957,35 @@ class ReportDialog(Modal):
     def __init__(self, parent, app):
         super().__init__(parent, "Send printer info")
         self.app = app
-        devs = usbscan.scan(app.known)
-        text = report.build(app.found, devs, app.cfg.nicknames(),
-                            settings_mod.data_dir() / "food-labeler.log", app.known)
-        self.text = text
+        self.devs = usbscan.scan(app.known)
         tk.Label(self.body, text="This is what will be sent. It only has facts about the "
                  "computer and printers — nothing you wrote on your labels.", font="ui",
                  bg=BG, fg=INK, wraplength=760, justify="left").pack(anchor="w", pady=(0, 8))
-        t = tk.Text(self.body, font="small", width=90, height=18, wrap="none")
-        t.insert("1.0", text)
-        t.configure(state="disabled")
-        t.pack(fill="both", expand=True)
+        self.everything = tk.BooleanVar(value=False)
+        tk.Checkbutton(self.body, text="Also list everything else plugged in (helps with "
+                       "unusual printers)", variable=self.everything, font="ui", bg=BG,
+                       activebackground=BG, command=self._show_report).pack(
+            anchor="w", pady=(0, 8))
+        self.report_box = tk.Text(self.body, font="small", width=90, height=18, wrap="none")
+        self.report_box.pack(fill="both", expand=True)
+        self._show_report()
         row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(10, 0))
         button(row, "Copy", self._copy, "chip").pack(side="left")
         button(row, "Save to Desktop", self._save, "chip").pack(side="left", padx=6)
         button(row, "Email it", self._email, "primary").pack(side="left")
         button(row, "Close", self.cancel, "quiet").pack(side="right")
+
+    def _show_report(self):
+        """Build the report (with or without the other USB devices) and show it."""
+        self.text = report.build(self.app.found, self.devs, self.app.cfg.nicknames(),
+                                 settings_mod.data_dir() / "food-labeler.log", self.app.known,
+                                 everything=bool(self.everything.get()))
+        t = self.report_box
+        t.configure(state="normal")
+        t.delete("1.0", "end")
+        t.insert("1.0", self.text)
+        t.configure(state="disabled")
 
     def _copy(self, quiet=False):
         self.clipboard_clear()

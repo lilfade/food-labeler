@@ -76,3 +76,62 @@ def test_scrub_hides_user_name_only_as_a_whole_word(monkeypatch):
     out = report._scrub("Food Labeler report for lab on LAB-PC, C:/Users/lab/x")
     assert "Food Labeler" in out and "<user> on <user>-PC" in out
     assert "lab" not in out.replace("Labeler", "")
+
+
+def _devices():
+    phone = usbscan.UsbDevice(key="1-1.6", vid="18d1", pid="4ee7", manufacturer="Example",
+                              product="Example Phone", serial="PHONESERIAL98765", port="1-1.6")
+    stick = usbscan.UsbDevice(key="USB\\VID_0781&PID_5567\\STICKSERIAL123", vid="0781",
+                              pid="5567", manufacturer="Example", product="Memory Stick",
+                              serial="STICKSERIAL123", pnp_class="DiskDrive")
+    lp = usbscan.UsbDevice(key="1-1.3", vid="0483", pid="2025",
+                           manufacturer="STMicroelectronics", product="BAR PRINTER",
+                           serial="000000000004", port="1-1.3")    # not printer-class
+    lp.family = K.match({}, lp.vidpid, "BAR PRINTER")
+    win = usbscan.UsbDevice(key="USB\\VID_1234&PID_0001\\WINPRN77", vid="1234", pid="0001",
+                            manufacturer="Odd", product="Odd thermal", serial="WINPRN77",
+                            pnp_class="Printer", is_printer=True)
+    cls7 = usbscan.UsbDevice(key="1-1.8", vid="abcd", pid="0001", product="Mystery printer",
+                             serial="CLASS7SERIAL", port="1-1.8", is_printer=True)
+    return [phone, stick, lp, win, cls7]
+
+
+def test_report_lists_only_printers_by_default():
+    text = report.build((), _devices(), {}, None, K)
+    for name, serial in [("LP610BT-compatible", "000000000004"), ("Odd thermal", "WINPRN77"),
+                         ("Mystery printer", "CLASS7SERIAL")]:
+        assert name in text and serial in text
+    for private in ("Example Phone", "PHONESERIAL98765", "Memory Stick", "STICKSERIAL123",
+                    "18d1", "0781"):
+        assert private not in text
+    assert "2 other USB devices plugged in, not listed" in text
+
+
+def test_report_can_list_everything_but_never_their_serials():
+    text = report.build((), _devices(), {}, None, K, everything=True)
+    assert "Example Phone" in text and "Memory Stick" in text and "18d1:4ee7" in text
+    assert "PHONESERIAL98765" not in text and "STICKSERIAL123" not in text
+    assert "000000000004" in text and "WINPRN77" in text       # printers keep theirs
+    assert "not listed" not in text
+
+
+@linux_only
+def test_report_checkbox_still_has_no_label_content_or_user(tmp_path, monkeypatch):
+    secret = "Aunt Mabel's Secret Plum Chutney 12345"
+    doc = model.LabelDoc()
+    doc.fields.update(food=secret, made_by="Mabel Q. Private")
+    settings.write_autosave(doc, str(tmp_path / "labels" / "chutney.label"), True)
+    monkeypatch.setattr(report.getpass, "getuser", lambda: "mabelq")
+    home = str(report.Path.home())
+    phone = usbscan.UsbDevice(key="1-1.6", vid="18d1", pid="4ee7",
+                              product=f"mabelq's phone {home}", serial="PHONESERIAL98765")
+    sysr, devr = make_fake_sysfs(tmp_path)
+    devs = usbscan.scan_linux(str(sysr), K) + [phone]
+    log = settings.data_dir() / "food-labeler.log"
+    log.write_text(f"2026-11-20 ERROR food_labeler: failed in {home}/x for mabelq\n")
+    for everything in (False, True):
+        text = report.build((), devs, {}, log, K, everything=everything)
+        assert secret not in text and "Mabel" not in text and "chutney" not in text.lower()
+        assert "mabelq" not in text and home not in text
+        assert "PHONESERIAL98765" not in text
+        assert ("Logitech" in text) == everything

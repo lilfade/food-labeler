@@ -3,6 +3,12 @@
 It contains only technical facts (program version, system, USB devices,
 printers, recent error lines) — never what is written on labels. Paths are
 shortened and the user name is hidden.
+
+USB devices: by default only printers are listed (a USB printer-class
+interface, Windows class "Printer", or a USB id / name of a known printer
+model). Everything else plugged in (phones, keyboards, storage…) is only
+counted, unless the person ticks "Also list everything else plugged in";
+even then their serial numbers are never included.
 """
 from __future__ import annotations
 
@@ -51,9 +57,18 @@ def recent_log_problems(log_path, max_lines: int = 40) -> list[str]:
     return keep[-max_lines:]
 
 
+def is_printer_device(d) -> bool:
+    """True for a USB device that is (or looks like) a printer."""
+    return bool(d.is_printer or d.family is not None
+                or str(getattr(d, "pnp_class", "") or "").lower() == "printer")
+
+
 def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
-          log_path=None, known=None) -> str:
-    """Build the report. Pass only printer/USB facts — never the label document."""
+          log_path=None, known=None, everything: bool = False) -> str:
+    """Build the report. Pass only printer/USB facts — never the label document.
+
+    ``everything``: also list USB devices that aren't printers (without their
+    serial numbers); by default they are only counted."""
     out = [f"{APP_NAME} printer report", "=" * 30,
            f"Program: {APP_NAME} {__version__}" + (" (installed)" if getattr(sys, "frozen", False)
                                                    else " (from source)"),
@@ -62,13 +77,22 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
     if known is not None:
         out.append("Known printer models: " + ", ".join(d.id for d in known.all()))
         out.append("")
-    out.append("USB devices:")
-    if not usb_devices:
+    printer_devs = [d for d in usb_devices if is_printer_device(d)]
+    others = [d for d in usb_devices if not is_printer_device(d)]
+    out.append("USB printers:" if not everything else "USB devices:")
+    shown = list(printer_devs) + (others if everything else [])
+    if not shown:
         out.append("  (none found)")
-    for d in usb_devices:
+    for d in shown:
+        printer = is_printer_device(d)
         out.append(f"  - {d.title()}")
-        out.append(f"      id {d.vidpid or '?'}  port {d.port or '?'}  printer-class "
-                   f"{'yes' if d.is_printer else 'no'}  serial {d.serial or '-'}")
+        line = (f"      id {d.vidpid or '?'}  port {d.port or '?'}  printer-class "
+                f"{'yes' if d.is_printer else 'no'}")
+        if printer:
+            line += f"  serial {d.serial or '-'}"
+        out.append(line)
+        if not printer:
+            continue                    # nothing more about devices that aren't printers
         if d.manufacturer or d.product:
             out.append(f"      says: {d.manufacturer} / {d.product}")
         if d.pnp_class:
@@ -77,6 +101,9 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
             out.append("      1284 id: " + ";".join(f"{k}:{v}" for k, v in d.ieee1284.items()))
         if d.lp:
             out.append(f"      driver node: {d.lp}")
+    if others and not everything:
+        n = len(others)
+        out.append(f"  ({n} other USB device{'s' if n != 1 else ''} plugged in, not listed)")
     out.append("")
     out.append("Printers:")
     if not printers_found:
