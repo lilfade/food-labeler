@@ -1,5 +1,5 @@
 """Known printer models, loaded from known_printers.json (bundled) plus an
-optional user file of updates that High Thyme Kitchen can send.
+optional printer update file the user adds (Settings → Add printer update file…).
 
 A Definition says how to recognise a model (IEEE 1284 id, USB vid:pid, or
 Windows/CUPS name patterns: plain text, never regular expressions, so a file

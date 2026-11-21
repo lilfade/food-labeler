@@ -406,7 +406,7 @@ class MyBakeryDialog(Modal):
             self.req_toggles[key] = tg
 
         self.heading("State rules updates")
-        _label(b, "High Thyme Kitchen may send a file with newer state rules. Your own "
+        _label(b, "Got a state rules update file with newer rules? Add it here. Your own "
                "changes above are kept.", fg=MUTED).pack(anchor="w")
         button(b, "Add state rules update file…", self._import).pack(anchor="w",
                                                                           pady=(6, 0))

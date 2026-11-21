@@ -71,7 +71,7 @@ A statement may contain the blanks `{business_name}`, `{permit_number}` and
 
 Whatever the file says, the app always asks for the product name,
 ingredients, allergens, business name and the **complete** address (street,
-city, state and ZIP), as High Thyme Kitchen's own labels do; a label never
+city, state and ZIP), because a buyer needs to know who made the food; a label never
 shows half an address. The baker can change this list per state.
 
 Validation is strict: one bad entry refuses the whole file, nothing is
