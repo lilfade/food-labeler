@@ -137,8 +137,9 @@ class ScrollFrame(tk.Frame):
         self.inner = tk.Frame(self.canvas, bg=bg)
         self._win = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
         self.canvas.configure(yscrollcommand=self.vsb.set)
-        self.canvas.pack(side="left", fill="both", expand=True)
+        # scrollbar packed first, so a narrow window squeezes the canvas, never the bar
         self.vsb.pack(side="right", fill="y")
+        self.canvas.pack(side="left", fill="both", expand=True)
         self.inner.bind("<Configure>", self._on_inner)
         self.canvas.bind("<Configure>", self._on_canvas)
         self.bind_all("<MouseWheel>", self._wheel, add="+")

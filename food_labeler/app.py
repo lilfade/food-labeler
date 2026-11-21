@@ -187,8 +187,10 @@ class App:
         main = tk.Frame(r, bg=BG, padx=14, pady=8)
         main.grid(row=2, column=0, sticky="nsew")
         main.grid_rowconfigure(0, weight=1)
-        main.grid_columnconfigure(0, weight=6)
-        main.grid_columnconfigure(1, weight=5)
+        # "uniform" keeps the 6:5 split no matter how wide the form's contents ask
+        # to be (the cottage label check would otherwise squeeze the preview).
+        main.grid_columnconfigure(0, weight=6, uniform="main")
+        main.grid_columnconfigure(1, weight=5, uniform="main")
 
         left = tk.Frame(main, bg=PANEL, highlightthickness=1, highlightbackground=BORDER)
         left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
@@ -1279,11 +1281,13 @@ class App:
         if bad:
             title = f"Label check: {len(bad)} thing{'s' if len(bad) != 1 else ''} missing"
         else:
-            title = "Label check: everything on the list is there"
-        tk.Label(fr, text=title, font="ui_bold", bg=PANEL,
+            title = f"Label check: all {len(items)} things are there"
+        tk.Label(fr, text=title, font="ui_bold", bg=PANEL, wraplength=520, justify="left",
                  fg=WARN if bad else GREEN_DARK).pack(anchor="w")
-        for it in items:
-            text = ("✔ " if it.ok else "✘ ") + it.label + (f" — {it.hint}" if it.hint else "")
+        # Only the missing items are listed, so the form below stays in view on a
+        # laptop screen; "About ...'s rules" shows everything the state asks for.
+        for it in bad:
+            text = "✘ " + it.label + (f" — {it.hint}" if it.hint else "")
             tk.Label(fr, text=text, font="ui", bg=PANEL, fg=GREEN_DARK if it.ok else WARN,
                      wraplength=520, justify="left").pack(anchor="w")
         if res.overflow:
@@ -1306,8 +1310,12 @@ class App:
         button(fr, f"About {rule.name}'s rules…", self.about_rules, "quiet").pack(anchor="w")
 
     def about_rules(self):
-        rule = self.cottage_rule().rule
-        parts = [rule.notes or "No notes."]
+        eff = self.cottage_rule()
+        rule = eff.rule
+        items = cottage.check_label(self.doc.fields, self.profile.data, eff.to_ctx())
+        parts = ["What the label needs:\n" + "\n".join(
+            ("✔ " if i.ok else "✘ ") + i.label for i in items)]
+        parts.append(rule.notes or "No notes.")
         if rule.source_url:
             parts.append("Source: " + rule.source_url
                          + (f" (checked {rule.checked_on})" if rule.checked_on else ""))

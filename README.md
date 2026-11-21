@@ -13,7 +13,7 @@ the screen is exactly what comes out of the printer. It works with
 LP610BT-type label printers (sold as Labelnize, Flexyva, Polono and others)
 and Zebra printers such as the ZP450, on Windows and Linux.
 
-![The four kinds of label](docs/screenshot-templates.png)
+![Food Labeler's main window](docs/screenshot.png)
 
 ---
 
@@ -68,6 +68,8 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 
 ### Other things you can do
 
+![Choosing the kind of label](docs/screenshot-templates.png)
+
 - **Kind of label → Change…**: *Simple food label*, *Package label* (with
   ingredients and your kitchen's name and address), *Date sticker*,
   *Free text*, or *Cottage food label* (for home bakers, see below).
@@ -87,10 +89,18 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 If you bake at home and sell under your state's *cottage food* law, choose
 **Kind of label → Cottage food label**.
 
+![A cottage food label for a Nebraska bakery](docs/screenshot-cottage.png)
+
+This is what that label prints (4 × 2 inch):
+
+![Printed cottage food label example](docs/samples/cottage_NE_large.png)
+
 1. **Set up my bakery** (Food Labeler offers this the first time):
    pick your state, then type your bakery's name, full address (street,
    city, state and ZIP), phone, email and permit number if you have one.
    You can change these any time in **Settings → My bakery**.
+
+   ![Set up my bakery: pick your state](docs/screenshot-bakery-setup.png)
 2. Fill in the label: product name, net weight (type *8 oz* or *1.5 lb*;
    grams are added when your state asks for them), ingredients, allergens,
    how to store it and the dates.
@@ -99,14 +109,21 @@ If you bake at home and sell under your state's *cottage food* law, choose
    and its allergens, so **Contains** fills itself in. The starter list is
    only an example: check each ingredient against your own package and
    press **Change…** to match it.
+
+   ![Building the ingredient list](docs/screenshot-ingredients.png)
 4. **Save to My products** keeps the product so next time **Choose from
    My products…** fills the whole label in one click.
-5. The **Label check** at the top of the form shows, in green, everything
-   your state asks for that is on the label, and in red what is missing.
-   If something is missing, **PRINT** asks before printing.
+5. The **Label check** at the top of the form says in green when everything
+   your state asks for is on the label, or lists in red what is missing.
+   **About (your state)'s rules…** shows the full list and where the rules
+   come from. If something is missing, **PRINT** asks before printing.
+
+   ![Label check showing a missing item](docs/screenshot-cottage-check.png)
 6. Your state's required wording is printed at the size your state asks
    for. If it doesn't all fit, Food Labeler says so and suggests a bigger
    label; it never makes the required wording smaller or leaves it out.
+
+![My bakery: your state, its source and your kitchen details](docs/screenshot-my-bakery.png)
 
 **Your own wording is kept.** In **Settings → My bakery** you can change
 the wording and the list of what must be on the label. Your changes are
@@ -181,8 +198,8 @@ folder*, file `food-labeler.log`.
 - **Building, testing, contributing:** [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Changes:** [CHANGELOG.md](CHANGELOG.md).
 - Sample printouts of every label kind and size: [docs/samples](docs/samples).
-- TODO: a fresh screenshot of the main window. (`docs/screenshot.png` is from
-  an older test build and is not used here.)
+- Screenshots in `docs/` come from `python tools/screenshot.py docs` (it
+  opens the real window with example data for about half a minute).
 
 ## License
 

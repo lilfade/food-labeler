@@ -4,6 +4,16 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.1.1 — 2026-11-20
+
+- The cottage food form no longer squeezes the label preview and printer
+  list into a thin strip; the screen keeps its left/right split.
+- The Label check is shorter: one green line when everything is there, or
+  just the missing items in red. **About (your state)'s rules…** shows the
+  full list. The form below it stays in view on a laptop screen.
+- The form's scroll bar can no longer be pushed off the edge.
+- New screenshots in the README, including the cottage food screens.
+
 ## 1.1.0 — 2026-11-20
 
 Labels for home bakers selling under their state's cottage food law.

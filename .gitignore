@@ -29,3 +29,6 @@ Food Labeler printer report.txt
 *.swp
 .DS_Store
 Thumbs.db
+
+# shows the real USB devices of whoever ran tools/screenshot.py
+docs/screenshot-usb.png
