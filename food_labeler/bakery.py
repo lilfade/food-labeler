@@ -34,6 +34,10 @@ PRODUCTS_NAME = "my_products.json"
 PRODUCTS_FORMAT = "food-labeler-products"
 LIB_VERSION = 1
 
+# Kinds of label a product can fill (My products in the main window).
+PRODUCT_KINDS = ("cottage", "package", "simple")
+QUICK_PRODUCTS = 6
+
 PROFILE_DEFAULTS = {
     "state": "",                 # preset id: "NE", "TX", ..., "custom"; "" = not chosen yet
     "business": "",
@@ -270,6 +274,10 @@ def clean_product(e) -> dict | None:
     if not (isinstance(days, int) and not isinstance(days, bool) and 0 < days <= 3650):
         days = None
     ids = e.get("ingredient_ids")
+    kind = e.get("kind") if e.get("kind") in PRODUCT_KINDS else ""
+    used = e.get("last_used")
+    if not (isinstance(used, str) and re.fullmatch(r"\d{4}-\d\d-\d\d[T ][\d:.]{2,15}", used)):
+        used = ""
     return {"id": str(e.get("id") or _new_id())[:40], "name": name,
             "net": str(e.get("net") or "").strip()[:80],
             "ingredients": str(e.get("ingredients") or "").strip()[:3000],
@@ -277,7 +285,11 @@ def clean_product(e) -> dict | None:
             "contains": str(e.get("contains") or "").strip()[:300],
             "no_allergens": bool(e.get("no_allergens", False)),
             "storage": str(e.get("storage") or "").strip()[:200],
-            "best_by_days": days}
+            "best_by_days": days,
+            # added in 1.5.0; older files simply don't have them
+            "kind": kind,                        # the kind of label it was saved from
+            "last_used": used,                   # "2026-11-21T09:30:00" or ""
+            "favourite": e.get("favourite") is True}
 
 
 class Library:
@@ -441,10 +453,74 @@ def load_starter(path: Path = STARTER) -> list:
 
 
 class Products(Library):
+    """My products. Each remembers when it was last used and whether it is a
+    favourite, so the main window can show the ones a baker reaches for."""
+
     fmt = PRODUCTS_FORMAT
     key = "products"
     what = "products"
     clean = staticmethod(clean_product)
+
+    def mark_used(self, item_id: str, when: str | None = None) -> None:
+        """Remember that a product was just put on a label (or saved)."""
+        import datetime as dt
+        p = self.get(item_id)
+        if p is None:
+            return
+        p["last_used"] = when or dt.datetime.now().isoformat(timespec="seconds")
+        self.save()
+
+    def set_favourite(self, item_id: str, on: bool) -> None:
+        p = self.get(item_id)
+        if p is None:
+            return
+        p["favourite"] = bool(on)
+        self.save()
+
+    def quick(self, n: int = QUICK_PRODUCTS) -> list[dict]:
+        """The products for the one-click buttons: favourites first, then the most
+        recently used, then the rest by name."""
+        return quick_products(self.items, n)
+
+    def search(self, query: str, n: int = QUICK_PRODUCTS) -> list[dict]:
+        """Products whose name has every word typed (see search_products)."""
+        return search_products(self.items, query, n)
+
+
+def _recent_first(items: list[dict]) -> list[dict]:
+    used = sorted((p for p in items if p.get("last_used")), key=lambda p: p["last_used"],
+                  reverse=True)
+    rest = sorted((p for p in items if not p.get("last_used")), key=lambda p: p["name"].lower())
+    return used + rest
+
+
+def quick_products(items: list[dict], n: int = QUICK_PRODUCTS) -> list[dict]:
+    """Favourites (most recently used first), then the others the same way."""
+    fav = [p for p in items if p.get("favourite")]
+    other = [p for p in items if not p.get("favourite")]
+    return (_recent_first(fav) + _recent_first(other))[: max(0, n)]
+
+
+def search_products(items: list[dict], query: str, n: int = QUICK_PRODUCTS) -> list[dict]:
+    """Every product whose name contains each word of ``query`` (any case).
+    Names starting with what was typed come first, then a word starting with it,
+    then the rest; favourites and recently used ones before others. An empty
+    query gives quick_products."""
+    words = str(query or "").lower().split()
+    if not words:
+        return quick_products(items, n)
+    q = " ".join(words)
+    hits = [p for p in items if all(w in p["name"].lower() for w in words)]
+
+    def rank(p):
+        name = p["name"].lower()
+        if name.startswith(q):
+            return 0
+        if any(part.startswith(words[0]) for part in re.split(r"[\s\-/(),]+", name)):
+            return 1
+        return 2
+    order = {id(p): i for i, p in enumerate(quick_products(hits, len(hits)))}
+    return sorted(hits, key=lambda p: (rank(p), order[id(p)]))[: max(0, n)]
 
 
 # ---------------------------------------------------------------------------
@@ -499,3 +575,67 @@ def apply_product(fields: dict, product: dict, today=None) -> dict:
     if product.get("best_by_days"):
         out["best_by"] = (t + dt.timedelta(days=int(product["best_by_days"]))).isoformat()
     return out
+
+
+def product_kind(product: dict) -> str:
+    """The kind of label a product fills when the label in the window can't
+    take one (saved before 1.5.0: cottage food)."""
+    k = product.get("kind")
+    return k if k in PRODUCT_KINDS else "cottage"
+
+
+def apply_to_label(template: str, fields: dict, product: dict, today=None) -> dict:
+    """Fill a cottage, package or simple label from a saved product.
+
+    Cottage labels get everything (apply_product). A package label gets the
+    name, weight, ingredients and allergens and a best-by date counted from
+    today. A simple label gets the name as the food, the allergens, the
+    storage words as its note, made today and used by the product's days."""
+    from . import dates
+    import datetime as dt
+    if template == "cottage":
+        return apply_product(fields, product, today)
+    t = today or dates.today()
+    days = product.get("best_by_days")
+    out = dict(fields)
+    if template == "package":
+        out.update(product=product.get("name", ""), net=product.get("net", ""),
+                   ingredients=product.get("ingredients", ""),
+                   contains=product.get("contains", ""))
+        if days:
+            out["best_by"] = (t + dt.timedelta(days=int(days))).isoformat()
+    elif template == "simple":
+        out.update(food=product.get("name", ""), contains=product.get("contains", ""),
+                   note=product.get("storage", ""), made_on=t.isoformat())
+        if days:
+            out["use_by"] = (t + dt.timedelta(days=int(days))).isoformat()
+    return out
+
+
+def product_from_label(template: str, fields: dict, name: str,
+                       existing: dict | None = None, today=None) -> dict:
+    """A My products entry from the label in the window. Saving over an existing
+    product keeps what this kind of label doesn't show (a simple label has no
+    ingredients, so saving one never empties a product's ingredients)."""
+    from . import dates
+    if template == "cottage":
+        new = product_from_fields(fields, name)
+    else:
+        new = {"name": name}
+        if template == "package":
+            new.update(net=fields.get("net", ""), ingredients=fields.get("ingredients", ""),
+                       contains=fields.get("contains", ""))
+            t, best = today or dates.today(), dates.parse(fields.get("best_by"))
+            if best and best > t:
+                new["best_by_days"] = (best - t).days
+        elif template == "simple":
+            new.update(contains=fields.get("contains", ""), storage=fields.get("note", ""))
+            made, use = dates.parse(fields.get("made_on")), dates.parse(fields.get("use_by"))
+            if made and use and use > made:
+                new["best_by_days"] = (use - made).days
+    for k in ("id", "kind", "last_used", "favourite"):
+        new.pop(k, None)                         # these stay as they were
+    out = dict(existing or {})
+    out.update(new)
+    out["kind"] = template if template in PRODUCT_KINDS else out.get("kind", "")
+    return clean_product(out) or {}

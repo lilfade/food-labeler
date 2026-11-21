@@ -718,7 +718,8 @@ class IngredientPicker(Modal):
 # ---------------------------------------------------------------------------
 
 class ProductPicker(Modal):
-    """Choose a saved product to fill the label; also delete, back up, restore."""
+    """Choose a saved product to fill the label; also mark favourites (they come
+    first in the main window), delete, back up, restore."""
 
     def __init__(self, parent, app):
         super().__init__(parent, "My products")
@@ -729,12 +730,16 @@ class ProductPicker(Modal):
                              selectbackground=GREEN, exportselection=False)
         self.lb.pack(fill="both", expand=True)
         self.lb.bind("<Double-Button-1>", lambda e: self._use())
+        self.lb.bind("<Return>", lambda e: self._use())
+        self.lb.bind("<<ListboxSelect>>", lambda e: self._show_star())
         self.empty = _label(self.body, "", fg=MUTED)
         self.empty.pack(anchor="w")
         row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(10, 0))
         button(row, "Use this product", self._use, "primary").pack(side="left")
-        button(row, "Delete", self._delete, "chip").pack(side="left", padx=8)
+        self.star_btn = button(row, "\u2606 Favourite", self._star, "chip")
+        self.star_btn.pack(side="left", padx=8)
+        button(row, "Delete", self._delete, "chip").pack(side="left")
         row2 = tk.Frame(self.body, bg=BG)
         row2.pack(fill="x", pady=(8, 0))
         button(row2, "Back up my products…", self._export, "quiet").pack(side="left")
@@ -743,14 +748,35 @@ class ProductPicker(Modal):
         button(row2, "Cancel", self.cancel, "quiet").pack(side="right")
         self._fill()
 
-    def _fill(self):
-        self.view = self.lib.sorted()
+    def _fill(self, keep=None):
+        self.view = sorted(self.lib.items, key=lambda p: (not p.get("favourite"),
+                                                          p["name"].lower()))
         self.lb.delete(0, "end")
         for p in self.view:
-            self.lb.insert("end", p["name"] + (f"   ({p['net']})" if p["net"] else ""))
+            star = "\u2605 " if p.get("favourite") else "   "
+            self.lb.insert("end", star + p["name"] + (f"   ({p['net']})" if p["net"] else ""))
+        if keep is not None and keep in self.view:
+            i = self.view.index(keep)
+            self.lb.selection_set(i)
+            self.lb.see(i)
         self.empty.configure(text="" if self.view else
                              "No products yet. Fill in a label and press "
-                             "“Save to My products”.")
+                             "“Save as product”.")
+        self._show_star()
+
+    def _show_star(self):
+        p = self._sel()
+        on = bool(p and p.get("favourite"))
+        self.star_btn.configure(text="\u2605 Favourite" if on else "\u2606 Favourite")
+
+    def _star(self):
+        """Favourite on / off: favourites are always among the one-click buttons."""
+        p = self._sel()
+        if p is None:
+            tell(self, "Pick one", "Tap a product in the list first.")
+            return
+        self.lib.set_favourite(p["id"], not p.get("favourite"))
+        self._fill(keep=self.lib.get(p["id"]))
 
     def _sel(self):
         s = self.lb.curselection()
