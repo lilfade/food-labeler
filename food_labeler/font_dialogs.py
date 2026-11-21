@@ -57,15 +57,8 @@ def _rgb(color: str):
 
 def summary(doc) -> str:
     """Short text for the main window: "Standard" or "Pacifico · Lato"."""
-    lt = lettering.clean(doc.lettering)
-    if lettering.is_default(lt):
-        return "Standard"
-    name = lt.get("name", lettering.DEFAULT)
-    other = lt.get("other", lettering.DEFAULT)
-    parts = [name] if doc.template in ("free", "picture") or other == name else [name, other]
-    missing = set(lettering.missing(lt))
-    return " · ".join(p + (" (not on this computer)" if p in missing else "")
-                           for p in parts)
+    from .ui_text import lettering_summary
+    return lettering_summary(doc.template, doc.lettering)
 
 
 # ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw, ImageTk
 
 from . import APP_NAME, BRAND, __version__
 from . import dates, known, model, printers, render, report, settings as settings_mod, stocks
-from . import btscan, templates, usbscan
+from . import btscan, templates, ui_text, usbscan
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, GREEN_LIGHT, INK, MUTED, PANEL, WARN,
                       WARN_BG, LinkLabel, Modal, ScrollFrame, ask, button, tell)
 
@@ -87,6 +87,8 @@ class TemplatePicker(Modal):
         grid.pack()
         self._imgs = []
         cols = 3 if len(model.TEMPLATES) > 4 else 2
+        # smaller pictures on a small screen, so the window fits without scrolling
+        pw, ph_ = (300, 170) if self.winfo_screenheight() >= 900 else (250, 125)
         for i, t in enumerate(model.TEMPLATES):
             stock = doc.stock if doc.stock in templates.ALLOWED_STOCKS[t] else "large"
             d = model.LabelDoc(t, stock, model.default_fields(t))
@@ -95,7 +97,7 @@ class TemplatePicker(Modal):
             if t == "picture":
                 d.picture = sample_picture(doc)
             res = render.render(d, ctx)
-            img = render.preview(res, 300, 170, highlight=False)
+            img = render.preview(res, pw, ph_, highlight=False)
             ph = ImageTk.PhotoImage(img)
             self._imgs.append(ph)
             name, hint = templates.TEMPLATE_INFO[t]
@@ -104,12 +106,13 @@ class TemplatePicker(Modal):
                           bg=GREEN_LIGHT if selected else PANEL, fg=INK, relief="flat",
                           highlightthickness=3,
                           highlightbackground=GREEN if selected else BORDER, cursor="hand2",
-                          padx=10, pady=10, command=lambda t=t: self.finish(t), wraplength=320)
-            b.grid(row=i // cols, column=i % cols, padx=8, pady=8, sticky="nsew")
+                          padx=10, pady=8, command=lambda t=t: self.finish(t),
+                          wraplength=pw + 20)
+            b.grid(row=i // cols, column=i % cols, padx=6, pady=6, sticky="nsew")
         button(self.body, "Cancel", self.cancel, "quiet").pack(anchor="e", pady=(10, 0))
 
 
-def stock_picture(st: stocks.Stock, box=130) -> Image.Image:
+def stock_picture(st: stocks.Stock, box=100) -> Image.Image:
     """Outline of a label size, drawn to scale with the others (4 x 6 in fills the box)."""
     img = Image.new("RGB", (box + 20, box + 20), BG)
     d = ImageDraw.Draw(img)
@@ -149,8 +152,11 @@ class StockPicker(Modal):
                           relief="flat", highlightthickness=3,
                           highlightbackground=GREEN if sel else BORDER, cursor="hand2",
                           padx=10, pady=6, command=lambda s=sid: self.finish(s),
-                          state="normal" if ok else "disabled", width=520)
-            b.grid(row=i, column=0, sticky="ew", pady=4)
+                          state="normal" if ok else "disabled", wraplength=300)
+            # two columns, so all five sizes fit on a laptop screen
+            b.grid(row=i // 2, column=i % 2, sticky="nsew", padx=4, pady=4)
+        grid.grid_columnconfigure(0, uniform="size")
+        grid.grid_columnconfigure(1, uniform="size")
         button(self.body, "Cancel", self.cancel, "quiet").pack(anchor="e", pady=(10, 0))
 
 
@@ -297,10 +303,12 @@ class SettingsDialog(Modal):
             tk.Label(b, text=text, font="big", bg=BG, fg=GREEN_DARK).pack(anchor="w",
                                                                          pady=(16, 6))
         heading("Text size")
-        row = tk.Frame(b, bg=BG)
-        row.pack(anchor="w")
-        button(row, "Smaller text", lambda: app.bigger_text(-1)).pack(side="left")
-        button(row, "Bigger text", lambda: app.bigger_text(1)).pack(side="left", padx=8)
+        self.size_row = tk.Frame(b, bg=BG)
+        self.size_row.pack(anchor="w")
+        self._draw_sizes()
+        tk.Label(b, text="A\u2212 and A+ at the top of the window change it a step at a "
+                 "time. It doesn't change the printed label.", font="small", bg=BG, fg=MUTED,
+                 wraplength=700, justify="left").pack(anchor="w", pady=(6, 0))
 
         heading("How dates look on simple labels")
         self.style = tk.StringVar(value=cfg["date_style"])
@@ -332,7 +340,7 @@ class SettingsDialog(Modal):
         button(row, "Set up my bakery", lambda: app.bakery_wizard()).pack(side="left", padx=8)
         row = tk.Frame(b, bg=BG)
         row.pack(anchor="w", pady=(8, 0))
-        button(row, "My products…", lambda: app.my_products()).pack(side="left")
+        button(row, "My products…", lambda: app.manage_products()).pack(side="left")
         button(row, "Back up or restore my ingredients…",
                lambda: _ingredients_backup(self, app)).pack(side="left", padx=8)
         tk.Label(b, text="These are suggestions from public state guidance. You are "
@@ -368,6 +376,19 @@ class SettingsDialog(Modal):
                      fg=INK, wraplength=700, justify="left").pack(anchor="w")
         button(self.body, "Done", self._done, "primary").pack(anchor="e", pady=(12, 0))
 
+    def _draw_sizes(self):
+        for w in self.size_row.winfo_children():
+            w.destroy()
+        cur = ui_text.text_size_id(self.app.cfg["ui_scale"])
+        for sid, words, _scale in ui_text.TEXT_SIZES:
+            button(self.size_row, words, lambda s=sid: self._pick_size(s),
+                   "primary" if sid == cur else "normal").pack(side="left", padx=(0, 8))
+
+    def _pick_size(self, size_id):
+        """Small, Normal, Large or Extra large: every window changes at once."""
+        self.app.set_text_size(size_id)
+        self._draw_sizes()
+
     def _style(self):
         self.app.cfg["date_style"] = self.style.get()
         self.app.schedule_render()
@@ -398,16 +419,17 @@ class AdvancedDialog(Modal):
         tk.Label(b, text=(f"Label size: {st.name} = {st.w} × {st.h} dots at "
                           f"{st.dpi} DPI ({st.w_mm} × {st.h_mm} mm), gap "
                           f"{adv['gap'].get(st.id, st.gap_mm)} mm"),
-                 font="ui", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(anchor="w")
+                 font="small", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(anchor="w")
         if p is not None:
             info = app.cfg["printers"].get(p.id, {})
             tk.Label(b, text=(f"Printer: {p.id} via {p.method} → {p.target}; language "
                               f"{(info.get('kind') or p.kind or 'tspl').upper()}; "
                               f"model {p.model or '?'}; USB {p.vidpid or '?'}; detected "
                               f"{p.dpi} dpi"),
-                     font="ui", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(anchor="w")
+                     font="small", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(
+                anchor="w")
             tk.Label(b, text="Print sharpness (resolution of this printer)", font="ui_bold",
-                     bg=BG, fg=INK).pack(anchor="w", pady=(14, 0))
+                     bg=BG, fg=INK).pack(anchor="w", pady=(10, 0))
             self.dpi = tk.IntVar(value=app.printer_dpi(p))
             for v in printers.DPI_CHOICES:
                 tk.Radiobutton(b, text=printers.DPI_LABELS[v], variable=self.dpi, value=v,
@@ -425,7 +447,7 @@ class AdvancedDialog(Modal):
         if d0 is None:
             d0 = st.density
         tk.Label(b, text=f"Darkness for {st.name} (TSPL DENSITY 0–15)", font="ui_bold",
-                 bg=BG, fg=INK).pack(anchor="w", pady=(14, 0))
+                 bg=BG, fg=INK).pack(anchor="w", pady=(10, 0))
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x")
         tk.Label(row, text="Lighter", font="ui", bg=BG).pack(side="left")
@@ -469,12 +491,14 @@ class AdvancedDialog(Modal):
                        variable=self.invert, font="ui", bg=BG, activebackground=BG).pack(
             anchor="w", pady=(8, 0))
 
-        tk.Label(b, text="Network printers (raw TCP, address:port)", font="ui_bold", bg=BG,
-                 fg=INK).pack(anchor="w", pady=(14, 0))
+        row = tk.Frame(b, bg=BG)
+        row.pack(fill="x", pady=(10, 0))
+        tk.Label(row, text="Network printers (raw TCP, address:port)", font="ui_bold", bg=BG,
+                 fg=INK).pack(side="left")
+        button(row, "Network printers…", self._net, "chip").pack(side="right")
         self.net_list = tk.Label(b, text="", font="ui", bg=BG, fg=MUTED, wraplength=700,
                                  justify="left")
         self.net_list.pack(anchor="w")
-        button(b, "Network printers…", self._net, "chip").pack(anchor="w", pady=(4, 0))
         self._show_net()
 
         row = tk.Frame(b, bg=BG)
@@ -489,7 +513,7 @@ class AdvancedDialog(Modal):
         nets = printers.network_printers(self.app.cfg["printers"], self.app.known)
         self.net_list.configure(text="\n".join(
             f"{self.app.printer_name(p)}: {p.target} ({p.kind.upper()})" for p in nets)
-            or "None added. Add one with the button below (also in My printers).")
+            or "None added. Add one with the button above (also in My printers).")
 
     def _net(self):
         """The same window as My printers → Add a network printer…"""
@@ -622,8 +646,8 @@ class NetworkPrinterDialog(Modal):
         self.added = False
         b = self.body
         tk.Label(b, text="Add a network printer", font="big", bg=BG, fg=INK).pack(anchor="w")
-        tk.Label(b, text=printers.NETWORK_HELP, font="ui", bg=BG, fg=MUTED, wraplength=720,
-                 justify="left").pack(anchor="w", pady=(4, 10))
+        tk.Label(b, text=printers.NETWORK_HELP, font="small", bg=BG, fg=MUTED,
+                 wraplength=720, justify="left").pack(anchor="w", pady=(4, 10))
         tk.Label(b, text="Address (for example 192.168.1.50:9100)", font="ui_bold", bg=BG,
                  fg=INK).pack(anchor="w")
         row = tk.Frame(b, bg=BG)
@@ -642,9 +666,12 @@ class NetworkPrinterDialog(Modal):
         tk.Label(b, text="What kind of printer is it?", font="ui_bold", bg=BG,
                  fg=INK).pack(anchor="w", pady=(10, 0))
         self.kind = tk.IntVar(value=0)
+        kinds = tk.Frame(b, bg=BG)
+        kinds.pack(anchor="w")
         for n, (words, _lang, _model) in enumerate(printers.NETWORK_TYPES):
-            tk.Radiobutton(b, text=words, variable=self.kind, value=n, font="ui", bg=BG,
-                           activebackground=BG).pack(anchor="w")
+            tk.Radiobutton(kinds, text=words, variable=self.kind, value=n, font="ui", bg=BG,
+                           activebackground=BG).grid(row=0, column=n, sticky="w",
+                                                     padx=(0, 12))
         tk.Label(b, text="Name (if you like, for example “Kitchen printer”)", font="ui_bold",
                  bg=BG, fg=INK).pack(anchor="w", pady=(10, 0))
         self.nick = tk.StringVar()
@@ -656,13 +683,11 @@ class NetworkPrinterDialog(Modal):
         button(row, "Add this printer", self._add, "primary").pack(side="left")
         self.done_lbl = tk.Label(row, text="", font="ui_bold", bg=BG, fg=GREEN_DARK)
         self.done_lbl.pack(side="left", padx=10)
+        button(row, "Done", lambda: self.finish(self.added), "normal").pack(side="right")
         tk.Label(b, text="My network printers", font="ui_bold", bg=BG, fg=INK).pack(
             anchor="w", pady=(16, 2))
         self.list = tk.Frame(b, bg=BG)
         self.list.pack(fill="x")
-        row = tk.Frame(b, bg=BG)
-        row.pack(fill="x", pady=(14, 0))
-        button(row, "Done", lambda: self.finish(self.added), "primary").pack(side="right")
         self._draw()
 
     def cancel(self):
@@ -1067,7 +1092,7 @@ class UsbDevicesDialog(Modal):
         button(nrow, "Add a network printer…", lambda: app.add_network_printer(self),
                "link").pack(side="left", padx=4)
         self.sf = ScrollFrame(b, bg=BG)
-        self.sf.configure(width=800, height=min(460, parent.winfo_screenheight() - 300))
+        self.sf.configure(width=800, height=min(460, parent.winfo_screenheight() - 360))
         self.sf.pack_propagate(False)
         self.sf.pack(fill="both", expand=True)
         row = tk.Frame(b, bg=BG)
@@ -1211,7 +1236,8 @@ class ReportDialog(Modal):
                        "unusual printers)", variable=self.everything, font="ui", bg=BG,
                        activebackground=BG, command=self._show_report).pack(
             anchor="w", pady=(0, 8))
-        self.report_box = tk.Text(self.body, font="small", width=90, height=18, wrap="none")
+        self.report_box = tk.Text(self.body, font="small", width=90, wrap="none",
+                                  height=18 if self.winfo_screenheight() >= 900 else 13)
         self.report_box.pack(fill="both", expand=True)
         self._show_report()
         row = tk.Frame(self.body, bg=BG)

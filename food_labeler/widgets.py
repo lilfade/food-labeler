@@ -1,7 +1,7 @@
 """Big, friendly Tk building blocks: dialogs, calendar, toggles, scroll frame.
 
 Everything uses the named fonts the main window creates ("ui", "big", …), so
-the A−/A+ text size buttons resize every window at once. Colours are plain
+the text size (Settings → Text size, or A− / A+) resizes every window at once. Colours are plain
 constants here; there is no theme engine.
 """
 from __future__ import annotations
@@ -27,6 +27,7 @@ GREEN_LIGHT = "#DCEFE2"
 WARN = "#B34700"
 WARN_BG = "#FFF1DC"
 BORDER = "#C9C2B4"
+CARD_EDGE = "#E2DACB"      # the soft edge of a white card on the cream background
 
 
 def center_on(win: tk.Toplevel, parent: tk.Misc):
@@ -58,7 +59,11 @@ class Modal(tk.Toplevel):
         self.result = None
         self.protocol("WM_DELETE_WINDOW", self.cancel)
         self.bind("<Escape>", lambda e: self.cancel())
-        self.body = tk.Frame(self, bg=BG, padx=28, pady=22)
+        # The window is as big as what is in it, but never taller than the screen:
+        # on a small screen (or with big text) it scrolls instead of running off it.
+        self.scroller = ScrollFrame(self, bg=BG, fit=True)
+        self.scroller.pack(fill="both", expand=True)
+        self.body = tk.Frame(self.scroller.inner, bg=BG, padx=26, pady=12)
         self.body.pack(fill="both", expand=True)
 
     def cancel(self):
@@ -73,6 +78,8 @@ class Modal(tk.Toplevel):
 
     def run(self):
         """Show, grab input and wait until closed. Returns the result."""
+        self.update_idletasks()
+        self.scroller._on_inner()          # the window's size, before it is placed
         center_on(self, self.master)
         self.deiconify()
         self.lift()
@@ -119,6 +126,9 @@ def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
         b.configure(width=width)
     if kind in ("primary", "print"):
         b.configure(highlightbackground=GREEN_DARK)
+    if kind == "chip":
+        # a soft filled pill: no outline, but the green focus ring still shows
+        b.configure(highlightbackground=colors[0])
     if kind == "link":
         b.configure(highlightbackground=BG, padx=4, pady=2)
         if font == "ui":
@@ -127,6 +137,135 @@ def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
             except tk.TclError:
                 pass
     return b
+
+
+def card(parent, padx=0, pady=0) -> tk.Frame:
+    """A white card on the cream background, with a soft edge (groups things
+    without heavy borders)."""
+    return tk.Frame(parent, bg=PANEL, highlightthickness=1, highlightbackground=CARD_EDGE,
+                    highlightcolor=CARD_EDGE, padx=padx, pady=pady)
+
+
+def menu_button(parent, text, fill_menu, kind="normal", font="ui", **kw):
+    """A button with words that opens a menu just under it (or above it near the
+    bottom of the screen). ``fill_menu(menu)`` adds the entries each time it
+    opens, so lists in it are always fresh. Space opens it from the keyboard
+    like any button, and the arrow keys and Enter work in the menu."""
+    b = button(parent, text, None, kind, font, **kw)
+    menu = tk.Menu(b, tearoff=False, font=font, bg="#FFFFFF", fg=INK,
+                   activebackground=GREEN_LIGHT, activeforeground=GREEN_DARK,
+                   relief="flat", bd=1)
+
+    def show():
+        menu.delete(0, "end")
+        fill_menu(menu)
+        b.update_idletasks()
+        x, y = b.winfo_rootx(), b.winfo_rooty() + b.winfo_height()
+        if y + menu.winfo_reqheight() > b.winfo_screenheight() - 40:
+            y = max(0, b.winfo_rooty() - menu.winfo_reqheight())
+        try:
+            menu.tk_popup(x, y)
+        finally:
+            menu.grab_release()
+    b.configure(command=show)
+    b.bind("<Return>", lambda e: (show(), "break")[1])
+    b.menu = menu
+    b.show_menu = show
+    return b
+
+
+class FlowFrame(tk.Frame):
+    """Puts its children (made with this frame as parent, then ``add``ed) left to
+    right and starts a new row when the next one doesn't fit, like words in a
+    sentence. Used for the chips and product buttons above the form, so nothing
+    is cut off at a big text size or in a narrow window."""
+
+    def __init__(self, parent, bg=PANEL, gap_x=6, gap_y=6, max_rows=0, **kw):
+        """``max_rows``: show at most this many rows (0 = all); the rest are hidden."""
+        super().__init__(parent, bg=bg, height=1, **kw)
+        self._gx, self._gy = gap_x, gap_y
+        self.max_rows = max_rows
+        self._items: list[tk.Widget] = []
+        self._job = None
+        self.bind("<Configure>", lambda e: self._later())
+
+    def add(self, widget):
+        self._items.append(widget)
+        if not getattr(widget, "_in_flow", False):
+            widget.bind("<Configure>", lambda e: self._later(), add="+")
+            widget._in_flow = True
+        self._later()
+        return widget
+
+    def clear(self, keep=()):
+        """Take everything out (destroyed), except the widgets in ``keep``."""
+        keep = list(keep)
+        for w in self.winfo_children():
+            if w not in keep:
+                w.destroy()
+        self._items = [w for w in keep if w.winfo_exists()]
+        self._later()
+
+    def _later(self):
+        if self._job is None:
+            self._job = self.after_idle(self.relayout)
+
+    def relayout(self):
+        self._job = None
+        try:
+            width = self.winfo_width()
+        except tk.TclError:
+            return
+        items = [w for w in self._items if w.winfo_exists()]
+        if width <= 1:            # not shown yet: one row
+            width = sum(w.winfo_reqwidth() + self._gx for w in items) or 1
+        rows, row, x = [], [], 0
+        for w in items:                  # first share them out into rows ...
+            rw = w.winfo_reqwidth()
+            if row and x + rw > width:
+                rows.append(row)
+                row, x = [], 0
+            row.append(w)
+            x += rw + self._gx
+        if row:
+            rows.append(row)
+        if self.max_rows and len(rows) > self.max_rows:
+            for extra in rows[self.max_rows:]:
+                for w in extra:
+                    w.place_forget()
+            rows = rows[:self.max_rows]
+        y = 0
+        for row in rows:                 # ... then place them, centred in their row
+            row_h = max(w.winfo_reqheight() for w in row)
+            x = 0
+            for w in row:
+                rw, rh = w.winfo_reqwidth(), w.winfo_reqheight()
+                w.place(x=x, y=y + (row_h - rh) // 2, width=min(rw, width))
+                x += rw + self._gx
+            y += row_h + self._gy
+        h = max(1, y - self._gy)
+        widest = max((w.winfo_reqwidth() for w in items), default=1)
+        if int(self.cget("height")) != h or int(self.cget("width")) != widest:
+            self.configure(height=h, width=widest)
+
+
+class HintEntry(tk.Entry):
+    """A text box that shows a grey hint (like "Find a product…") while empty."""
+
+    def __init__(self, parent, hint: str, textvariable: tk.StringVar, font="field", **kw):
+        super().__init__(parent, textvariable=textvariable, font=font, **kw)
+        self.var = textvariable
+        self.hint = tk.Label(self, text=hint, font=font, bg=kw.get("bg", "#FFFFFF"), fg=MUTED,
+                             cursor="xterm")
+        self.hint.bind("<Button-1>", lambda e: self.focus_set())
+        textvariable.trace_add("write", lambda *a: self._show_hint())
+        self._show_hint()
+
+    def _show_hint(self):
+        if self.var.get():
+            self.hint.place_forget()
+        else:
+            self.hint.place(x=4, rely=0.5, anchor="w")
 
 
 # ---------------------------------------------------------------------------
@@ -297,15 +436,22 @@ class ScrollFrame(tk.Frame):
     """A vertically scrolling frame; the mouse wheel works anywhere over it, and the
     widget that gets the keyboard focus (Tab, or a click) is scrolled into view."""
 
-    def __init__(self, parent, bg=PANEL):
+    # room left for a window's title bar and the task bar when ``fit`` is on
+    SCREEN_MARGIN = 80
+
+    def __init__(self, parent, bg=PANEL, fit=False):
+        """``fit``: as tall as the content (no scroll bar) until the screen is
+        too small for it; then as tall as the screen allows, with a scroll bar."""
         super().__init__(parent, bg=bg)
+        self.fit = fit
         self.canvas = tk.Canvas(self, bg=bg, highlightthickness=0, bd=0, width=200, height=160)
         self.vsb = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.inner = tk.Frame(self.canvas, bg=bg)
         self._win = self.canvas.create_window((0, 0), window=self.inner, anchor="nw")
         self.canvas.configure(yscrollcommand=self.vsb.set)
         # scrollbar packed first, so a narrow window squeezes the canvas, never the bar
-        self.vsb.pack(side="right", fill="y")
+        if not fit:
+            self.vsb.pack(side="right", fill="y")
         self.canvas.pack(side="left", fill="both", expand=True)
         self.inner.bind("<Configure>", self._on_inner)
         self.canvas.bind("<Configure>", self._on_canvas)
@@ -348,6 +494,16 @@ class ScrollFrame(tk.Frame):
         need = self.inner.winfo_reqwidth()
         if int(self.canvas.cget("width")) != need:
             self.canvas.configure(width=need)
+        if self.fit:
+            room = max(200, self.winfo_screenheight() - self.SCREEN_MARGIN)
+            want = self.inner.winfo_reqheight()
+            h = min(want, room)
+            if int(self.canvas.cget("height")) != h:
+                self.canvas.configure(height=h)
+            if want > room and not self.vsb.winfo_manager():
+                self.vsb.pack(side="right", fill="y", before=self.canvas)
+            elif want <= room and self.vsb.winfo_manager():
+                self.vsb.pack_forget()
 
     def _on_canvas(self, e):
         self.canvas.itemconfigure(self._win, width=e.width)
@@ -360,9 +516,24 @@ class ScrollFrame(tk.Frame):
             w = getattr(w, "master", None)
         return False
 
+    def _can_scroll(self) -> bool:
+        try:
+            return self.inner.winfo_height() > self.canvas.winfo_height() + 1
+        except tk.TclError:
+            return False
+
     def _wheel(self, e):
         try:
             if not self._over_me(e) or isinstance(e.widget, tk.Text):
+                return
+            # a scrolling area inside another: only the innermost one that can
+            # scroll moves (a dialog that fits the screen never scrolls itself)
+            w = e.widget
+            while w is not None and w is not self:
+                if isinstance(w, ScrollFrame) and w._can_scroll():
+                    return
+                w = getattr(w, "master", None)
+            if not self._can_scroll():
                 return
         except (AttributeError, tk.TclError):
             return
