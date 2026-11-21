@@ -32,16 +32,17 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `btscan.py` | lists paired Bluetooth devices without connecting (`bluetoothctl devices`/`info` on Linux, PnP `BTHENUM` entries on Windows) and turns the printers among them into `Printer`s |
 | `known.py` | known printer models: bundled `known_printers.json` + the user's update file |
 | `cottage.py` | cottage food state rules (bundled `cottage_rules.json` < imported update < the user's own edits), "Label check", net quantity wording |
-| `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* |
+| `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* (last used, favourites, search; filling a cottage, package or simple label: `apply_to_label`, `product_from_label`) |
 | `bakery_dialogs.py` | Set up my bakery, My bakery, My ingredients, My products windows |
 | `usbscan.py` | lists every USB device for "My printer isn't in the list" |
 | `report.py` | the plain-text printer report a user pastes into a GitHub issue when asking for help (no label content); the new-issue link (https://github.com only, report never in the address) and the e-mail fallback |
 | `settings.py` | settings file, data/labels folders, log file, autosave |
-| `app.py` | main window: form, preview, printer menu, PRINT |
+| `app.py` | main window: My products, the chips above the form (kind, size, wide/tall, extras), form, preview, printer menu and *Printer options*, PRINT |
+| `ui_text.py` | the main window's words that are tested without a window: text sizes (`TEXT_SIZES`, `SCALES`), chip words, the recent labels in *Open ▾* |
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, Add a network printer, USB devices, report |
 | `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
 | `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings, Set up a new roll windows |
-| `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell` (web addresses in the message become links), calendar, toggles, `LinkLabel` (http/https only, `safe_url`), `ScrollFrame` (scrolls the focused widget into view, `scroll_target`) |
+| `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell` (web addresses in the message become links), calendar, toggles, `LinkLabel` (http/https only, `safe_url`), `ScrollFrame` (scrolls the focused widget into view, `scroll_target`; with `fit`, as tall as its content until the screen is too small), `FlowFrame` (rows that wrap, like words), `menu_button`, `card`, `HintEntry` |
 
 Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py`, `picture_dialogs.py` and `widgets.py` imports Tk, so
 everything else is tested headless.
@@ -117,6 +118,11 @@ dpi × 2, so it prints at the real size. The preview scales the bitmap to the
 window, so it looks the same at either resolution.
 
 ### Pictures and QR codes
+
+The picture window shows *This picture will print mostly black* when more
+than `pictures.MOSTLY_BLACK` (65 %) of the converted picture's dots are black
+(`black_share`, `mostly_black_warning`); it only looks at the result, so what
+prints is unchanged.
 
 A label may carry a picture (`LabelDoc.picture`, see `pictures.py`) and a QR
 code (`LabelDoc.qr`, see `qrcodes.py`). The picture is kept as the original

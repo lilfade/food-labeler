@@ -6,8 +6,43 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 
 ## 1.5.0 — unreleased
 
-Bluetooth printing (alpha), network printers, wide or tall labels, and
-fixes from testing with real printers.
+Bluetooth printing (alpha), network printers, wide or tall labels, a
+tidier main window with your products first, and fixes from testing with
+real printers.
+
+- **My products, first.** The main window starts with **My products**: one
+  button for each of your favourite and most recently used products. One
+  click fills in the label with today's dates; then choose how many and
+  press **PRINT**. **Find a product…** finds any other one as you type
+  (Enter takes the first). **Save as product** works on simple food labels
+  and package labels as well as cottage food labels, and **Manage…** opens
+  the list, where you can mark ★ favourites. On a date sticker, free text or
+  picture label, a product asks before changing the kind of label. Products
+  you saved before work as they did.
+- **Text size has four choices.** **Settings → Text size**: *Small*,
+  *Normal*, *Large* or *Extra large*; **A−** and **A+** still change it a
+  step at a time. New installs start at *Normal*, which is smaller than
+  before; if you already use Food Labeler, your size stays as it is (the
+  old standard size is now called *Large*).
+- **A tidier main window.** Six rows of *Change…* buttons became one row:
+  **Kind ▾**, **Size ▾** and **Wide / Tall**, and a row for the extras:
+  **+ Picture**, **+ QR code** and **Lettering ▾**. Once a picture or QR
+  code is on, its button says so (*Picture: Our logo*) with **✕ Remove**
+  next to it. The preview is bigger.
+- **Open ▾** lists the labels you saved or opened most recently (this
+  replaces the *My saved labels* bar). The separate *Print…* button is gone:
+  **PRINT** and **Ctrl+P** print as before.
+- **One line for the printer.** *Printer:* and your printer, then
+  **Printer options ▾** with *Look for printers again*, *My printers…*,
+  *Print settings…*, *New roll? Set it up…*, *Add a network printer…* and
+  *My printer isn't in the list…*. The new-roll reminder is one slim line.
+- **Every window fits a small laptop screen** (1280 × 720) at the Small,
+  Normal and Large text sizes. A window that is still too tall for the
+  screen now scrolls instead of running off the bottom.
+- **"This picture will print mostly black."** The picture window now says so
+  when most of a picture would print black, and suggests moving the slider
+  toward *Lighter* or choosing *Photo (tiny dots)* (and first turning off
+  *Swap black and white* if it is on). Nothing about printing changed.
 
 - **Network printers.** A label printer on your network (with its own
   network socket, through a print server, or behind a small network

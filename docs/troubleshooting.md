@@ -7,10 +7,16 @@ Go to **Settings → Advanced…**, tick **Invert colours**, and press **Save**.
 Some printers use the opposite colours; this switch fixes that.
 
 **A picture prints with black and white swapped.**
-Press **Picture → Change…** and check **Swap black and white** is off: while
+Press the **Picture: …** button above the form and check **Swap black and white** is off: while
 it is on, the window says *Black and white are swapped*. The picture on the
 right of the main window is exactly what prints, so if it looks right there
 but not on paper, the whole label is swapped: see the entry above.
+
+**A picture prints as a black block.**
+The picture window says so before you print (*This picture will print
+mostly black*). Move the *Lighter ↔ Darker* slider toward **Lighter**, or
+choose **Photo (tiny dots)**; if **Swap black and white** is on, turn it off
+first.
 
 **My picture won't open.**
 Food Labeler opens PNG, JPG, GIF, BMP, WebP, TIFF and ICO pictures. iPhone
@@ -18,30 +24,30 @@ photos (HEIC) and SVG drawings can't be opened yet: open them in a photo or
 drawing program and save them as PNG or JPG first.
 
 **The printing is too pale or too dark.**
-Press **Print settings…** (under the printer list) and move *Darkness*
+Press **Printer options ▾ → Print settings…** and move *Darkness*
 towards *Darker* or *Lighter*, then **Save**. Not sure which is best? Press
 **Darkness test**. More in [Print settings](printer.md#print-settings).
 
 **The printing is not in the middle of the label, or comes out upside down.**
-**Print settings…** → *Nudge the print* moves it left, right, up or down;
+**Printer options ▾ → Print settings…** → *Nudge the print* moves it left, right, up or down;
 *Print upside down* turns it round.
 
 **Labels print across the gap, or the printer skips labels.**
 The printer doesn't know where each label starts on this roll. Set up the
-roll: **Print settings…** → **New roll? Set it up…** (see
+roll: **Printer options ▾ → New roll? Set it up…** (see
 [New roll? Set it up](printer.md#new-roll-set-it-up)). Check the label size
 and the kind of roll match what is in the printer.
 
 **My printer isn't found.**
-Check it is switched on and plugged in, then press **Look for printers
-again**. Still nothing? Follow
+Check it is switched on and plugged in, then press **Printer options ▾ →
+Look for printers again**. Still nothing? Follow
 [My printer isn't in the list](printer.md#my-printer-isnt-in-the-list):
 it finds the printer when you plug it back in, or makes a short report and
 opens a help form on GitHub where you paste it, and we'll try to help.
 
 **My network printer isn't answering.**
 Check the printer and its print server or network bridge are switched on and
-on the same network as the computer. **My printers… → Add a network
+on the same network as the computer. **Printer options ▾ → Add a network
 printer…** lists it with its address; type the address again and press **Test
 the connection** to check it (nothing is printed). See
 [Network printers](printer.md#network-printers).
@@ -51,7 +57,7 @@ the connection** to check it (nothing is printed). See
 
 **The writing doesn't fit.**
 A message tells you which part is too long. Use shorter words or a bigger
-label (**Label size → Change…**).
+label (the **Size: …** button above the form).
 
 **Windows says "Windows protected your PC".**
 That is normal for a new download. Click **More info**, then **Run anyway**.

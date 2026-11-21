@@ -56,10 +56,13 @@ If Windows says *"Windows protected your PC"*, that is normal: see
 - **Contains:** tap any allergens. Add a note or *Made by* if you like.
 - **Look at the picture on the right**: that is exactly what will print.
 - Choose **how many labels** with **−** and **+**, then press **PRINT**.
+- **Make it again tomorrow?** Press **Save as product** once; after that it
+  is one click under **My products**, at the top left.
+- Writing on the screen too big or too small? **Settings → Text size**.
 
 ## More help
 
-- **[Using Food Labeler](docs/guide.md)**: first time on Windows, saved labels, wide or tall labels, lettering, pictures, QR codes and cottage food labels.
+- **[Using Food Labeler](docs/guide.md)**: first time on Windows, My products, saved labels, wide or tall labels, lettering, pictures, QR codes and cottage food labels.
 - **[Your printer](docs/printer.md)**: choosing and naming printers, USB, network (print server or bridge) or Bluetooth (alpha), print settings and setting up a new roll.
 - **[Printers we know about](docs/printer-list.md)**: tested on paper: LP610BT-type printers (USB and network) and the Zebra ZP450. Alpha (should work, not tested yet): MUNBYN, Rollo, iDPRT/HPRT, Polono PL60, Phomemo, Jadens, Xprinter, Arkscan and more.
 - **[Something not right?](docs/troubleshooting.md)**: quick fixes for blank, pale or crooked labels and printers that aren't found.

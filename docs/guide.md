@@ -8,6 +8,7 @@ what comes out of the printer.
 
 - [First time on Windows](#first-time-on-windows)
 - [Making a label](#making-a-label)
+- [My products: one click](#my-products-one-click)
 - [Other things you can do](#other-things-you-can-do)
 - [Lettering](#lettering)
 - [Pictures](#pictures)
@@ -42,8 +43,9 @@ to make an account; or email hello@highthymekitchen.com if you're stuck).
    - Then click the **Run anyway** button that appears.
 
    Windows usually asks this only the first time you open a new download.
-6. Food Labeler opens. If it finds your printer, its name is shown above the
-   **PRINT** button. If not, see [Your printer](printer.md).
+6. Food Labeler opens. If it finds your printer, its name is shown next to
+   **Printer:**, above the **PRINT** button. If not, see
+   [Your printer](printer.md).
 
 ## Making a label
 
@@ -63,31 +65,73 @@ to make an account; or email hello@highthymekitchen.com if you're stuck).
 If the writing doesn't fit, a message tells you which part is too long.
 Use shorter words or a bigger label.
 
+![The Food Labeler window](screenshot.png)
+
+The window has three parts: **My products** and the label's details on the
+left, the picture of the label and your printer on the right, and **How many
+labels?** with **PRINT** at the bottom.
+
+## My products: one click
+
+Most bakers make the same things again and again. Save each one once:
+
+1. Fill in a label (a simple food label, a package label or a cottage food
+   label).
+2. Press **Save as product** (at the top, next to *Manage…*) and give it a
+   name.
+
+From then on it is a button under **My products**: one click fills in the
+label, with today's date and the right "use by" or "best by" date. Then
+choose **how many** and press **PRINT**.
+
+- The buttons show your **favourites** (★) first, then the products you used
+  most recently. To find any other product, type a few letters in
+  **Find a product…** and press Enter for the first match.
+- **Manage…** lists all your products: use one, mark it as a ★ favourite,
+  delete it, or back them all up and restore them.
+- On a date sticker, free text or picture label, a product first asks if it
+  may change the label to the kind it was saved from.
+- No products yet? The strip says *Save a product once and it's one click
+  next time*.
+
 ## Other things you can do
 
 ![Choosing the kind of label](screenshot-templates.png)
 
-- **Kind of label → Change…**: *Simple food label*, *Package label* (with
+Above the form, a row of buttons shows how the label is set up. Press one to
+change it:
+
+- **Kind: …**: *Simple food label*, *Package label* (with
   ingredients and your kitchen's name and address), *Date sticker*,
   *Free text*, *Picture label* (one big picture), or *Cottage food label*
   (for home bakers, see [below](#for-home-bakers-cottage-food-labels)).
-- **Label size → Change…**: pick the size of the labels in your printer.
-- **Which way?**: *Wide* or *Tall*, for every kind of label (not on round
+- **Size: …**: pick the size of the labels in your printer.
+- **Wide** or **Tall**, for every kind of label (not on round
   ones). Labels on a 4 × 2 or 3 × 2 roll are wide unless you pick *Tall*:
   then the label is laid out 2 inches wide and 4 inches tall and printed
   sideways on the roll. A 4 × 6 label is tall unless you pick *Wide* (6 × 4).
   The picture on the right always shows the label the way you read it; when
   it prints sideways, a small arrow shows which edge comes out of the
   printer first. The choice is saved in the label file.
-- **Save** keeps the label so you can print it again. Saved labels appear
-  under **My saved labels** at the top: one click opens them. When you open
-  an old label, Food Labeler asks if the dates should change to today.
+- **+ Picture**, **+ QR code** and **Lettering** add the extras below. Once
+  a label has a picture or a QR code, its button says so (*Picture: Our
+  logo*) and **✕ Remove** next to it takes it off (**Undo** puts it back).
+- **Save** keeps the label so you can print it again. **Open ▾** lists the
+  labels you saved or opened most recently: one click opens them; *All my
+  saved labels…* shows the rest. When you open an old label, Food Labeler
+  asks if the dates should change to today.
 - **Undo** takes back the last change.
-- **A−** and **A+** make all the writing on the screen smaller or bigger.
+- **Text size**: **Settings → Text size** has four choices: *Small*,
+  *Normal*, *Large* and *Extra large*. **A−** and **A+** at the top change it
+  a step at a time. Food Labeler remembers your choice. (It only changes the
+  screen, never the printed label.)
 - **Save as picture** makes a picture of the label to send to someone (the
   way it is read, even if it prints sideways).
-- **Printer on your network?** Use **My printers… → Add a network
-  printer…**; see [Network printers](printer.md#network-printers).
+- **Printer options ▾** (next to your printer) has everything else about
+  printers: *Look for printers again*, *My printers…*, *Print settings…*,
+  *New roll? Set it up…*, *Add a network printer…* and *My printer isn't
+  in the list…*. See [Your printer](printer.md).
+- **Ctrl+P** asks how many and prints, like the **PRINT** button.
 - Your work is kept safe automatically, even if the computer switches off.
 - Your saved labels are in `Documents\My Food Labels` (Linux:
   `~/Documents/My Food Labels`). Updates to Food Labeler never change them.
@@ -96,7 +140,7 @@ Use shorter words or a bigger label.
 
 ![A label with a fancy name in Pacifico](screenshot-fancy-name.png)
 
-- **Lettering → Change…** (under *Label size*) lets you pick the kind of
+- **Lettering** (above the form) lets you pick the kind of
   letters on your label: one for the **name of the food** and one for
   **everything else**. Each choice is shown in its own lettering, so you can
   see what you get. Food Labeler remembers your choice for your next label.
@@ -124,13 +168,14 @@ Details for helpers: [fonts.md](fonts.md).
 
 ![A label with a logo and a QR code](screenshot-picture-qr.png)
 
-- **Picture → Add a picture…** puts your logo (or any picture) on the label:
+- **+ Picture** (above the form) puts your logo (or any picture) on the label:
   above the name, below the writing, on the left or right side, or in any of
   the four corners, as big as you like. The writing flows around it.
   (On round labels: above or below the writing.) Thermal printers only print
   black, so you choose how it turns black and white: *Logo / drawing (solid
   black)* with a *Lighter ↔ Darker* slider, or *Photo (tiny dots)*. The
-  picture on the right is exactly what prints. **Keep in My pictures** makes
+  picture on the right is exactly what prints; if it would come out mostly
+  black, the window says so and suggests what to change. **Keep in My pictures** makes
   your logo one click next time. The picture is saved inside the label file
   (in black and white shades, so the file stays small). If there isn't
   room, the writing your state asks for keeps its size and the picture gets
@@ -144,14 +189,14 @@ Details for helpers: [fonts.md](fonts.md).
 - **Swap black and white** makes a negative: what is light prints black.
   It is off unless you switch it on, and the picture window says so while it
   is on.
-- **Kind of label → Picture label** is one big picture (a logo sticker or a
+- **Kind → Picture label** is one big picture (a logo sticker or a
   round seal) with a line of words under it if you want.
 
 ![Adding a picture](screenshot-picture.png)
 
 ## QR codes
 
-**QR code → Add a QR code…** adds a code people can scan with their
+**+ QR code** (above the form) adds a code people can scan with their
 phone: your website, your phone number, your email, or some text (for
 example how to reheat it), with words under it like *Scan for our menu*.
 What the code holds is shown in small print under the label picture. It
@@ -167,7 +212,7 @@ so instead of printing it.
 ## For home bakers (cottage food labels)
 
 If you bake at home and sell under your state's *cottage food* law, choose
-**Kind of label → Cottage food label**.
+**Kind → Cottage food label**.
 
 ![A cottage food label for a Nebraska bakery](screenshot-cottage.png)
 
@@ -192,8 +237,9 @@ This is what that label prints (4 × 2 inch):
    press **Change…** to match it.
 
    ![Building the ingredient list](screenshot-ingredients.png)
-4. **Save to My products** keeps the product so next time **Choose from
-   My products…** fills the whole label in one click.
+4. **Save as product** (under *My products*) keeps the product, so next
+   time one click on its button fills the whole label in (see
+   [My products](#my-products-one-click)).
 5. The **Label check** at the top of the form says in green when everything
    your state asks for is on the label, or lists in red what is missing.
    **About (your state)'s rules…** shows the full list and where the rules

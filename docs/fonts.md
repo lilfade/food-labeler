@@ -1,7 +1,7 @@
 # Fonts
 
 Food Labeler prints in **DejaVu Sans** unless you choose other lettering
-(*Kind of label → Lettering → Change…*). Every label has two choices:
+(*Lettering* above the form). Every label has two choices:
 
 - **Name of the food** (on a date sticker: the lot number; on free text: your
   words) — any font.

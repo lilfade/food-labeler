@@ -28,15 +28,16 @@ If something prints wrong, see [Something not right?](troubleshooting.md).
 
 ## Picking your printer
 
-- The printer you are using is shown above the **PRINT** button. If you have
-  more than one, click it to choose.
+- The printer you are using is shown next to **Printer:**, above the
+  **PRINT** button. If you have more than one, click it to choose.
+- Everything else is in **Printer options ▾** next to it:
 - **My printers…** lets you give printers names like *White label printer*.
   **Which one is it?** prints a tiny label saying which printer it is.
 - **Look for printers again** if you just plugged one in.
 
 ## Print settings
 
-**Print settings…** (under the printer list) is kept for each printer:
+**Printer options ▾ → Print settings…** is kept for each printer:
 
 - *Darkness*: lighter or darker.
 - *Speed*: slower is sharper.
@@ -64,8 +65,8 @@ stay the same size either way; at 300 dpi the writing is just crisper.
 Each time you put a new roll in the printer, set it up once, so the
 printing lands on the labels and not across the gaps between them.
 
-1. Press **Print settings…** (under the printer list), then
-   **New roll? Set it up…**.
+1. Press **Printer options ▾ → New roll? Set it up…** (it is also in
+   **Print settings…**).
 2. **Put the new roll in.** Pull out a few labels past the front and close
    the lid.
 3. **Say what is on the roll:** the label size (your label's size is already
@@ -86,7 +87,7 @@ The window also says how to set up a roll with the printer's own feed
 button, in case that is ever needed. Food Labeler remembers which roll you
 set up on each printer. When you pick a different label size, a short line
 under the printer asks *"New roll in the … printer? Set it up"*; press
-**Set up**, or **No, same roll** if you didn't change the roll. Nothing is
+**Set it up**, or **No, same roll** if you didn't change the roll. Nothing is
 ever sent to the printer until you press **Set it up** and say OK.
 (**Settings → Advanced… → Feed / calibrate…** opens the same window.)
 
@@ -103,8 +104,9 @@ are *alpha — not tested yet* until someone has printed on them that way.
    the bridge's instructions give it. It looks like `192.168.1.50:9100`: the
    part before the colon is where the printer is on your network, the number
    after it is the port (9100 if nothing else is said).
-2. In Food Labeler, open **My printers… → Add a network printer…** (it is
-   also in **My printer isn't in the list** and in **Set up my printer**).
+2. In Food Labeler, open **Printer options ▾ → Add a network printer…** (it
+   is also in **My printers…**, **My printer isn't in the list** and **Set up
+   my printer**).
 3. Type the address and press **Test the connection**. This only checks that
    something answers there, within a few seconds; it never prints anything.
 4. Say what kind of printer it is (*Label printer like the LP610BT*, *Zebra
@@ -138,7 +140,7 @@ computer's own Bluetooth settings:
 2. Open **Settings → Bluetooth & devices → Add device → Bluetooth**, and
    pick the printer (LP610BT-type printers are called *LP610BT*). If it asks
    for a PIN, try **0000** or **1234**.
-3. In Food Labeler, press **Look for printers again**. The printer shows up
+3. In Food Labeler, press **Printer options ▾ → Look for printers again**. The printer shows up
    as, for example, *… — Bluetooth COM5 (…3F:A2)*.
 
 If you installed the printer maker's driver on the Bluetooth port, the
@@ -150,7 +152,7 @@ printer is an ordinary Windows printer and works the same way as over USB.
 2. Pair it in your desktop's **Bluetooth** settings (or ask your helper to
    use `bluetoothctl`: `pair`, then `trust`). If it asks for a PIN, try
    **0000** or **1234**.
-3. In Food Labeler, press **Look for printers again**. The printer shows up
+3. In Food Labeler, press **Printer options ▾ → Look for printers again**. The printer shows up
    as, for example, *… — Bluetooth (…3F:A2)*.
 
 **Two printers with the same name?** Both of ours are called *LP610BT*.
@@ -170,8 +172,8 @@ Mac computers aren't supported.
 ## My printer isn't in the list
 
 1. Check the printer is switched on and its cable is plugged in.
-2. Press **Look for printers again**.
-3. Still nothing? Press **My printer isn't in the list**. Unplug the printer,
+2. Press **Printer options ▾ → Look for printers again**.
+3. Still nothing? Press **Printer options ▾ → My printer isn't in the list…**. Unplug the printer,
    wait a moment and plug it back in: it shows up marked
    *"This just appeared"*. Press **Use this as my printer**.
 4. If that doesn't work, press **Ask for help on GitHub**. It makes a short
