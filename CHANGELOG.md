@@ -4,6 +4,26 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.5.1 — unreleased
+
+Safety and small fixes.
+
+- **Damaged files open safely.** A label file, settings file, product or
+  ingredient list or state wording file with odd or broken values in it no
+  longer stops Food Labeler. What can be read is used and the rest goes
+  back to its usual setting; a label that really can't be read says it is
+  damaged, and is taken off the list of recent labels.
+- **Very long writing and QR codes.** A label with a very long word is
+  drawn much faster, and a QR code can't be made longer than a QR code can
+  hold.
+- **Network printers.** Food Labeler waits a short, fixed time for a
+  network printer's answer after printing, however slowly it answers.
+- **Printer names** that come from the printer or the computer are shown
+  on one tidy line.
+- **New roll notice.** It now reads as a whole sentence: *New roll in the …?
+  Set it up so the labels line up.*
+- The website's publishing step has only the permissions it needs.
+
 ## 1.5.0 — 2026-11-21
 
 Bluetooth printing (alpha), network printers, wide or tall labels, a

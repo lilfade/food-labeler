@@ -24,4 +24,4 @@ PyInstaller Windows version resource and the release workflow all read it.
 APP_NAME = "Food Labeler"
 APP_ID = "food-labeler"
 BRAND = "High Thyme Kitchen"
-__version__ = "1.5.0"
+__version__ = "1.5.1"
