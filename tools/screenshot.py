@@ -7,7 +7,7 @@ so run it on a desktop you are not using at that moment:
 Uses a temporary data folder and FOOD_LABELER_DRY_RUN, so nothing is printed
 and nothing of yours is touched. Printer discovery is replaced by two pretend
 printers (shown as ready), and "Test the connection" and "Get more fonts"
-never connect.
+never connect; "Check for updates" gets a pretend GitHub answer.
 
 Settings, from the environment:
 
@@ -92,6 +92,43 @@ def _no_font_download(*a, **k):
 
 
 fontget.http_get = _no_font_download
+
+# "Check for updates" answers with a pretend release (never GitHub itself)
+import json as _json  # noqa: E402
+
+from food_labeler import updates  # noqa: E402
+
+_NOTES = {
+    "v1.7.0": ("Easier printing on small screens.\n\n"
+               "- **Bigger PRINT button** when the window is small.\n"
+               "- *My products* remembers how many labels you printed last time.\n"
+               "- The [guide](https://github.com/lilfade/food-labeler/blob/main/docs/guide.md) "
+               "has new pictures.\n\n"
+               "**Windows:** download `FoodLabeler.exe`. The first time, Windows may say "
+               "\"Windows protected your PC\": click **More info**, then **Run anyway**."),
+    "v1.6.1": "Small fixes.\n\n- Dates on round labels line up again.\n"
+              "- A product with a very long name fits on its button.",
+}
+
+
+def _fake_release(tag, date, prerelease=False):
+    return {"tag_name": tag, "name": f"Food Labeler {tag[1:]}", "draft": False,
+            "prerelease": prerelease, "published_at": f"{date}T10:00:00Z",
+            "html_url": f"https://github.com/lilfade/food-labeler/releases/tag/{tag}",
+            "body": _NOTES.get(tag, "")}
+
+
+def _fake_github(url, limit):
+    """GitHub's answers for the update window: 1.7.0 is the newest."""
+    if url.endswith("/releases/latest"):
+        return _json.dumps(_fake_release("v1.7.0", "2026-12-15")).encode()
+    return _json.dumps([_fake_release("v1.8.0-beta", "2026-12-20", True),
+                        _fake_release("v1.7.0", "2026-12-15"),
+                        _fake_release("v1.6.1", "2026-12-01"),
+                        _fake_release("v1.6.0", "2026-11-25")]).encode()
+
+
+updates.http_get = _fake_github
 try:
     from food_labeler import btscan
     btscan.scan = lambda *a, **k: []
@@ -711,6 +748,38 @@ def w_bakery_wizard_3():
 def w_settings():
     from food_labeler.dialogs import SettingsDialog
     return show(SettingsDialog(root, app), "w-settings.png")
+
+
+@step
+def update_dialog():
+    from food_labeler.dialogs import UpdateDialog
+    return show(UpdateDialog(root, lambda: updates.check(current="1.6.0")),
+                "screenshot-update.png", 900)
+
+
+@step(docs=False)
+def w_settings_about():
+    from food_labeler.dialogs import SettingsDialog
+    d = SettingsDialog(root, app)
+    d.update()
+    d.body.winfo_children()[0].canvas.yview_moveto(1.0)    # down to About
+    return show(d, "w-settings-about.png")
+
+
+@step(docs=False)
+def w_update_current():
+    from food_labeler.dialogs import UpdateDialog
+    return show(UpdateDialog(root, lambda: updates.check(current="1.7.0")),
+                "w-update-current.png", 900)
+
+
+@step(docs=False)
+def w_update_offline():
+    from food_labeler.dialogs import UpdateDialog
+
+    def offline():
+        raise updates.UpdateError(updates.OFFLINE)
+    return show(UpdateDialog(root, offline), "w-update-offline.png", 900)
 
 
 @step(docs=False)

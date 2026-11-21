@@ -153,11 +153,15 @@ class _SafeRedirect(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def read_limited(resp, limit: int) -> bytes:
-    """Read a response body, refusing anything larger than ``limit`` bytes."""
+def read_limited(resp, limit: int, too_big: Exception | None = None) -> bytes:
+    """Read a response body, refusing anything larger than ``limit`` bytes.
+
+    Raises ``too_big`` (default: FontGetError(TOO_BIG)) when it is larger; the
+    update check (updates.py) passes its own error."""
+    too_big = too_big if too_big is not None else FontGetError(TOO_BIG)
     length = resp.headers.get("Content-Length") if getattr(resp, "headers", None) else None
     if length and length.isdigit() and int(length) > limit:
-        raise FontGetError(TOO_BIG)
+        raise too_big
     buf = io.BytesIO()
     while True:
         chunk = resp.read(64 * 1024)
@@ -165,7 +169,7 @@ def read_limited(resp, limit: int) -> bytes:
             break
         buf.write(chunk)
         if buf.tell() > limit:
-            raise FontGetError(TOO_BIG)
+            raise too_big
     return buf.getvalue()
 
 

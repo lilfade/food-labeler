@@ -1,4 +1,5 @@
-"""The extra windows: pickers, save/open, settings, printers, USB devices, report.
+"""The extra windows: pickers, save/open, settings, printers, USB devices, report,
+Check for updates.
 
 Every dialog is a widgets.Modal: build it, call .run(), get the result back.
 Dialogs talk to the main window through the ``app`` they are given (its
@@ -22,9 +23,10 @@ from PIL import Image, ImageDraw, ImageTk
 
 from . import APP_NAME, BRAND, __version__
 from . import dates, known, model, printers, render, report, settings as settings_mod, stocks
-from . import btscan, templates, ui_text, usbscan
+from . import btscan, templates, ui_text, updates, usbscan
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, GREEN_LIGHT, INK, MUTED, PANEL, WARN,
-                      WARN_BG, LinkLabel, Modal, ScrollFrame, ask, button, tell)
+                      WARN_BG, LinkLabel, Modal, ScrollFrame, ask, button, center_on,
+                      open_url, tell)
 
 PROJECT_SITE = "https://lilfade.github.io/food-labeler/"
 
@@ -374,6 +376,12 @@ class SettingsDialog(Modal):
         if support:
             tk.Label(b, text=f"(or email {support} if you're stuck)", font="ui", bg=BG,
                      fg=INK, wraplength=700, justify="left").pack(anchor="w")
+        row = tk.Frame(b, bg=BG)
+        row.pack(anchor="w", pady=(10, 0))
+        button(row, "Check for updates…", lambda: UpdateDialog(self).run()).pack(side="left")
+        tk.Label(row, text="Only when you press it: Food Labeler never goes online by "
+                 "itself.", font="small", bg=BG, fg=MUTED, wraplength=420,
+                 justify="left").pack(side="left", padx=10)
         button(self.body, "Done", self._done, "primary").pack(anchor="e", pady=(12, 0))
 
     def _draw_sizes(self):
@@ -398,6 +406,171 @@ class SettingsDialog(Modal):
             self.app.cfg["kitchen"][key] = t.get("1.0", "end-1c").strip()
         self.app.cfg.save()
         self.finish(True)
+
+
+class UpdateDialog(Modal):
+    """"Check for updates…" (Settings → About): asks GitHub once, on a worker
+    thread (updates.check), and shows the answer: up to date, or the new
+    version with its notes, a big *Download the new version* button that opens
+    the release page in the browser, and how to install it. Nothing is
+    downloaded or installed by Food Labeler itself."""
+
+    POLL_MS = 100
+    WIDTH = 720
+
+    def __init__(self, parent, check=None):
+        super().__init__(parent, "Check for updates")
+        self._check_fn = check or updates.check
+        self._q: queue.Queue = queue.Queue()
+        self.outcome = None                     # the Result or the error message shown
+        self.area = tk.Frame(self.body, bg=BG)
+        self.area.pack(fill="both", expand=True)
+        self.bottom = tk.Frame(self.body, bg=BG)
+        self.bottom.pack(fill="x", pady=(12, 0))
+        tk.Label(self.body, text=updates.PRIVACY, font="small", bg=BG, fg=MUTED,
+                 wraplength=self.WIDTH, justify="left").pack(anchor="w", pady=(10, 0))
+        self._start_check()
+
+    def _clear(self):
+        for fr in (self.area, self.bottom):
+            for w in fr.winfo_children():
+                w.destroy()
+
+    def _close_button(self, kind="normal"):
+        b = button(self.bottom, "Close", self.cancel, kind)
+        b.pack(side="right")
+        return b
+
+    def _start_check(self):
+        self._clear()
+        tk.Label(self.area, text="Checking GitHub for a new version…", font="big", bg=BG,
+                 fg=INK, wraplength=self.WIDTH, justify="left").pack(anchor="w")
+        tk.Label(self.area, text=f"You have {APP_NAME} {__version__}.", font="ui", bg=BG,
+                 fg=MUTED).pack(anchor="w", pady=(6, 0))
+        self._close_button()
+
+        def work():
+            try:
+                self._q.put(self._check_fn())
+            except updates.UpdateError as e:
+                self._q.put(str(e))
+            except Exception:  # noqa: BLE001 - never leave the window waiting
+                log.exception("update check failed")
+                self._q.put(updates.PROBLEM)
+        threading.Thread(target=work, daemon=True).start()
+        self.after(self.POLL_MS, self._poll_check)
+
+    def _poll_check(self):
+        try:
+            got = self._q.get_nowait()
+        except queue.Empty:
+            if self.winfo_exists():
+                self.after(self.POLL_MS, self._poll_check)
+            return
+        if not self.winfo_exists():
+            return
+        if isinstance(got, updates.Result):
+            self.show_result(got)
+        else:
+            self.show_error(str(got))
+
+    def show_error(self, message: str):
+        """Couldn't check: say why, offer Try again and the releases page."""
+        self.outcome = message
+        self._clear()
+        tk.Label(self.area, text=message, font="big", bg=BG, fg=WARN, wraplength=self.WIDTH,
+                 justify="left").pack(anchor="w")
+        tk.Label(self.area, text=f"You have {APP_NAME} {__version__}. You can also look "
+                 "for new versions yourself:", font="ui", bg=BG, fg=INK,
+                 wraplength=self.WIDTH, justify="left").pack(anchor="w", pady=(8, 0))
+        owner, repo = updates.repo_from_config()
+        LinkLabel(self.area, updates.releases_page(owner, repo), font="ui",
+                  wraplength=self.WIDTH).pack(anchor="w")
+        button(self.bottom, "Try again", self._start_check, "primary").pack(side="left")
+        self._close_button()
+
+    def show_result(self, res):
+        """Up to date, or the new version with its notes and the download button."""
+        self.outcome = res
+        self._clear()
+        words = updates.window_text(res)
+        a = self.area
+        tk.Label(a, text=words["title"], font="big", bg=BG,
+                 fg=GREEN_DARK if words["download"] else INK, wraplength=self.WIDTH,
+                 justify="left").pack(anchor="w")
+        if words["detail"]:
+            tk.Label(a, text=words["detail"], font="ui", bg=BG, fg=MUTED,
+                     wraplength=self.WIDTH, justify="left").pack(anchor="w", pady=(4, 0))
+        if not words["download"]:
+            LinkLabel(a, res.all_url, "See every version on GitHub", font="ui",
+                      wraplength=self.WIDTH).pack(anchor="w", pady=(10, 0))
+            self._close_button("primary").focus_set()
+            return
+        tk.Label(a, text="What's new", font="ui_bold", bg=BG, fg=INK).pack(anchor="w",
+                                                                         pady=(10, 2))
+        box = tk.Frame(a, bg=PANEL, highlightthickness=2, highlightbackground=BORDER)
+        box.pack(fill="both", expand=True)
+        self.notes = tk.Text(box, font="ui", wrap="word", width=60, height=8, relief="flat",
+                             bd=0, padx=10, pady=8, bg=PANEL, fg=INK, highlightthickness=0,
+                             cursor="arrow", takefocus=False)
+        sb = tk.Scrollbar(box, orient="vertical", command=self.notes.yview)
+        self.notes.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.notes.pack(side="left", fill="both", expand=True)
+        for tag, font, colour in (("heading", "ui_bold", INK), ("version", "ui_bold",
+                                                                 GREEN_DARK)):
+            try:
+                self.notes.tag_configure(tag, font=font, foreground=colour)
+            except tk.TclError:
+                pass
+        self.notes.tag_configure("bullet", lmargin1=0, lmargin2=22)
+        for kind, text in words["notes"]:
+            self.notes.insert("end", text + "\n", (kind,))
+        self.notes.delete("end-2c", "end-1c")      # no empty line at the end
+        self.notes.configure(state="disabled")
+        dl = button(a, "Download the new version", lambda: self._download(res.latest.url),
+                    "primary", font="big")
+        dl.pack(anchor="w", pady=(12, 4))
+        tk.Label(a, text=updates.HOW_TO, font="ui", bg=BG, fg=INK, wraplength=self.WIDTH,
+                 justify="left").pack(anchor="w")
+        owner, repo = updates.repo_from_config()
+        tk.Label(a, text=f"Only download {APP_NAME} from github.com/{owner}/{repo}/releases.",
+                 font="ui_bold", bg=BG, fg=INK, wraplength=self.WIDTH,
+                 justify="left").pack(anchor="w", pady=(4, 0))
+        self._close_button()
+        dl.focus_set()
+        self._fit_notes()
+
+    def _fit_notes(self):
+        """Make the notes box as wide as the other words and as tall as the screen
+        allows (4 to 14 lines), so the whole window fits on a 1280 × 720 screen
+        at every text size."""
+        try:
+            self.update_idletasks()
+            from tkinter import font as tkfont
+            f = tkfont.Font(font=self.notes.cget("font"))
+            line = max(1, f.metrics("linespace"))
+            # as wide as the other words (they wrap at WIDTH), whatever the text size
+            self.notes.configure(width=max(30, (self.WIDTH - 40) // max(1, f.measure("n"))))
+            self.notes.tag_configure("bullet", lmargin2=f.measure("\u2022 "))
+            self.update_idletasks()
+            other = self.body.winfo_reqheight() - self.notes.winfo_reqheight()
+            room = self.winfo_screenheight() - ScrollFrame.SCREEN_MARGIN - 24 - other
+            self.notes.configure(height=max(4, min(14, room // line)))
+            self.update_idletasks()
+            self.scroller._on_inner()
+            center_on(self, self.master)
+        except tk.TclError:
+            pass
+
+    def _download(self, url: str):
+        """Open the release page in the browser (only a checked github.com address)."""
+        owner, repo = updates.repo_from_config()
+        prefix = f"https://github.com/{owner}/{repo}/releases".lower()
+        if str(url).lower().startswith(prefix) and open_url(url):
+            return
+        tell(self, "Download the new version", "I couldn't open your web browser. Open "
+             "this page yourself and download the new version there:\n\n" + str(url))
 
 
 def _ingredients_backup(parent, app):

@@ -102,6 +102,11 @@ def selftest() -> int:
     for dpi in (203, 300):
         st = stocks.get("large", dpi)
         assert calibrate.lineup_label_image(st).size == (st.w, st.h)
+    # "Check for updates": the version compares and https is bundled (nothing is fetched)
+    import ssl
+    from . import updates
+    assert ssl.HAS_SNI and updates.compare(__version__, "0.1") == 1
+    assert updates.notes_lines("- **new**") == [("bullet", "\u2022 new")]
     # Make sure the GUI toolkit is bundled. Importing tkinter never opens a
     # window; only creating tk.Tk() would.
     import tkinter
