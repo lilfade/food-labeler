@@ -2,7 +2,8 @@
 optional user file of updates that High Thyme Kitchen can send.
 
 A Definition says how to recognise a model (IEEE 1284 id, USB vid:pid, or
-Windows/CUPS name patterns), which language it speaks (TSPL or ZPL) and its
+Windows/CUPS name patterns: plain text, never regular expressions, so a file
+from anywhere can't make matching slow), which language it speaks (TSPL or ZPL) and its
 preferred darkness/speed per label size, its print head's resolution (203 or
 300 dpi), how wide it can print and how to set up a new roll by hand. Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
@@ -16,6 +17,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 log = logging.getLogger("food_labeler.known")
@@ -36,6 +38,24 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 VIDPID_RE = re.compile(r"^[0-9a-f]{4}:[0-9a-f]{4}$")
 MAX_ENTRIES = 200
 MAX_BY_HAND = 600             # "calibrate_by_hand": a few sentences, shown as they are
+MAX_PATTERN = 80              # one "ieee1284"/"windows" pattern (all its alternatives)
+MAX_SUBJECT = 200             # names longer than this are cut before matching
+
+
+@lru_cache(maxsize=1024)
+def alternatives(pattern: str) -> tuple[str, ...]:
+    """A name pattern's alternatives: split on "|", trimmed, case-folded, empties dropped.
+
+    Patterns are plain text. Every character, including ones that would mean
+    something in a regular expression (``( ) * ? [ ] . ^ $``), is literal, so
+    matching is a few substring searches and can never hang."""
+    return tuple(a for a in (x.strip().casefold() for x in pattern.split("|")) if a)
+
+
+def pattern_found(pattern: str, text: str) -> bool:
+    """True if any alternative of ``pattern`` is in ``text`` (case-insensitive)."""
+    subject = (text or "")[:MAX_SUBJECT].casefold()
+    return any(a in subject for a in alternatives(pattern))
 
 
 class DefinitionError(Exception):
@@ -97,7 +117,7 @@ class Definition:
         if not self.ieee1284 or not info:
             return False
         for k, pattern in self.ieee1284.items():
-            if not re.search(pattern, info.get(k.upper(), ""), re.I):
+            if not pattern_found(pattern, info.get(k.upper(), "")):
                 return False
         return True
 
@@ -107,7 +127,7 @@ class Definition:
 
     def match_text(self, text: str) -> bool:
         """True if any ``windows`` pattern is found in a printer/driver/queue name."""
-        return any(re.search(p, text or "", re.I) for p in self.windows)
+        return any(pattern_found(p, text) for p in self.windows)
 
 
 def _int_map(v, name):
@@ -154,18 +174,18 @@ def validate_entry(e) -> Definition:
         if not VIDPID_RE.match(x.lower()):
             raise DefinitionError(f"“{x}” isn't a USB id like 0483:2025.")
 
-    def check_re(x):
-        try:
-            re.compile(x)
-        except re.error:
-            raise DefinitionError(f"Printer “{name}” has a pattern that doesn't work: {x}") from None
+    def check_pattern(x):
+        # Plain text (see alternatives()); only its size and content are checked.
+        if len(x) > MAX_PATTERN or "\x00" in x or not alternatives(x):
+            raise DefinitionError(f"Printer “{name}” has a name pattern that is empty or too "
+                                  f"long (at most {MAX_PATTERN} letters).")
 
     i1284 = e.get("ieee1284", {})
     if not isinstance(i1284, dict) or not all(isinstance(k, str) and isinstance(v, str)
                                               for k, v in i1284.items()):
         raise DefinitionError(f"Printer “{name}” has a bad “ieee1284” section.")
     for v in i1284.values():
-        check_re(v)
+        check_pattern(v)
     stocks_ = str_list("stocks")
     if set(stocks_) - STOCK_IDS:
         raise DefinitionError(f"Printer “{name}” mentions an unknown label size.")
@@ -193,7 +213,7 @@ def validate_entry(e) -> Definition:
         brands=str_list("brands"), dpi=int(dpi), max_width_dots=width, media=media,
         usb=[x.lower() for x in str_list("usb", check_vidpid)],
         ieee1284={k.upper(): v for k, v in i1284.items()},
-        windows=str_list("windows", check_re),
+        windows=str_list("windows", check_pattern),
         density=_int_map(e.get("density"), "density"), speed=_int_map(e.get("speed"), "speed"),
         stocks=stocks_ or sorted(STOCK_IDS), notes=notes,
         calibrate_by_hand=by_hand.strip(),
@@ -285,7 +305,8 @@ class KnownPrinters:
                     return d
         if text:
             # more specific patterns (longer) first
-            for d in sorted(self.defs.values(), key=lambda d: -max([len(p) for p in d.windows] or [0])):
+            for d in sorted(self.defs.values(), key=lambda d: -max(
+                    [len(a) for p in d.windows for a in alternatives(p)] or [0])):
                 if d.match_text(text):
                     return d
         return None

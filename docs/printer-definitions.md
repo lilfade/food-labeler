@@ -60,8 +60,8 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `max_width_dots` | no | widest the head can print, in dots at this entry's `dpi` (LP610BT-type 812, Zebra ZP450 832 = 4.09 in). Labels wider than this are refused with a plain message. Leave it out if not known. |
 | `media` | no | `"gap"` (default), `"continuous"`, `"black-mark"` (informational for now) |
 | `usb` | no | list of `"vvvv:pppp"` USB vendor:product ids (hex) |
-| `ieee1284` | no | map of IEEE 1284 device-id keys to regular expressions; **all** must match (case-insensitive search). Keys as the printer reports them, e.g. `MFG`, `MDL`, `CMD`, `MANUFACTURER`, `MODEL`, `COMMAND SET`. |
-| `windows` | no | regular expressions matched against the Windows printer name + driver name (and CUPS queue name/URI on Linux) |
+| `ieee1284` | no | map of IEEE 1284 device-id keys to name patterns (see *Name patterns* below); **all** must match. Keys as the printer reports them, e.g. `MFG`, `MDL`, `CMD`, `MANUFACTURER`, `MODEL`, `COMMAND SET`. |
+| `windows` | no | name patterns matched against the Windows printer name + driver name (and CUPS queue name/URI on Linux); any one matching is enough |
 | `density` | no | TSPL `DENSITY` 0–15: a number, or `{"default": n, "<size>": n}` |
 | `speed` | no | TSPL `SPEED`: same shape as `density` |
 | `stocks` | no | label sizes the printer takes: `small`, `medium`, `large`, `round`, `xl` (default: all). Printing another size asks "Print anyway?" |
@@ -71,13 +71,30 @@ Save files as UTF-8 (with or without a byte-order mark).
 Label size ids: `small` 32×25 mm, `medium` 3×2 in, `large` 4×2 in,
 `round` 2 in circle, `xl` 4×6 in.
 
+## Name patterns
+
+Patterns in `ieee1284` and `windows` are **plain text**, not regular
+expressions. A pattern matches when its text appears anywhere in the name,
+ignoring upper/lower case. Separate alternatives with `|`:
+`"ZP450|ZP 450"` matches *Zebra ZP450* and *ZDesigner ZP 450-200dpi*.
+Every other character is taken literally, so `?`, `*`, `.`, `(`, `[`, `^`
+and `$` only match themselves. Each pattern (all its alternatives together)
+may be at most 80 characters, and only the first 200 characters of a name
+are looked at.
+
+Until 1.3.1 these were regular expressions. Older update files still import
+without an error, but any regular-expression characters in them are now
+taken literally, so a pattern such as `ZP ?450` no longer matches *ZP450*:
+write it as `ZP450|ZP 450`. Plain-word patterns such as `Zebra` or `LP610`
+work exactly as before.
+
 ## How matching works
 
 1. **IEEE 1284 id** (Linux reads `/sys/class/usbmisc/lpN/device/ieee1284_id`):
    entries with more `ieee1284` keys are tried first.
 2. **USB id** (`usb`).
 3. **Names** (`windows` patterns; longer patterns are tried first, so a
-   specific entry such as `ZP ?450` beats a generic `Zebra`).
+   specific entry such as `ZDesigner ZP 450` beats a generic `Zebra`).
 
 The printer *resolution* is, in order: the user's own choice for that printer
 (*My printers… → Sharpness*, or *Advanced*), else `300` if the 1284

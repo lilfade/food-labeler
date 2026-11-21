@@ -66,8 +66,14 @@ def test_import_and_merge(tmp_path):
     ({"format": "food-labeler-printers", "version": 1,
       "printers": [{"id": "x", "name": "X", "language": "tspl", "usb": ["12345"]}]}, "USB id"),
     ({"format": "food-labeler-printers", "version": 1,
-      "printers": [{"id": "x", "name": "X", "language": "tspl", "windows": ["(unclosed"]}]},
-     "pattern"),
+      "printers": [{"id": "x", "name": "X", "language": "tspl", "windows": ["x" * 81]}]},
+     "too long"),
+    ({"format": "food-labeler-printers", "version": 1,
+      "printers": [{"id": "x", "name": "X", "language": "tspl", "windows": [" | "]}]},
+     "empty"),
+    ({"format": "food-labeler-printers", "version": 1,
+      "printers": [{"id": "x", "name": "X", "language": "tspl",
+                    "ieee1284": {"MDL": "y" * 81}}]}, "too long"),
     ({"format": "food-labeler-printers", "version": 1,
       "printers": [{"id": "x", "name": "X", "language": "tspl", "run": "rm -rf /"}]},
      "doesn't understand"),
@@ -113,3 +119,66 @@ def test_update_file_with_byte_order_mark(tmp_path):
     p.write_bytes(b"\xef\xbb\xbf" + json.dumps(UPDATE).encode("utf-8"))
     k = known.KnownPrinters(user_dir=tmp_path / "data")
     assert k.import_file(p) == ["Acme label printer (Acme / Bcme…)"]
+
+
+@pytest.mark.parametrize("name, family", [
+    ("4B-LP610BT", "lp610bt-compatible"),
+    ("BAR PRINTER", "lp610bt-compatible"),
+    ("Labelnize", "lp610bt-compatible"),
+    ("Flexyva", "lp610bt-compatible"),
+    ("Polono", "lp610bt-compatible"),
+    ("ZDesigner ZP 450-200dpi", "zebra-zp450"),
+    ("ZTC ZP 450-200dpi", "zebra-zp450"),
+    ("Zebra ZP450", "zebra-zp450"),
+    ("zdesigner zp450 (copy 1)", "zebra-zp450"),
+    ("Zebra GK420d", "zebra-zpl"),
+])
+def test_bundled_names_still_match(name, family):
+    # The bundled file is plain text patterns now; real names must still match.
+    assert known.KnownPrinters().match(text=name).id == family
+
+
+def test_bundled_1284_ids_still_match():
+    k = known.KnownPrinters()
+    for model in ("ZTC ZP 450-200dpi", "ZP450", "Zebra ZP 450"):
+        assert k.match(info={"MANUFACTURER": "Zebra Technologies", "COMMAND SET": "ZPL",
+                             "MODEL": model}).id == "zebra-zp450"
+    assert k.match(info={"MFG": "Labelnize", "CMD": "TSPL", "MDL": "4B-LP610BT"}).id \
+        == "lp610bt-compatible"
+
+
+def test_patterns_are_plain_text_with_alternatives(tmp_path):
+    upd = {"format": "food-labeler-printers", "version": 1, "printers": [
+        {"id": "acme", "name": "Acme", "language": "tspl",
+         "windows": ["Acme ?100|Acme-200"], "ieee1284": {"MDL": "A.C|AC*"}}]}
+    k = known.KnownPrinters(user_dir=tmp_path / "data")
+    k.import_file(write(tmp_path, upd))
+    assert k.match(text="ACME-200 driver").id == "acme"
+    assert k.match(text="my acme ?100").id == "acme"
+    assert k.match(text="Acme 100") is None          # "?" is a plain question mark
+    assert k.match(info={"MDL": "xac*y"}).id == "acme"
+    assert k.match(info={"MDL": "ABC"}) is None       # "." is a plain dot
+
+
+def test_regex_looking_update_imports_and_matches_quickly(tmp_path):
+    import time
+    evil = "^(([a-zA-Z0-9 -]+)*)*!$"
+    upd = {"format": "food-labeler-printers", "version": 1, "printers": [
+        {"id": "evil", "name": "Evil", "language": "tspl",
+         "windows": [evil], "ieee1284": {"MDL": evil, "MFG": evil}}]}
+    k = known.KnownPrinters(user_dir=tmp_path / "data")
+    assert k.import_file(write(tmp_path, upd)) == ["Evil"]
+    k = known.KnownPrinters(user_dir=tmp_path / "data")   # as at start-up
+    subject = "a" * 5000 + " ZDesigner ZP 450-200dpi"
+    start = time.perf_counter()
+    for _ in range(20):
+        k.match(info={"MDL": subject, "MFG": subject}, vidpid="ffff:0000", text=subject)
+    assert time.perf_counter() - start < 0.1
+    assert k.match(text="x " + evil + " y").id == "evil"   # matched literally
+    assert k.match(text="ZDesigner ZP 450-200dpi").id == "zebra-zp450"
+
+
+def test_long_names_are_cut_before_matching():
+    k = known.KnownPrinters()
+    assert k.match(text="x" * 300 + "Zebra") is None
+    assert k.match(text="x" * 100 + "Zebra").id == "zebra-zpl"

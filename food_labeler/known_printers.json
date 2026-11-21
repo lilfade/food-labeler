@@ -65,11 +65,11 @@
       "ieee1284": {
         "MANUFACTURER": "Zebra",
         "COMMAND SET": "ZPL",
-        "MODEL": "ZP ?450"
+        "MODEL": "ZP450|ZP 450"
       },
       "windows": [
-        "ZP ?450",
-        "ZDesigner ZP ?450"
+        "ZP450|ZP 450",
+        "ZDesigner ZP450|ZDesigner ZP 450"
       ],
       "stocks": [
         "small",
