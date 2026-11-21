@@ -141,7 +141,7 @@ jobs:
             echo
             echo "**Windows:** download \`FoodLabeler.exe\`. The first time, Windows may say"
             echo "\"Windows protected your PC\": click **More info**, then **Run anyway**."
-            echo "See the README for step-by-step help."
+            echo "Step-by-step help: https://github.com/lilfade/food-labeler/blob/main/docs/guide.md"
           } >> notes.md
           cat notes.md
 
