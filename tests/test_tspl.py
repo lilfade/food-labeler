@@ -25,7 +25,7 @@ def test_header_per_stock():
 
 def test_stock_dots():
     assert [(stocks.get(s).w, stocks.get(s).h) for s in stocks.ORDER] == [
-        (256, 200), (609, 406), (812, 406), (406, 405), (812, 1218)]
+        (256, 200), (609, 400), (812, 400), (406, 405), (812, 1218)]
     assert stocks.get("round").circle_dia == 382
     assert stocks.get("small").margin == 12 and stocks.get("large").margin == 24
 
@@ -68,12 +68,12 @@ def test_full_job_layout():
     head = tspl.header(st)
     assert job.startswith(head)
     rest = job[len(head):]
-    prefix = b"BITMAP 0,0,102,406,0,"
+    prefix = b"BITMAP 0,0,102,400,0,"
     assert rest.startswith(prefix)
-    data = rest[len(prefix):len(prefix) + 102 * 406]
+    data = rest[len(prefix):len(prefix) + 102 * 400]
     assert data[0] == 0x00 and data[1] == 0xFF
     assert data[101] == 0xFF          # last byte of row: 4 pad bits set to 1
-    assert rest[len(prefix) + 102 * 406:] == b"\r\nPRINT 3,1\r\n"
+    assert rest[len(prefix) + 102 * 400:] == b"\r\nPRINT 3,1\r\n"
 
 
 def test_calibrate():

@@ -47,11 +47,11 @@ def selftest() -> int:
     doc.fields["product"] = "Selftest Soup"
     res = render.render(doc, {}, dpi=300)
     st = stocks.get("large", 300)
-    assert res.image.size == (st.w, st.h) == (1200, 600) and not res.overflow
+    assert res.image.size == (st.w, st.h) == (1200, 591) and not res.overflow
     job = tspl.build_job(res.image, st, 1)
-    assert job.startswith(b"SIZE 101.6 mm,50.8 mm") and b"BITMAP 0,0,150,600," in job
+    assert job.startswith(b"SIZE 101.6 mm,50.8 mm") and b"BITMAP 0,0,150,591," in job
     zjob = zpl.build_job(res.image, st, 1)
-    assert b"^PW1200\n^LL600\n" in zjob
+    assert b"^PW1200\n^LL591\n" in zjob
     assert zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h)).tobytes() == res.image.tobytes()
     count += 1
     # a picture and a QR code (300 dpi): picture converted, code drawn in whole dots

@@ -57,6 +57,18 @@ class Stock:
     zpl_md: int = 0      # ZPL ^MD darkness (relative to the printer's setting)
     zpl_pr: int = 3      # ZPL ^PR print rate
     dpi: int = BASE_DPI  # resolution the dot sizes above are for
+    # Height of the label's printed face in mm when it is shorter than the
+    # roll's nominal size (0 = the same as h_mm). "2 inch" die-cut labels are
+    # really about 50.0 mm: a Zebra measured this roll at 399-400 dots and the
+    # LP610BT left the bottom 6 rows of a 406-row picture in the gap. ``h`` is
+    # drawn to the face; TSPL SIZE still states the nominal h_mm that the
+    # printers were proven with, and the gap sensor finds each label.
+    face_h_mm: float = 0.0
+
+    @property
+    def drawn_h_mm(self) -> float:
+        """The height the picture is drawn to, in mm (the face, if smaller)."""
+        return self.face_h_mm or self.h_mm
 
     @property
     def scale(self) -> float:
@@ -94,9 +106,9 @@ STOCKS: dict[str, Stock] = {
         Stock("small", "Small — date sticker", "Little sticker for dates",
               256, 200, 32.0, 25.0, gap_mm=2.0, density=9, speed=3),
         Stock("medium", "Medium — 3 × 2 inches", "Jars and small boxes",
-              609, 406, 76.2, 50.8),
+              609, 400, 76.2, 50.8, face_h_mm=50.0),
         Stock("large", "Large — 4 × 2 inches", "Most food containers",
-              812, 406, 101.6, 50.8),
+              812, 400, 101.6, 50.8, face_h_mm=50.0),
         Stock("round", "Round — 2 inch seal", "Round sticker for lids",
               406, 405, 50.8, 50.7, round=True, circle_dia=382, speed=3,
               zpl_lt=-3, zpl_md=8, zpl_pr=2),
@@ -109,12 +121,13 @@ DEFAULT_STOCK = "large"
 ORDER = ["small", "medium", "large", "round", "xl"]
 
 
-# Label sizes in dots per resolution. The 203 dpi numbers are the ones above
-# (unchanged since 1.0.0); every row equals round(mm * dpi / 25.4), which
-# tests/test_dpi.py checks, and the circle is the 203 dpi circle scaled.
+# Label sizes in dots per resolution. The 203 dpi numbers are the ones above;
+# every row equals round(mm * dpi / 25.4) of the drawn size (the printed face,
+# see Stock.face_h_mm), which tests/test_dpi.py checks, and the circle is the
+# 203 dpi circle scaled. 3 x 2 and 4 x 2 were 406 rows (50.8 mm) before 1.3.1.
 SIZES_DOTS = {
     203: {s.id: (s.w, s.h, s.circle_dia) for s in STOCKS.values()},
-    300: {"small": (378, 295, 0), "medium": (900, 600, 0), "large": (1200, 600, 0),
+    300: {"small": (378, 295, 0), "medium": (900, 591, 0), "large": (1200, 591, 0),
           "round": (600, 599, 565), "xl": (1200, 1800, 0)},
 }
 

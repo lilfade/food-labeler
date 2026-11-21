@@ -30,13 +30,13 @@ def test_job_format():
     doc.fields["food"] = "Soup"
     res = render.render(doc)
     job = zpl.build_job(res.image, stocks.get("large"), 5).decode()
-    assert job.startswith("^XA\n^CI28\n^PW812\n^LL406\n^LH0,0\n^LT0\n^MD0\n^PR3\n^FO0,0^GFA,")
+    assert job.startswith("^XA\n^CI28\n^PW812\n^LL400\n^LH0,0\n^LT0\n^MD0\n^PR3\n^FO0,0^GFA,")
     assert job.endswith("^FS\n^PQ5,0,0,N\n^XZ\n")
-    total = 102 * 406
+    total = 102 * 400
     assert f"^GFA,{total},{total},102," in job
     hexpart = job.split("^GFA,")[1].split("^FS")[0].split(",", 3)[3]
     assert hexpart == hexpart.upper()
-    back = zpl.decode_gfa(job.encode()).crop((0, 0, 812, 406))
+    back = zpl.decode_gfa(job.encode()).crop((0, 0, 812, 400))
     assert back.tobytes() == res.image.tobytes()
 
 

@@ -48,9 +48,9 @@ def test_tspl_mark_and_continuous_jobs():
 def test_zpl_jobs():
     assert calibrate.setup_job("zpl", LARGE, "gap") == b"^XA^MNW^XZ\n~JC\n"
     assert calibrate.setup_job("zpl", LARGE, "mark") == b"^XA^MNM^XZ\n~JC\n"
-    assert calibrate.setup_job("zpl", LARGE, "continuous") == b"^XA^MNN^PW812^LL406^XZ\n"
+    assert calibrate.setup_job("zpl", LARGE, "continuous") == b"^XA^MNN^PW812^LL400^XZ\n"
     assert calibrate.setup_job("zpl", stocks.get("large", 300), "continuous") == (
-        b"^XA^MNN^PW1200^LL600^XZ\n")
+        b"^XA^MNN^PW1200^LL591^XZ\n")
     for m in ("gap", "mark", "continuous"):
         assert b"^JUS" not in calibrate.setup_job("zpl", LARGE, m)   # never saved for good
 
@@ -140,7 +140,7 @@ def test_lineup_job_uses_print_settings():
     assert b"DENSITY 12" in turned and b"BLINE" in turned and turned != plain
     st300 = stocks.get("large", 300)
     z = calibrate.lineup_label_job(st300, ZPL, ADV, None, {"media": "continuous"})
-    assert b"^PW1200\n^LL600\n" in z and b"^MNN" in z
+    assert b"^PW1200\n^LL591\n" in z and b"^MNN" in z
     back = zpl.decode_gfa(z).crop((0, 0, st300.w, st300.h))
     assert back.tobytes() == calibrate.lineup_label_image(st300).tobytes()
 

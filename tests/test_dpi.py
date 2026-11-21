@@ -16,7 +16,7 @@ K = known.KnownPrinters()
 # ---- dot sizes ---------------------------------------------------------------
 
 def test_203_sizes_are_unchanged():
-    want = {"small": (256, 200, 0), "medium": (609, 406, 0), "large": (812, 406, 0),
+    want = {"small": (256, 200, 0), "medium": (609, 400, 0), "large": (812, 400, 0),
             "round": (406, 405, 382), "xl": (812, 1218, 0)}
     for sid, (w, h, dia) in want.items():
         st = stocks.get(sid)
@@ -30,14 +30,14 @@ def test_sizes_follow_the_mm(dpi):
     for sid in stocks.ORDER:
         st = stocks.get(sid, dpi)
         assert st.w == stocks.mm_to_dots(st.w_mm, dpi)
-        assert st.h == stocks.mm_to_dots(st.h_mm, dpi)
+        assert st.h == stocks.mm_to_dots(st.drawn_h_mm, dpi)
         assert (st.w_mm, st.h_mm, st.gap_mm) == (stocks.get(sid).w_mm, stocks.get(sid).h_mm,
                                                  stocks.get(sid).gap_mm)
 
 
 def test_300_table():
     got = {sid: (stocks.get(sid, 300).w, stocks.get(sid, 300).h) for sid in stocks.ORDER}
-    assert got == {"small": (378, 295), "medium": (900, 600), "large": (1200, 600),
+    assert got == {"small": (378, 295), "medium": (900, 591), "large": (1200, 591),
                    "round": (600, 599), "xl": (1200, 1800)}
     rnd = stocks.get("round", 300)
     assert rnd.circle_dia == 565 and rnd.zpl_lt == -4
@@ -135,11 +135,11 @@ def test_tspl_and_zpl_at_300():
     st = res.stock
     job = tspl.build_job(res.image, st, 1)
     assert job.startswith(b"SIZE 101.6 mm,50.8 mm\r\nGAP 3 mm,0 mm\r\n")
-    assert b"BITMAP 0,0,150,600,0," in job
-    assert len(job.split(b"BITMAP 0,0,150,600,0,", 1)[1]) == 150 * 600 + len(b"\r\nPRINT 1,1\r\n")
+    assert b"BITMAP 0,0,150,591,0," in job
+    assert len(job.split(b"BITMAP 0,0,150,591,0,", 1)[1]) == 150 * 591 + len(b"\r\nPRINT 1,1\r\n")
     z = zpl.build_job(res.image, st, 1)
-    assert b"^PW1200\n^LL600\n" in z and b"^GFA,90000,90000,150," in z
-    assert zpl.decode_gfa(z).crop((0, 0, 1200, 600)).tobytes() == res.image.tobytes()
+    assert b"^PW1200\n^LL591\n" in z and b"^GFA,88650,88650,150," in z
+    assert zpl.decode_gfa(z).crop((0, 0, 1200, 591)).tobytes() == res.image.tobytes()
     rnd = render.render(model.LabelDoc("simple", "round", {"food": "Soup"}), {}, dpi=300)
     z = zpl.build_job(rnd.image, rnd.stock, 1)
     assert b"^PW600\n^LL599\n^LH0,0\n^LT-4\n" in z
