@@ -73,12 +73,24 @@ class Modal(tk.Toplevel):
         center_on(self, self.master)
         self.deiconify()
         self.lift()
+        # Remember who held the input grab (another dialog that opened this one),
+        # so it gets it back when this one closes.
+        try:
+            previous = self.grab_current()
+        except (tk.TclError, KeyError):
+            previous = None
         try:
             self.grab_set()
         except tk.TclError:
             pass
         self.focus_force()
         self.wait_window()
+        try:
+            if previous is not None and previous.winfo_exists():
+                previous.grab_set()
+                previous.focus_force()
+        except tk.TclError:
+            pass
         return self.result
 
 

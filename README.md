@@ -111,6 +111,8 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 
 #### Fonts
 
+![A label with a fancy name in Pacifico](docs/screenshot-fancy-name.png)
+
 - **Lettering → Change…** (under *Label size*) lets you pick the kind of
   letters on your label: one for the **name of the food** and one for
   **everything else**. Each choice is shown in its own lettering, so you can
@@ -124,6 +126,12 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
   *Dancing Script*, look at it, and press **Add this font**. This is the only
   part of Food Labeler that uses the internet, and you never need it.
   **Add a font file from my computer…** adds a font you already have.
+
+<p>
+<img src="docs/screenshot-lettering.png" alt="Choosing the lettering" width="32%">
+<img src="docs/screenshot-font-picker.png" alt="The list of lettering" width="32%">
+<img src="docs/screenshot-get-fonts.png" alt="Getting a font from Google Fonts" width="32%">
+</p>
 - If you open a label made on another computer with a font you don't have,
   Food Labeler shows it in the standard lettering and offers to get the font.
 

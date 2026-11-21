@@ -189,6 +189,40 @@ def products():
     return True
 
 
+@step
+def lettering():
+    from food_labeler.font_dialogs import LetteringDialog
+    app.doc.set_template("simple")
+    app.doc.fields.update(food="Lemon Thyme Shortbread", contains="Milk, Wheat",
+                          note="Keep refrigerated")
+    app.doc.lettering = {"name": "Pacifico", "other": "Lato"}
+    app._sync_ui_from_doc()
+    d = LetteringDialog(root, app.doc, app.render_ctx() if hasattr(app, "render_ctx")
+                        else cfg.render_ctx())
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-lettering.png", d), d.destroy(),
+                             grab("screenshot-fancy-name.png"), nxt()))
+    return True
+
+
+@step
+def font_picker():
+    from food_labeler.font_dialogs import FontPicker
+    d = FontPicker(root, "name", "Pacifico")
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-font-picker.png", d), d.destroy(), nxt()))
+    return True
+
+
+@step
+def get_fonts():
+    from food_labeler.font_dialogs import GetFontsDialog
+    d = GetFontsDialog(root, "Dancing Script")
+    d.deiconify()
+    root.after(700, lambda: (grab("screenshot-get-fonts.png", d), d.destroy(), nxt()))
+    return True
+
+
 def nxt():
     if not steps:
         root.after(100, root.destroy)
