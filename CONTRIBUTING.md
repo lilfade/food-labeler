@@ -48,6 +48,21 @@ User help lives in [README.md](README.md) and three guides:
   users add.
 - [docs/samples](docs/samples): sample printouts of every label kind and size.
 
+## Website
+
+The website at https://lilfade.github.io/food-labeler/ lives in `site/`:
+one page (`index.html`), `style.css`, `404.html` and `robots.txt`. It is
+plain HTML and CSS: no scripts, no web fonts, no trackers. The pictures are
+not kept twice: the *Website* workflow (`.github/workflows/pages.yml`)
+copies the screenshots and samples it needs from `docs/`, the seal from
+`assets/` and the icons from `food_labeler/assets/` into `img/` and
+publishes the result to GitHub Pages. It runs on every push to `main` that
+changes one of those folders, or by hand (*Actions → Website → Run
+workflow*). If a new picture is used on the page, add it to the copy step.
+
+GitHub Pages has to be turned on once, by the repository owner:
+*Settings → Pages → Build and deployment → Source: GitHub Actions*.
+
 ## Development setup
 
 You need Python 3.11 or newer (CI uses 3.12) with Tk (`python3-tk` on

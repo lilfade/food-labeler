@@ -6,6 +6,8 @@
 
 *by High Thyme Kitchen*
 
+Website: https://lilfade.github.io/food-labeler/
+
 > ### In short
 >
 > **It's a free program that prints the sticker that goes on your food.**

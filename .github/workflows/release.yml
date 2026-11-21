@@ -146,6 +146,8 @@ jobs:
             echo "Only download Food Labeler from https://github.com/lilfade/food-labeler/releases — never from a link someone sends you."
             echo
             echo "Step-by-step help: https://github.com/lilfade/food-labeler/blob/main/docs/guide.md"
+            echo
+            echo "Website: https://lilfade.github.io/food-labeler/"
           } >> notes.md
           cat notes.md
 

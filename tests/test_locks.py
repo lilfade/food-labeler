@@ -51,11 +51,26 @@ def test_runtime_and_dev_locks_agree():
     assert "setuptools" in dev                                # PyInstaller needs it
 
 
+WORKFLOWS = ROOT / ".github" / "workflows"
+
+
 @pytest.mark.parametrize("wf", ["ci.yml", "release.yml"])
-def test_workflows_install_only_hashed_and_pin_actions(wf):
-    text = (ROOT / ".github" / "workflows" / wf).read_text(encoding="utf-8")
+def test_workflows_install_only_hashed(wf):
+    text = (WORKFLOWS / wf).read_text(encoding="utf-8")
     installs = re.findall(r"pip install[^\n]*", text)
     assert installs and all("--require-hashes" in x for x in installs), installs
+
+
+def test_known_workflows_are_checked():
+    assert {"ci.yml", "release.yml", "pages.yml"} <= {p.name for p in WORKFLOWS.glob("*.yml")}
+
+
+@pytest.mark.parametrize("wf", sorted(p.name for p in WORKFLOWS.glob("*.y*ml")))
+def test_workflows_pin_actions(wf):
+    """Every workflow (the website's included) pins each action to a full commit SHA."""
+    text = (WORKFLOWS / wf).read_text(encoding="utf-8")
+    installs = re.findall(r"pip install[^\n]*", text)
+    assert all("--require-hashes" in x for x in installs), installs
     uses = re.findall(r"uses:\s*(\S+)(.*)", text)
     assert uses
     for action, comment in uses:
