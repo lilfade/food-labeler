@@ -4,11 +4,13 @@ Used by templates.layout() when a label has a picture or a QR code, and for
 the Picture label (one big picture, optional words under it).
 
 Plain-word placements (pictures.PLACES): *Above the name* takes a band across
-the top; *Left side* / *Right side* take a column the height of the text
-area; *Top-left corner* / *Top-right corner* take just their own box, so the
-text flows beside and then under them. Several things in the same place sit
-side by side (above) or one under the other (columns). On round labels
-everything goes above the name, kept inside the circle.
+the top and *Below the writing* one across the bottom; *Left side* / *Right
+side* take a column the height of the text area; the four corners take just
+their own box, so the text flows beside and then under (or over) them.
+Several things in the same place sit side by side (bands) or one under the
+other (sides); a corner and a column on the same side share one column, so
+nothing overlaps. On round labels things go across the top or the bottom of
+the circle, kept inside it.
 
 The wording wins: templates.fit() first shrinks the text as usual (never
 below each block's minimum, so the state's required wording keeps its size);
@@ -107,68 +109,137 @@ def _fit_in_circle(region: Region, half_w: float, h: float):
     return y0
 
 
-def arrange(items: list[Item], stock: stocks.Stock, region: Region) -> None:
-    """Give items their positions and take their space out of ``region``."""
-    gap = stock.d(12)
-    slots: dict[str, list[Item]] = {}
-    for it in items:
-        place = "above" if stock.round or it.place in ("fill", "fit") else it.place
-        slots.setdefault(place, []).append(it)
-    for place, its in slots.items():
-        if place == "above":
-            for _ in range(40):
-                total = sum(i.w for i in its) + gap * (len(its) - 1)
-                band = max(i.h for i in its)
-                if total > region.full_width:
-                    k = region.full_width / total
-                elif band > region.height:
-                    k = region.height / band
-                elif region.circle is not None and _fit_in_circle(region, total / 2,
-                                                                 band) is None:
-                    k = 0.95
-                else:
-                    break
-                for i in its:
-                    i.scale(k, stock)
-            total = sum(i.w for i in its) + gap * (len(its) - 1)
-            band = max(i.h for i in its)
-            y0 = region.top
-            if region.circle is not None:
-                y0 = _fit_in_circle(region, total / 2, band) or region.top
-            x = (region.left + region.right) / 2 - total / 2
-            for i in its:
-                i.x, i.y = x, y0
-                x += i.w + gap
-            region.top = y0 + band + gap
-            continue
-        # a column on the left or right, or a corner box
-        maxw = region.full_width * 0.45
-        for _ in range(40):
-            colw = max(i.w for i in its)
-            total = sum(i.h for i in its) + gap * (len(its) - 1)
-            if colw > maxw:
-                k = maxw / colw
-            elif total > region.height:
-                k = region.height / total
-            else:
-                break
-            for i in its:
-                i.scale(k, stock)
-        colw = max(i.w for i in its)
-        total = sum(i.h for i in its) + gap * (len(its) - 1)
-        corner = place.startswith("corner")
-        y = region.top if corner else region.top + (region.height - total) / 2
-        y_end = y + total
-        left = place in ("left", "corner")
+# Where each placement goes: a band across the top or the bottom, or a side
+# ("left"/"right") at the top, in the middle (a column) or at the bottom.
+SIDES = {"corner": ("left", "top"), "left": ("left", "column"),
+         "corner_bottom_left": ("left", "bottom"),
+         "corner_right": ("right", "top"), "right": ("right", "column"),
+         "corner_bottom_right": ("right", "bottom")}
+BOTTOM_PLACES = ("bottom", "corner_bottom_left", "corner_bottom_right")
+
+
+def where(place: str, stock: stocks.Stock) -> str:
+    """The placement actually used on this label: on round labels only across the
+    top ("above") or the bottom of the circle; the Picture label's own "fill"/"fit"
+    count as above."""
+    if place in ("fill", "fit"):
+        return "above"
+    if stock.round:
+        return "bottom" if place in BOTTOM_PLACES else "above"
+    return place if place in SIDES or place in ("above", "bottom") else "above"
+
+
+def _band(its: list[Item], stock: stocks.Stock, region: Region, gap: float,
+          at_bottom: bool) -> None:
+    """Items side by side across the top (or the bottom) of the text area."""
+    for _ in range(40):
+        total = sum(i.w for i in its) + gap * (len(its) - 1)
+        band = max(i.h for i in its)
+        if total > region.full_width:
+            k = region.full_width / total
+        elif band > region.height:
+            k = region.height / band
+        elif region.circle is not None and _fit_in_circle(region, total / 2, band) is None:
+            k = 0.95
+        else:
+            break
         for i in its:
-            i.x = region.left if left else region.right - i.w
+            i.scale(k, stock)
+    total = sum(i.w for i in its) + gap * (len(its) - 1)
+    band = max(i.h for i in its)
+    if at_bottom:
+        y0 = region.bottom - band
+        if region.circle is not None:
+            top = _fit_in_circle(region, total / 2, band)
+            if top is not None:            # the top band's mirror image
+                y0 = 2 * region.circle[1] - (top + band)
+    else:
+        y0 = region.top
+        if region.circle is not None:
+            y0 = _fit_in_circle(region, total / 2, band) or region.top
+    x = (region.left + region.right) / 2 - total / 2
+    for i in its:
+        i.x = x
+        i.y = y0 + (band - i.h if at_bottom else 0)
+        x += i.w + gap
+    if at_bottom:
+        region.bottom = y0 - gap
+    else:
+        region.top = y0 + band + gap
+
+
+def _side(its: list[tuple[str, Item]], side: str, stock: stocks.Stock, region: Region,
+          gap: float) -> None:
+    """Items down one side: corners at the top or bottom, columns in the middle.
+
+    With only corners, the text flows beside a corner and then under (or over)
+    it. As soon as there is a column, the whole side is one column of the text
+    area's height, so a corner and a column on the same side never overlap."""
+    items = [i for _r, i in its]
+    maxw = region.full_width * 0.45
+    for _ in range(40):
+        colw = max(i.w for i in items)
+        total = sum(i.h for i in items) + gap * (len(items) - 1)
+        if colw > maxw:
+            k = maxw / colw
+        elif total > region.height:
+            k = region.height / total
+        else:
+            break
+        for i in items:
+            i.scale(k, stock)
+    colw = max(i.w for i in items)
+    tops = [i for r, i in its if r == "top"]
+    cols = [i for r, i in its if r == "column"]
+    bots = [i for r, i in its if r == "bottom"]
+    y = region.top
+    for i in tops:
+        i.y = y
+        y += i.h + gap
+    top_limit = y                          # under the top corner (and its gap)
+    y = region.bottom
+    for i in reversed(bots):
+        y -= i.h
+        i.y = y
+        y -= gap
+    bottom_limit = y                       # over the bottom corner (and its gap)
+    if cols:
+        total = sum(i.h for i in cols) + gap * (len(cols) - 1)
+        y = top_limit + (bottom_limit - top_limit - total) / 2
+        for i in cols:
             i.y = y
             y += i.h + gap
-        ey0, ey1 = (region.top, y_end + gap) if corner else (region.top, region.bottom)
-        if left:
+    for i in items:
+        i.x = region.left if side == "left" else region.right - i.w
+    if cols:
+        spans = [(region.top, region.bottom)]
+    else:
+        spans = ([(region.top, top_limit)] if tops else []) + \
+                ([(bottom_limit, region.bottom)] if bots else [])
+    for ey0, ey1 in spans:
+        if side == "left":
             region.exclusions.append((region.left, ey0, region.left + colw + gap, ey1))
         else:
             region.exclusions.append((region.right - colw - gap, ey0, region.right, ey1))
+
+
+def arrange(items: list[Item], stock: stocks.Stock, region: Region) -> None:
+    """Give items their positions and take their space out of ``region``.
+
+    The bands across the top and the bottom come first, then the sides inside
+    what is left, so nothing is ever placed on top of anything else."""
+    gap = stock.d(12)
+    above = [i for i in items if where(i.place, stock) == "above"]
+    below = [i for i in items if where(i.place, stock) == "bottom"]
+    if above:
+        _band(above, stock, region, gap, at_bottom=False)
+    if below:
+        _band(below, stock, region, gap, at_bottom=True)
+    for side in ("left", "right"):
+        its = [(SIDES[where(i.place, stock)][1], i) for i in items
+               if SIDES.get(where(i.place, stock), ("",))[0] == side]
+        if its:
+            _side(its, side, stock, region, gap)
 
 
 def _circle_mask(img: Image.Image, x: int, y: int, region: Region) -> Image.Image:
@@ -284,7 +355,8 @@ def _picture_label(doc, stock, blocks, pic, qr, text) -> Layout:
             return Layout(overflow=True, overflow_key="qr", message=qrcodes.TOO_SMALL)
         it = _qr_item(qr, text, stock, module0)
         if not stock.round:          # in a picture label a QR code takes a whole side
-            it.place = {"corner": "left", "corner_right": "right"}.get(it.place, it.place)
+            it.place = {"corner": "left", "corner_right": "right", "corner_bottom_left": "left",
+                        "corner_bottom_right": "right"}.get(it.place, it.place)
         items.append(it)
         arrange(items, stock, region)
     out = Layout()

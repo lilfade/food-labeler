@@ -27,7 +27,7 @@ from tkinter import filedialog
 from PIL import ImageTk
 
 from . import pictures, printers, printsettings, qrcodes, render, settings as settings_mod
-from . import calibrate, stocks
+from . import calibrate, extras, stocks
 from .widgets import (BG, BORDER, GREEN, INK, MUTED, PANEL, WARN, Modal, ScrollFrame, Toggle,
                       ask, button, tell)
 
@@ -65,7 +65,9 @@ class PictureDialog(Modal):
         self.dpi = app.current_dpi()
         self.library = pictures.Library(settings_mod.data_dir())
         on_picture_label = self.doc.template == "picture"
+        round_label = stocks.get(self.doc.stock).round
         self.places = (pictures.PLACES_FOR_PICTURE_LABEL if on_picture_label
+                       else pictures.PLACES_ON_ROUND if round_label
                        else pictures.PLACES_FOR_OTHERS)
         pic = pictures.clean(self.doc.picture)
         if pic is None:
@@ -96,12 +98,15 @@ class PictureDialog(Modal):
 
         _heading(left, "Where does it go?")
         self.place = tk.StringVar(value=pic["place"])
-        for p in self.places:
-            tk.Radiobutton(left, text=pictures.PLACES[p], variable=self.place, value=p,
+        grid = tk.Frame(left, bg=BG)             # two columns, to keep the window short
+        grid.pack(anchor="w")
+        for n, p in enumerate(self.places):
+            tk.Radiobutton(grid, text=pictures.PLACES[p], variable=self.place, value=p,
                            font="ui", bg=BG, activebackground=BG,
-                           command=self._changed).pack(anchor="w")
-        if app.doc.stock and stocks.get(self.doc.stock).round and not on_picture_label:
-            tk.Label(left, text="On round labels the picture goes above the writing.",
+                           command=self._changed).grid(row=n // 2, column=n % 2, sticky="w",
+                                                       padx=(0, 16))
+        if round_label and not on_picture_label:
+            tk.Label(left, text="On round labels the picture goes above or below the writing.",
                      font="small", bg=BG, fg=MUTED).pack(anchor="w")
 
         _heading(left, "How big?")
@@ -409,10 +414,15 @@ class QrDialog(Modal):
                             justify="left")
         self.msg.pack(anchor="w", pady=(6, 0))
         _heading(right, "Where does it go?")
+        round_label = stocks.get(self.doc.stock).round
+        places = (pictures.PLACES_ON_ROUND if round_label and self.doc.template != "picture"
+                  else qrcodes.PLACES)
+        if qr["place"] not in places:
+            qr["place"] = "bottom" if qr["place"] in extras.BOTTOM_PLACES else "above"
         self.place = tk.StringVar(value=qr["place"])
         grid = tk.Frame(right, bg=BG)
         grid.pack(anchor="w")
-        for n, p in enumerate(qrcodes.PLACES):   # two columns, to keep the window short
+        for n, p in enumerate(places):           # two columns, to keep the window short
             tk.Radiobutton(grid, text=pictures.PLACES[p], variable=self.place, value=p,
                            font="ui", bg=BG, activebackground=BG,
                            command=self._changed).grid(row=n // 2, column=n % 2, sticky="w",

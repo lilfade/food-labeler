@@ -4,7 +4,8 @@ A label's QR code is a plain dict (``LabelDoc.qr``)::
 
     {"what": "link" | "phone" | "email" | "text", "value": "...",
      "caption": "Scan for our menu",       # optional line under the code
-     "place": "above" | "left" | "right" | "corner" | "corner_right",
+     "place": "above" | "bottom" | "left" | "right" | "corner" | "corner_right"
+              | "corner_bottom_left" | "corner_bottom_right",
      "size": 30}                           # % of the label's height (10..100)
 
 Codes are made with segno at error correction level M (segno may raise it
@@ -25,7 +26,8 @@ from . import stocks
 
 WHAT = {"link": "A website link", "phone": "My phone number", "email": "My email",
         "text": "Some text"}
-PLACES = ["above", "left", "right", "corner", "corner_right"]
+PLACES = ["above", "bottom", "left", "right", "corner", "corner_right",
+          "corner_bottom_left", "corner_bottom_right"]
 SIZE_RANGE = (10, 100)
 DEFAULTS = {"what": "link", "value": "", "caption": "", "place": "right", "size": 35}
 MIN_MODULE_203 = 3            # smallest square, in 203 dpi dots (0.375 mm)

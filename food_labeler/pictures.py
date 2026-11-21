@@ -4,7 +4,8 @@ black and white dots for a thermal printer, and the "My pictures" library.
 A label's picture is a plain dict (``LabelDoc.picture``)::
 
     {"png": "<base64 PNG>", "name": "logo.png",
-     "place": "above" | "left" | "right" | "corner" | "corner_right" | "fill" | "fit",
+     "place": "above" | "bottom" | "left" | "right" | "corner" | "corner_right"
+              | "corner_bottom_left" | "corner_bottom_right" | "fill" | "fit",
      "size": 35,                        # % of the label's height (10..100)
      "mode": "logo" | "photo",          # solid black (threshold) or tiny dots (dither)
      "threshold": None | 1..254,        # logo: None = automatic (Otsu)
@@ -75,12 +76,18 @@ PLACES = {
     "right": "Right side",
     "corner": "Top-left corner",
     "corner_right": "Top-right corner",
+    "bottom": "Below the writing",
+    "corner_bottom_left": "Bottom-left corner",
+    "corner_bottom_right": "Bottom-right corner",
     "fill": "Fill the label",
     "fit": "Fit inside",
 }
 # Which placements each kind of label offers (Picture label: the picture is the label).
 PLACES_FOR_PICTURE_LABEL = ["fit", "fill"]
-PLACES_FOR_OTHERS = ["above", "left", "right", "corner"]
+PLACES_FOR_OTHERS = ["above", "bottom", "left", "right", "corner", "corner_right",
+                     "corner_bottom_left", "corner_bottom_right"]
+# Round labels: only across the top or the bottom of the circle.
+PLACES_ON_ROUND = ["above", "bottom"]
 MODES = {"logo": "Logo / drawing (solid black)", "photo": "Photo (tiny dots)"}
 SIZE_RANGE = (10, 100)
 DEFAULTS = {"png": "", "name": "", "place": "above", "size": 35, "mode": "logo",
