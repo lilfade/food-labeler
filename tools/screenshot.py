@@ -298,6 +298,15 @@ def roll_notice():
     return True
 
 
+@step
+def report_dialog():
+    from food_labeler.dialogs import ReportDialog
+    d = ReportDialog(root, app)
+    d.deiconify()
+    root.after(1500, lambda: (grab("screenshot-report.png", d), d.destroy(), nxt()))
+    return True
+
+
 def nxt():
     if not steps:
         root.after(100, root.destroy)

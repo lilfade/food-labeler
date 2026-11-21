@@ -32,3 +32,4 @@ Thumbs.db
 
 # shows the real USB devices of whoever ran tools/screenshot.py
 docs/screenshot-usb.png
+docs/screenshot-report.png
