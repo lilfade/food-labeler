@@ -1,0 +1,90 @@
+# Your printer
+
+[← Back to the start](../README.md)
+
+Food Labeler works with LP610BT-type label printers (sold as Labelnize,
+Flexyva, Polono and others) and Zebra printers such as the ZP450, on Windows
+and Linux.
+
+- [Picking your printer](#picking-your-printer)
+- [Print settings](#print-settings)
+- [Sharpness: 203 or 300 dpi](#sharpness-203-or-300-dpi)
+- [New roll? Set it up](#new-roll-set-it-up)
+- [My printer isn't in the list](#my-printer-isnt-in-the-list)
+
+If something prints wrong, see [Something not right?](troubleshooting.md).
+
+## Picking your printer
+
+- The printer you are using is shown above the **PRINT** button. If you have
+  more than one, click it to choose.
+- **My printers…** lets you give printers names like *White label printer*.
+  **Which one is it?** prints a tiny label saying which printer it is.
+- **Look for printers again** if you just plugged one in.
+
+## Print settings
+
+**Print settings…** (under the printer list) is kept for each printer:
+
+- *Darkness*: lighter or darker.
+- *Speed*: slower is sharper.
+- *Nudge the print* if it isn't in the middle of the label.
+- *Print upside down*.
+- The kind of labels in the printer: with gaps, with black marks, or a
+  continuous roll.
+- Whether it stops so you can tear the label off.
+
+**Darkness test** prints 3 labels (lighter, now, darker) so you can pick
+the best; **Feed one blank label** moves the roll on. **Reset to normal**
+puts everything back.
+
+![Print settings](screenshot-print-settings.png)
+
+## Sharpness: 203 or 300 dpi
+
+**Sharpness** (in **My printers…**): most label printers are *Normal
+(203 dpi)*, and Food Labeler picks that for you. Only change it to
+*Sharp (300 dpi)* if your printer (or its box) says 300 dpi. Your labels
+stay the same size either way; at 300 dpi the writing is just crisper.
+
+## New roll? Set it up
+
+Each time you put a new roll in the printer, set it up once, so the
+printing lands on the labels and not across the gaps between them.
+
+1. Press **Print settings…** (under the printer list), then
+   **New roll? Set it up…**.
+2. **Put the new roll in.** Pull out a few labels past the front and close
+   the lid.
+3. **Say what is on the roll:** the label size (your label's size is already
+   picked) and the kind of roll: *Labels with gaps* (most rolls), *Labels
+   with black marks* (black lines on the back) or *Continuous roll* (one long
+   strip, no gaps).
+4. Press **Set it up**. Food Labeler asks first, because the printer feeds
+   2–4 blank labels to measure them. A continuous roll needs no setting up;
+   this only tells the printer the size, and no labels are used.
+5. If you like, press **Print one test label**. It has a box just inside
+   the edges and an arrow pointing to the end that comes out first. If the
+   box sits on the label, press **Looks right**. If not, press **It's off —
+   help me** for what to try.
+
+![Setting up a new roll](screenshot-roll-setup.png)
+
+The window also says how to set up a roll with the printer's own feed
+button, in case that is ever needed. Food Labeler remembers which roll you
+set up on each printer. When you pick a different label size, a short line
+under the printer asks *"New roll in the … printer? Set it up"*; press
+**Set up**, or **No, same roll** if you didn't change the roll. Nothing is
+ever sent to the printer until you press **Set it up** and say OK.
+(**Settings → Advanced… → Feed / calibrate…** opens the same window.)
+
+## My printer isn't in the list
+
+1. Check the printer is switched on and its cable is plugged in.
+2. Press **Look for printers again**.
+3. Still nothing? Press **My printer isn't in the list**. Unplug the printer,
+   wait a moment and plug it back in: it shows up marked
+   *"This just appeared"*. Press **Use this as my printer**.
+4. If that doesn't work, press **Send this to High Thyme Kitchen**. It makes a
+   short report about the computer and printer (never what is on your labels)
+   that you can e-mail to us at hello@highthymekitchen.com, and we will help.

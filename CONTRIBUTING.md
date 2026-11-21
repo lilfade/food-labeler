@@ -15,6 +15,39 @@ experts, so the guiding rules are:
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit.
 
+User help lives in [README.md](README.md) and three guides:
+[Using Food Labeler](docs/guide.md), [Your printer](docs/printer.md) and
+[Something not right?](docs/troubleshooting.md). Changes are listed in
+[CHANGELOG.md](CHANGELOG.md).
+
+## For helpers
+
+- **Linux:** download `food-labeler`, make it executable
+  (`chmod +x food-labeler`) and run it, or build it yourself with
+  `./build_linux.sh` and install a menu entry with
+  `./packaging/install_linux.sh`. Printing straight to a USB printer needs the
+  user in the `lp` group (`sudo usermod -aG lp $USER`, then log out and in);
+  a raw CUPS queue also works.
+- **Where things are kept:** saved labels in `Documents\My Food Labels`
+  (Linux: `~/Documents/My Food Labels`); settings, autosave, log, printer
+  updates, *My bakery*, *My ingredients*, *My products*, fonts you added and
+  your own cottage wording in `%APPDATA%\FoodLabeler` (Linux:
+  `~/.local/share/food-labeler`). Updates to Food Labeler never change them.
+- **Checking a download:** `SHA256SUMS.txt` on the
+  [Releases page](https://github.com/lilfade/food-labeler/releases/latest)
+  has the checksum of each file.
+
+## Developer docs
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the pieces fit.
+- [docs/printer-definitions.md](docs/printer-definitions.md): adding new
+  printer models with a printer update file.
+- [docs/cottage-rules.md](docs/cottage-rules.md): the state cottage food
+  rules and how to update them.
+- [docs/fonts.md](docs/fonts.md): bundled fonts, their sources and fonts
+  users add.
+- [docs/samples](docs/samples): sample printouts of every label kind and size.
+
 ## Development setup
 
 You need Python 3.11 or newer (CI uses 3.12) with Tk (`python3-tk` on
@@ -60,6 +93,10 @@ To try printing without a printer:
 ```sh
 FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler
 ```
+
+Screenshots in `docs/` come from `python tools/screenshot.py docs`. It
+opens the real window with example data for about half a minute, so only run
+it on a desktop nobody is using at that moment.
 
 `tools/render_samples.py` redraws `docs/samples/*.png` (the exact printer
 bitmaps for every template and size, the fonts sheet, `dpi-203-vs-300.png`,
@@ -165,7 +202,7 @@ variable file only when Google's repository has nothing else).
    `min_scale` from its x-height compared with DejaVu Sans (55 at size 100)
    and more for script/handwriting fonts.
 4. Add it to the table in `docs/fonts.md` (license, size, exact source path
-   and commit), to the README's license paragraph and to the CHANGELOG.
+   and commit), to the license paragraph in `docs/guide.md` and to the CHANGELOG.
 5. Run the tests (`tests/test_fonts.py` checks every bundled font loads,
    draws and has a real bold) and `python tools/render_samples.py --fonts`,
    then look at `docs/samples/fonts-contact-sheet.png`.
