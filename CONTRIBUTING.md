@@ -58,7 +58,8 @@ Labels*) or GitHub leaves them off.
 - [docs/fonts.md](docs/fonts.md): bundled fonts, their sources and fonts
   users add.
 - [docs/bluetooth-and-phones.md](docs/bluetooth-and-phones.md): notes on
-  printing over Bluetooth and on a phone version (research, not built yet).
+  printing over Bluetooth (built in 1.5.0, alpha) and on a phone version
+  (research, not built yet).
 - [docs/samples](docs/samples): sample printouts of every label kind and size.
 
 ## Website
@@ -142,7 +143,7 @@ so pair first:
    & devices → Add device**.
 2. Start Food Labeler (or, to see the job without printing,
    `FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler`) and
-   press **Look for printers again**. The printer appears as
+   press **Printer options ▾ → Look for printers again**. The printer appears as
    *… — Bluetooth (…3F:A2)* (Windows: *… — Bluetooth COM5 (…3F:A2)*), marked
    *(alpha — not tested yet)*.
 3. Put a roll in, pick that printer and print **one** label (a test label
@@ -168,9 +169,16 @@ To try printing without a printer:
 FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler
 ```
 
-Screenshots in `docs/` come from `python tools/screenshot.py docs`. It
-opens the real window with example data for about half a minute, so only run
-it on a desktop nobody is using at that moment.
+Screenshots in `docs/` come from
+`SHOT_SCREEN=1280x720 python tools/screenshot.py docs`: the main window at
+1280 × 720 with the *Normal* text size, example data and two pretend
+printers. It opens the real window for about half a minute, so only
+run it on a desktop nobody is using at that moment. It never prints or
+connects to anything. It also saves `screenshot-usb.png` and
+`screenshot-report.png`, which show the USB devices of the computer it ran
+on: they are in `.gitignore` and must never be committed. If a new
+screenshot is used on the website, add it to the copy step in
+`.github/workflows/pages.yml`.
 
 `tools/render_samples.py` redraws `docs/samples/*.png` (the exact printer
 bitmaps for every template and size, the fonts sheet, `dpi-203-vs-300.png`,

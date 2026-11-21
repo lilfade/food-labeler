@@ -46,8 +46,9 @@ real printers.
 
 - **Network printers.** A label printer on your network (with its own
   network socket, through a print server, or behind a small network
-  bridge) is now easy to add: **My printers → Add a network printer…**
-  (also in *My printer isn't in the list* and *Set up my printer*). Type
+  bridge) is now easy to add: **Printer options ▾ → Add a network
+  printer…** (also in *My printers*, *My printer isn't in the list* and
+  *Set up my printer*). Type
   its address, like `192.168.1.50:9100`, and press **Test the connection**:
   it only checks that something answers and never prints. Say what kind
   of printer it is and press **Add this printer**; it becomes your printer
@@ -59,8 +60,8 @@ real printers.
   Set it up**, the darkness test, **Feed one blank label** and **Which one
   is it?**. Before, adding one under Advanced didn't choose it, and the
   Advanced window showed an empty box afterwards; it now lists them.
-- **Wide or tall.** A new **Which way?** choice (next to the label size)
-  lays any label out *Wide* or *Tall* (not round ones). A tall label on a
+- **Wide or tall.** New **Wide** and **Tall** buttons (next to the label
+  size) lay any label out wide or tall (not round ones). A tall label on a
   4 × 2 roll is 2 inches wide and 4 inches tall and prints sideways; a
   4 × 6 label can be wide (6 × 4). The preview shows it the way you read
   it, with a small arrow at the edge that comes out of the printer first.
@@ -104,8 +105,8 @@ real printers.
 - **Print over Bluetooth.** LP610BT-type printers with Bluetooth can now
   print without the USB cable, on Windows and Linux. Pair the printer once
   in the computer's own Bluetooth settings (the PIN is often 0000 or 1234),
-  then press **Look for printers again**. It shows up as, for example,
-  *… — Bluetooth (…3F:A2)*. Food Labeler never pairs by itself. See
+  then press **Printer options ▾ → Look for printers again**. It shows up
+  as, for example, *… — Bluetooth (…3F:A2)*. Food Labeler never pairs by itself. See
   [Bluetooth printers](docs/printer.md#bluetooth-printers-alpha).
 - **Alpha — not tested yet.** Printing over Bluetooth hasn't been tested on
   paper. Bluetooth printers have *(alpha — not tested yet)* after their name,

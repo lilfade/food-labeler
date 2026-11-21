@@ -30,10 +30,15 @@ If something prints wrong, see [Something not right?](troubleshooting.md).
 
 - The printer you are using is shown next to **Printer:**, above the
   **PRINT** button. If you have more than one, click it to choose.
+- The line under it says how the printer is: *ready*, *not plugged in or
+  switched off*, or what to do. Click it for help.
 - Everything else is in **Printer options ▾** next to it:
-- **My printers…** lets you give printers names like *White label printer*.
-  **Which one is it?** prints a tiny label saying which printer it is.
-- **Look for printers again** if you just plugged one in.
+  - **Look for printers again** if you just plugged one in.
+  - **My printers…** lets you give printers names like *White label
+    printer*. **Which one is it?** prints a tiny label saying which printer
+    it is. *Type* and *Sharpness* are there too.
+  - **Print settings…** and **New roll? Set it up…** (below).
+  - **Add a network printer…** and **My printer isn't in the list…**.
 
 ## Print settings
 
@@ -110,13 +115,16 @@ are *alpha — not tested yet* until someone has printed on them that way.
 3. Type the address and press **Test the connection**. This only checks that
    something answers there, within a few seconds; it never prints anything.
 4. Say what kind of printer it is (*Label printer like the LP610BT*, *Zebra
-   label printer*, or *Another label printer*), give it a name if you like,
-   and press **Add this printer**. It is chosen as your printer straight
-   away.
+   label printer*, or *Another label printer (TSPL)*), give it a name if you
+   like, and press **Add this printer**. It is chosen as your printer
+   straight away.
 
-Your network printers are listed in the same window, with their address and
-a **Remove** button. Print settings, **New roll? Set it up**, the darkness
-test, **Feed one blank label** and **Which one is it?** all work with them.
+![Add a network printer, with one network printer already added](screenshot-network-printer.png)
+
+Your network printers are listed in the same window, with their address,
+**Use this one** and a **Remove** button. Print settings, **New roll? Set it
+up**, the darkness test, **Feed one blank label** and **Which one is it?**
+all work with them.
 Food Labeler never looks for printers on the network by itself; it only
 connects when you print (or press **Test the connection**). If printing says
 the printer isn't answering at its address, check the printer and its print

@@ -373,7 +373,7 @@ which devices are paired and never pairs or connects to look.
 ### Network printers
 
 A network printer is a printer the person added with *Add a network
-printer…* (My printers, My printer isn't in the list, Set up my printer;
+printer…* (Printer options, My printers, My printer isn't in the list, Set up my printer;
 Advanced lists them and opens the same window): `printers[<id>]` in
 settings.json with `"manual": true, "method": "network", "target":
 "host:port", "kind"` and the kind of printer they said it is (`"model"`, a

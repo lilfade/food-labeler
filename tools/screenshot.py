@@ -6,12 +6,13 @@ so run it on a desktop you are not using at that moment:
 
 Uses a temporary data folder and FOOD_LABELER_DRY_RUN, so nothing is printed
 and nothing of yours is touched. Printer discovery is replaced by two pretend
-printers and "Test the connection" never connects.
+printers (shown as ready), and "Test the connection" and "Get more fonts"
+never connect.
 
 Settings, from the environment:
 
     SHOT_SCALE=0.8        text size (0.7 Small, 0.8 Normal, 1.0 Large, 1.2 Extra large)
-    SHOT_SIZE=1280x720    main window size (default 1366x800, the docs' size)
+    SHOT_SIZE=1366x800    main window size (default 1280x720, the docs' size)
     SHOT_SCREEN=1280x720  pretend the screen is this big (dialogs size themselves to it)
     SHOT_ALL=1            also walk through every other window and flow
     SHOT_STEPS=a,b        only these steps (names as below)
@@ -41,7 +42,7 @@ from food_labeler import app as appmod, known, model, printers, settings  # noqa
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else ROOT / "docs")
 OUT.mkdir(parents=True, exist_ok=True)
 SCALE = float(os.environ.get("SHOT_SCALE") or 0)
-SIZE = os.environ.get("SHOT_SIZE") or "1366x800"
+SIZE = os.environ.get("SHOT_SIZE") or "1280x720"
 SCREEN = os.environ.get("SHOT_SCREEN") or ""
 ALL = os.environ.get("SHOT_ALL") == "1"
 ONLY = [s for s in (os.environ.get("SHOT_STEPS") or "").split(",") if s]
@@ -65,6 +66,17 @@ def fake_printers():
 
 
 printers.discover = lambda *a, **k: fake_printers()
+_real_status = printers.status
+
+
+def _fake_status(p, name=""):
+    """The pretend printers are "ready" (their /dev/usb paths don't exist here)."""
+    if p is not None and p.id in ("usb:1-1.4", "usb:1-1.2"):
+        return "ready", f"{name or p.default_name()} \u2014 ready"
+    return _real_status(p, name)
+
+
+printers.status = _fake_status
 
 
 def _no_network(*a, **k):
@@ -72,6 +84,14 @@ def _no_network(*a, **k):
 
 
 printers.check_network = _no_network
+from food_labeler import fontget  # noqa: E402
+
+
+def _no_font_download(*a, **k):
+    raise fontget.FontGetError("(screenshot run: not connecting)")
+
+
+fontget.http_get = _no_font_download
 try:
     from food_labeler import btscan
     btscan.scan = lambda *a, **k: []
@@ -257,6 +277,21 @@ def too_much():
 
 
 @step
+def tall():
+    set_label("simple", food="Chicken Noodle Soup", contains="Wheat, Eggs",
+              note="Keep refrigerated", made_by="Grandma Jo")
+    app.set_orientation("tall")
+
+    def back():
+        grab("screenshot-tall.png")
+        set_label("simple", food="Chicken Noodle Soup", contains="Wheat, Eggs",
+                  note="Keep refrigerated", made_by="Grandma Jo")
+        nxt()
+    root.after(700, back)
+    return True
+
+
+@step
 def template_picker():
     from food_labeler.dialogs import TemplatePicker
     return show(TemplatePicker(root, app.doc, cfg.render_ctx()), "screenshot-templates.png",
@@ -358,7 +393,9 @@ def font_picker():
 @step
 def get_fonts():
     from food_labeler.font_dialogs import GetFontsDialog
-    return show(GetFontsDialog(root, "Dancing Script"), "screenshot-get-fonts.png")
+    d = GetFontsDialog(root, "")          # a name typed, "Find it" not pressed (no internet)
+    d.var.set("Dancing Script")
+    return show(d, "screenshot-get-fonts.png")
 
 
 @step
@@ -403,6 +440,15 @@ def roll_setup():
     from food_labeler.picture_dialogs import RollSetupDialog
     p = printers.Printer(id="usb:1-1.4", **FAKE_USB)
     return show(RollSetupDialog(root, app, p), "screenshot-roll-setup.png", 900)
+
+
+@step
+def network_printer():
+    from food_labeler.dialogs import NetworkPrinterDialog
+    # an example address from the range kept for documentation (192.0.2.x)
+    printers.add_network_printer(cfg["printers"], "192.0.2.10:9100", "tspl",
+                                 "lp610bt-compatible", "Shed printer")
+    return show(NetworkPrinterDialog(root, app), "screenshot-network-printer.png")
 
 
 @step

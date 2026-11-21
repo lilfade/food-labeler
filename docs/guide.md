@@ -44,8 +44,8 @@ to make an account; or email hello@highthymekitchen.com if you're stuck).
 
    Windows usually asks this only the first time you open a new download.
 6. Food Labeler opens. If it finds your printer, its name is shown next to
-   **Printer:**, above the **PRINT** button. If not, see
-   [Your printer](printer.md).
+   **Printer:**, above the **PRINT** button, with *ready* under it. If not,
+   see [Your printer](printer.md).
 
 ## Making a label
 
@@ -94,18 +94,20 @@ choose **how many** and press **PRINT**.
 - No products yet? The strip says *Save a product once and it's one click
   next time*.
 
+![Manage…: all your products, with ★ favourites first](screenshot-products.png)
+
 ## Other things you can do
 
 ![Choosing the kind of label](screenshot-templates.png)
 
-Above the form, a row of buttons shows how the label is set up. Press one to
+The buttons above the form show how the label is set up. Press one to
 change it:
 
-- **Kind: …**: *Simple food label*, *Package label* (with
+- **Kind: … ▾**: *Simple food label*, *Package label* (with
   ingredients and your kitchen's name and address), *Date sticker*,
   *Free text*, *Picture label* (one big picture), or *Cottage food label*
   (for home bakers, see [below](#for-home-bakers-cottage-food-labels)).
-- **Size: …**: pick the size of the labels in your printer.
+- **Size: … ▾**: pick the size of the labels in your printer.
 - **Wide** or **Tall**, for every kind of label (not on round
   ones). Labels on a 4 × 2 or 3 × 2 roll are wide unless you pick *Tall*:
   then the label is laid out 2 inches wide and 4 inches tall and printed
@@ -113,7 +115,9 @@ change it:
   The picture on the right always shows the label the way you read it; when
   it prints sideways, a small arrow shows which edge comes out of the
   printer first. The choice is saved in the label file.
-- **+ Picture**, **+ QR code** and **Lettering** add the extras below. Once
+
+  ![A tall label on a 4 × 2 roll, with the arrow showing which edge comes out first](screenshot-tall.png)
+- **+ Picture**, **+ QR code** and **Lettering ▾** add the extras below. Once
   a label has a picture or a QR code, its button says so (*Picture: Our
   logo*) and **✕ Remove** next to it takes it off (**Undo** puts it back).
 - **Save** keeps the label so you can print it again. **Open ▾** lists the
@@ -131,7 +135,7 @@ change it:
   printers: *Look for printers again*, *My printers…*, *Print settings…*,
   *New roll? Set it up…*, *Add a network printer…* and *My printer isn't
   in the list…*. See [Your printer](printer.md).
-- **Ctrl+P** asks how many and prints, like the **PRINT** button.
+- **Ctrl+P** prints too: it first asks how many.
 - Your work is kept safe automatically, even if the computer switches off.
 - Your saved labels are in `Documents\My Food Labels` (Linux:
   `~/Documents/My Food Labels`). Updates to Food Labeler never change them.
@@ -140,7 +144,7 @@ change it:
 
 ![A label with a fancy name in Pacifico](screenshot-fancy-name.png)
 
-- **Lettering** (above the form) lets you pick the kind of
+- **Lettering ▾** (above the form) lets you pick the kind of
   letters on your label: one for the **name of the food** and one for
   **everything else**. Each choice is shown in its own lettering, so you can
   see what you get. Food Labeler remembers your choice for your next label.
@@ -233,11 +237,11 @@ This is what that label prints (4 × 2 inch):
 3. **Build from My ingredients…** lets you pick ingredients in order,
    heaviest first. Each one remembers what's in it ("Butter (cream, salt)")
    and its allergens, so **Contains** fills itself in. The starter list is
-   only an example: check each ingredient against your own package and
-   press **Change…** to match it.
+   only an example (marked ⚠): check each ingredient against your own
+   package and press **Change…** under the list to match it.
 
    ![Building the ingredient list](screenshot-ingredients.png)
-4. **Save as product** (under *My products*) keeps the product, so next
+4. **Save as product** (in the *My products* box) keeps the product, so next
    time one click on its button fills the whole label in (see
    [My products](#my-products-one-click)).
 5. The **Label check** at the top of the form says in green when everything
