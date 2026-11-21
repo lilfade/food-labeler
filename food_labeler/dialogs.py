@@ -619,10 +619,15 @@ class MyPrintersDialog(Modal):
             fr.pack(fill="x", pady=4)
             name = info.get("nickname") or (p.default_name() if here else "My printer")
             kind = info.get("kind") or p.kind or "tspl"
-            tk.Label(fr, text=name, font="ui_bold", bg=PANEL, fg=INK, wraplength=380,
+            shown = f"{name} {printers.ALPHA_TAG}" if here and p.alpha else name
+            tk.Label(fr, text=shown, font="ui_bold", bg=PANEL, fg=INK, wraplength=380,
                      justify="left").grid(row=0, column=0,
                                                                           sticky="w")
-            sub = f"{p.port}  •  {'Zebra' if kind == 'zpl' else 'Label printer (LP610BT type)'}"
+            if p.driver_only and not info.get("kind"):
+                what = "Prints through the maker's driver"
+            else:
+                what = "Zebra" if kind == "zpl" else "Label printer (LP610BT type)"
+            sub = f"{p.port}  •  {what}"
             if here:
                 sharp = printers.printer_dpi(p, info)
                 sub += "  •  " + ("Sharp (300 dpi)" if sharp == 300 else "Normal (203 dpi)")
@@ -736,7 +741,7 @@ class SetupWizard(Modal):
         self.lb = tk.Listbox(self.frame, font="ui", height=min(8, max(3, len(found))),
                              activestyle="none", selectbackground=GREEN, exportselection=False)
         for p in found:
-            self.lb.insert("end", p.display(self.app.cfg.nickname(p.id)))
+            self.lb.insert("end", p.display(self.app.cfg.nickname(p.id), tag=True))
         self.lb.pack(fill="x")
         pick = printers.auto_pick(found)
         cur = self.app.current_printer()
@@ -902,7 +907,11 @@ class UsbDevicesDialog(Modal):
             if new:
                 tk.Label(fr, text="This just appeared — is it your printer?", font="ui_bold",
                          bg=WARN_BG, fg=WARN).grid(row=0, column=0, sticky="w")
-            tk.Label(fr, text=d.title(), font="ui_bold", bg=fr["bg"], fg=INK, wraplength=460,
+            title = d.title()
+            if (d.is_printer or d.family is not None) and not getattr(
+                    d.family, "verified_on_paper", False):
+                title = f"{title} {printers.ALPHA_TAG}"
+            tk.Label(fr, text=title, font="ui_bold", bg=fr["bg"], fg=INK, wraplength=460,
                      justify="left").grid(
                 row=1, column=0, sticky="w")
             tk.Label(fr, text=d.describe(), font="ui", bg=fr["bg"], fg=MUTED).grid(
@@ -927,7 +936,7 @@ class UsbDevicesDialog(Modal):
                 return
             pid = choose(self, "Which one is it?",
                          "Which of these installed printers is it?",
-                         [(x.display(app.cfg.nickname(x.id)), x.id) for x in wins])
+                         [(x.display(app.cfg.nickname(x.id), tag=True), x.id) for x in wins])
             p = next((x for x in wins if x.id == pid), None)
         else:
             p = next((x for x in found if x.id == f"usb:{d.port}"), None)

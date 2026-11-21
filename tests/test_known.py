@@ -60,7 +60,7 @@ def test_import_and_merge(tmp_path):
     ({"format": "food-labeler-printers", "version": 2, "printers": [{}]}, "different version"),
     ({"format": "food-labeler-printers", "version": 1, "printers": []}, "no printers"),
     ({"format": "food-labeler-printers", "version": 1,
-      "printers": [{"id": "x", "name": "X", "language": "escpos"}]}, "tspl or zpl"),
+      "printers": [{"id": "x", "name": "X", "language": "escpos"}]}, "tspl, zpl or driver"),
     ({"format": "food-labeler-printers", "version": 1,
       "printers": [{"id": "Bad Id", "name": "X", "language": "tspl"}]}, "id"),
     ({"format": "food-labeler-printers", "version": 1,

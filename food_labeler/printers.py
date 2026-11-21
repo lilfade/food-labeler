@@ -32,6 +32,24 @@ Some drivers don't pass RAW data through. For those, the per-printer
 1-bit picture is drawn on the printer's GDI device context and the driver
 converts it, losing exact darkness/speed control but usually working.
 
+Printers that only work through their maker's driver
+------------------------------------------------------
+Some cheap label printers don't take TSPL or ZPL at all; they only print
+what the maker's own driver sends them. Their entry in known_printers.json
+says ``"language": "driver"``. Unless the printer's IEEE 1284 id names a
+language Food Labeler speaks, or the user picked a Type for it, such a
+printer prints through the Windows driver ("windows_driver", as if the
+"Print through Windows driver" switch were on). On Linux there is no such
+path, so printing says plainly that it needs the maker's driver
+(MSG_NEEDS_DRIVER) instead of sending something it can't print.
+
+Tested and alpha printers
+-------------------------
+Only models with ``"verified_on_paper": true`` have been tried on real
+labels. Every other printer, matched or not, is "alpha": its name carries
+ALPHA_TAG wherever printers are listed, and the first print to it shows
+ALPHA_NOTICE once (remembered per printer as ``"alpha_ok"``).
+
 Resolution
 ----------
 The print head's resolution (203 or 300 dpi) belongs to the printer. Its
@@ -75,6 +93,14 @@ METHODS = {
 MSG_NOT_ANSWERING = ("The printer isn't answering. Check it is switched on "
                      "and the cable is plugged in.")
 MSG_NO_PRINTER = "No printer is set up yet. Click “Set up my printer”."
+MSG_NEEDS_DRIVER = ("This printer only prints through its maker's own program (its "
+                    "driver), so Food Labeler can't send labels to it directly. On Windows, "
+                    "install the maker's driver and Food Labeler prints through it. On this "
+                    "computer that isn't possible yet. If you'd like it to work, please tell "
+                    "us: Settings → Get help with my printer → Ask for help on GitHub.")
+ALPHA_TAG = "(alpha — not tested yet)"
+ALPHA_NOTICE = ("This printer hasn't been tested with Food Labeler yet. It should work, but "
+                "if it doesn't, please tell us on GitHub (Ask for help on GitHub).")
 MSG_PERMISSION = ("This computer won't let Food Labeler use the printer yet. Ask your helper "
                   "to add you to the “lp” group, then log out and back in.")
 
@@ -116,10 +142,25 @@ class Printer:
             return short
         return self.queue or self.target or "Printer"
 
-    def display(self, nickname: str = "") -> str:
-        """Name plus where it is ("… — USB port 1-1.4"), so identical units differ."""
+    def display(self, nickname: str = "", tag: bool = False) -> str:
+        """Name plus where it is ("… — USB port 1-1.4"), so identical units differ.
+
+        ``tag``: add "(alpha — not tested yet)" for a printer we haven't tested."""
         name = nickname or self.default_name()
+        if tag and self.alpha:
+            name = f"{name} {ALPHA_TAG}"
         return f"{name} \u2014 {self.port}" if self.port else name
+
+    @property
+    def alpha(self) -> bool:
+        """Not a model we have tested on paper (unknown printers included)."""
+        return not getattr(self.family, "verified_on_paper", False)
+
+    @property
+    def driver_only(self) -> bool:
+        """Matched a model that only prints through its maker's driver, and nothing
+        (its 1284 id) says it speaks TSPL or ZPL."""
+        return bool(getattr(self.family, "driver_only", False)) and not self.kind
 
     @property
     def matches(self) -> bool:
@@ -203,10 +244,29 @@ def classify(p: "Printer", known=None, info: dict | None = None, text: str = "")
         p.dpi = p.family.dpi
     if not p.kind and info:
         p.kind = kind_from_1284(info)
-    if not p.kind and p.family is not None:
+    if not p.kind and p.family is not None and p.family.language != "driver":
         p.kind = p.family.language
-    if not p.kind:
+    if not p.kind and not getattr(p.family, "driver_only", False):
         p.kind = kind_from_text(text)
+
+
+def printer_config(p: "Printer", info: dict | None = None) -> dict:
+    """Printer.config() with the user's choices for it (settings ``printers[id]``):
+    language ("Type"), the Windows "print through driver" switch, and the
+    driver path for printers that only work through their maker's driver."""
+    info = info or {}
+    cfg = p.config(info.get("kind") or "")
+    if p.method == "windows_raw" and (info.get("via_driver")
+                                      or (p.driver_only and not info.get("kind"))):
+        cfg["method"] = "windows_driver"      # the picture through the maker's driver
+    elif p.driver_only and not info.get("kind") and p.method in ("device", "cups"):
+        cfg["method"] = "needs_driver"        # send() says so plainly; nothing is sent
+    return cfg
+
+
+def alpha_notice_due(p: "Printer | None", info: dict | None = None) -> bool:
+    """True the first time something is printed to an untested ("alpha") printer."""
+    return p is not None and p.alpha and not (info or {}).get("alpha_ok")
 
 
 def kind_from_text(text: str) -> str:
@@ -501,6 +561,8 @@ def send(cfg: dict, data: bytes, image=None, copies: int = 1) -> str:
     method, target = cfg.get("method", ""), cfg.get("target", "")
     if not method or not target:
         raise PrinterError(MSG_NO_PRINTER)
+    if method == "needs_driver":
+        raise PrinterError(MSG_NEEDS_DRIVER)
     dry = os.environ.get("FOOD_LABELER_DRY_RUN")
     if dry:
         p = Path(dry)
@@ -557,7 +619,8 @@ def send_windows_raw(name: str, data: bytes, win32print=None) -> None:
 def send_windows_driver(name: str, image, copies: int = 1) -> None:
     """Fallback: print the picture through the normal Windows driver (GDI)."""
     if image is None:
-        raise PrinterError("There is nothing to print.")
+        raise PrinterError("This printer prints through its Windows driver, which can only "
+                           "print labels. Use the printer's own feed button instead.")
     try:
         import win32con  # type: ignore
         import win32ui  # type: ignore

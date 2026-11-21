@@ -3,9 +3,12 @@ optional user file of updates that High Thyme Kitchen can send.
 
 A Definition says how to recognise a model (IEEE 1284 id, USB vid:pid, or
 Windows/CUPS name patterns: plain text, never regular expressions, so a file
-from anywhere can't make matching slow), which language it speaks (TSPL or ZPL) and its
+from anywhere can't make matching slow), which language it speaks (TSPL, ZPL, or
+"driver" for printers that only print through their maker's driver) and its
 preferred darkness/speed per label size, its print head's resolution (203 or
-300 dpi), how wide it can print and how to set up a new roll by hand. Files are validated strictly:
+300 dpi), how wide it can print, how to set up a new roll by hand and whether we have
+tested it on paper ("verified_on_paper"; untested models are shown as
+"alpha — not tested yet"). Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
 the program half-configured.
 
@@ -30,9 +33,13 @@ USER_FILE_NAME = "known_printers.json"
 
 ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "max_width_dots", "media", "usb",
                 "ieee1284", "windows", "density", "speed", "stocks", "notes",
-                "calibrate_by_hand"}
+                "calibrate_by_hand", "max_width_mm", "verified_on_paper"}
+LANGUAGES = ("tspl", "zpl", "driver")   # "driver": only through the maker's (Windows) driver
+SUPPORT_TESTED = "Tested"
+SUPPORT_ALPHA = "Alpha — not tested yet"
 DPI_VALUES = (203, 300)        # print head resolutions Food Labeler lays out for
 MAX_WIDTH_RANGE = (64, 4000)   # sane print head widths, in the printer's own dots
+MAX_WIDTH_MM_RANGE = (8, 300)  # the same in mm ("max_width_mm")
 STOCK_IDS = {"small", "medium", "large", "round", "xl"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 VIDPID_RE = re.compile(r"^[0-9a-f]{4}:[0-9a-f]{4}$")
@@ -80,6 +87,17 @@ class Definition:
     stocks: list = field(default_factory=list)
     notes: str = ""
     calibrate_by_hand: str = ""  # how to set up a new roll with the printer's own button
+    verified_on_paper: bool = False  # we printed real labels on one; else "alpha"
+
+    @property
+    def support(self) -> str:
+        """What we can promise, in plain words: "Tested" or "Alpha — not tested yet"."""
+        return SUPPORT_TESTED if self.verified_on_paper else SUPPORT_ALPHA
+
+    @property
+    def driver_only(self) -> bool:
+        """Only prints through the maker's own driver (no TSPL/ZPL straight to it)."""
+        return self.language == "driver"
 
     @property
     def display_name(self) -> str:
@@ -158,8 +176,8 @@ def validate_entry(e) -> Definition:
         raise DefinitionError("A printer in the file has a missing or bad “id”.")
     if not isinstance(name, str) or not name.strip() or len(name) > 80:
         raise DefinitionError(f"Printer “{pid}” has a missing or bad name.")
-    if lang not in ("tspl", "zpl"):
-        raise DefinitionError(f"Printer “{name}” must say language tspl or zpl.")
+    if lang not in LANGUAGES:
+        raise DefinitionError(f"Printer “{name}” must say language tspl, zpl or driver.")
 
     def str_list(key, check=None):
         v = e.get(key, [])
@@ -198,6 +216,17 @@ def validate_entry(e) -> Definition:
             or not (width == 0 or MAX_WIDTH_RANGE[0] <= width <= MAX_WIDTH_RANGE[1])):
         raise DefinitionError(f"Printer “{name}” has a bad “max_width_dots” (it should be "
                               "the print width in dots, like 832).")
+    width_mm = e.get("max_width_mm")
+    if width_mm is not None:
+        if (isinstance(width_mm, bool) or not isinstance(width_mm, (int, float))
+                or not MAX_WIDTH_MM_RANGE[0] <= width_mm <= MAX_WIDTH_MM_RANGE[1]):
+            raise DefinitionError(f"Printer “{name}” has a bad “max_width_mm” (it should be "
+                                  "the print width in mm, like 104).")
+        if not width:                    # dots win when both are given
+            width = int(width_mm * int(dpi) / 25.4)
+    verified = e.get("verified_on_paper", False)
+    if not isinstance(verified, bool):
+        raise DefinitionError(f"Printer “{name}” has a bad “verified_on_paper” (true or false).")
     media = e.get("media", "gap")
     if media not in ("gap", "continuous", "black-mark"):
         raise DefinitionError(f"Printer “{name}” has an unknown media type.")
@@ -216,7 +245,7 @@ def validate_entry(e) -> Definition:
         windows=str_list("windows", check_pattern),
         density=_int_map(e.get("density"), "density"), speed=_int_map(e.get("speed"), "speed"),
         stocks=stocks_ or sorted(STOCK_IDS), notes=notes,
-        calibrate_by_hand=by_hand.strip(),
+        calibrate_by_hand=by_hand.strip(), verified_on_paper=verified,
     )
 
 
@@ -253,6 +282,8 @@ def _to_json(d: Definition) -> dict:
         out["max_width_dots"] = d.max_width_dots
     if d.calibrate_by_hand:
         out["calibrate_by_hand"] = d.calibrate_by_hand
+    if d.verified_on_paper:
+        out["verified_on_paper"] = True
     return out
 
 

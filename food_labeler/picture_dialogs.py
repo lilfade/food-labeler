@@ -470,7 +470,8 @@ class PrintSettingsDialog(Modal):
     """Per-printer print settings in plain words, with "Reset to normal"."""
 
     def __init__(self, parent, app, printer):
-        super().__init__(parent, "Print settings")
+        super().__init__(parent, "Print settings" + (f" {printers.ALPHA_TAG}"
+                                                      if printer.alpha else ""))
         self.app = app
         self.p = printer
         info = app.cfg["printers"].get(printer.id, {})

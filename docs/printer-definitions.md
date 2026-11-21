@@ -55,9 +55,11 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `id` | yes | lowercase letters, digits, `-` (max 64). Same id as a built-in entry replaces it. |
 | `name` | yes | what the user sees (max 80 chars) |
 | `brands` | no | brand names sold with this hardware. With 2+ brands the name is shown as `name (A / B / C…)` because clones share USB ids — never claim one brand. |
-| `language` | yes | `"tspl"` (LP610BT and clones) or `"zpl"` (Zebra) |
+| `language` | yes | `"tspl"` (LP610BT and clones), `"zpl"` (Zebra) or `"driver"`: the printer doesn't take TSPL or ZPL and only prints through its maker's driver (see *Driver-only printers* below) |
 | `dpi` | no | print head resolution: `203` (default) or `300`. 600 dpi and anything else is refused. Labels are laid out in mm, so the same label prints the same size at either resolution, only sharper at 300. |
 | `max_width_dots` | no | widest the head can print, in dots at this entry's `dpi` (LP610BT-type 812, Zebra ZP450 832 = 4.09 in). Labels wider than this are refused with a plain message. Leave it out if not known. |
+| `max_width_mm` | no | the same in mm (e.g. `104`), when the maker gives the width in mm; turned into dots at `dpi` (rounded down). If both are given, `max_width_dots` wins. |
+| `verified_on_paper` | no | `true` only when we have printed real labels on this model. Default `false`: the printer is shown as *alpha — not tested yet* and the first print to it shows a one-time notice. Only the LP610BT-compatible and Zebra ZP450 entries are `true`. |
 | `media` | no | `"gap"` (default), `"continuous"`, `"black-mark"` (informational for now) |
 | `usb` | no | list of `"vvvv:pppp"` USB vendor:product ids (hex) |
 | `ieee1284` | no | map of IEEE 1284 device-id keys to name patterns (see *Name patterns* below); **all** must match. Keys as the printer reports them, e.g. `MFG`, `MDL`, `CMD`, `MANUFACTURER`, `MODEL`, `COMMAND SET`. |
@@ -87,6 +89,31 @@ without an error, but any regular-expression characters in them are now
 taken literally, so a pattern such as `ZP ?450` no longer matches *ZP450*:
 write it as `ZP450|ZP 450`. Plain-word patterns such as `Zebra` or `LP610`
 work exactly as before.
+
+## Tested and alpha printers
+
+Every entry without `"verified_on_paper": true`, and every printer that
+matches no entry at all, is *alpha*: its name has *(alpha — not tested yet)*
+after it in the printer list, *My printers*, the USB devices window and the
+*Print settings* title, and the first print to it asks once:
+"This printer hasn't been tested with Food Labeler yet. It should work, but
+if it doesn't, please tell us on GitHub" (**OK, print** / **Cancel**). The
+answer is remembered for that printer (`"alpha_ok"` in its settings). The
+printer report says `tested` or `alpha (not tested yet)` for each printer.
+
+## Driver-only printers
+
+Some cheap printers don't understand TSPL or ZPL; they only print what the
+maker's own driver sends them. Give them `"language": "driver"`. On Windows,
+Food Labeler then prints the label picture through that driver, exactly like
+the *Print through Windows driver* switch in *Advanced* (the darkness and
+speed in *Print settings* don't apply; set those in the driver). On Linux
+printing stops with a plain message saying the printer needs its maker's
+driver, and nothing is sent. Setting up a new roll can't be done through a
+driver, so the window's "with the printer's own button" text matters for
+these printers. If the printer's IEEE 1284 id names `TSPL` or `ZPL`, or the
+user picks a *Type* in *My printers*, that wins and the label is sent in that
+language as usual. EPL-only printers are treated as `driver` for now.
 
 ## How matching works
 

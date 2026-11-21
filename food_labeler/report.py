@@ -129,7 +129,9 @@ def build(printers_found=(), usb_devices=(), nicknames: dict | None = None,
         out.append(f"      id {p.id}  language {p.kind or '?'}  dpi {p.dpi}  "
                    f"via {p.method} {p.target}")
         out.append(f"      model {p.model or '?'}  usb {p.vidpid or '?'}  "
-                   f"matched {getattr(p.family, 'id', '-')}")
+                   f"matched {getattr(p.family, 'id', '-')}  "
+                   f"{'alpha (not tested yet)' if p.alpha else 'tested'}"
+                   + ("  driver only" if p.driver_only else ""))
         if p.detail:
             out.append(f"      detail: {p.detail}")
     out.append("")

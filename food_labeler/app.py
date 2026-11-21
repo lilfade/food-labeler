@@ -1055,7 +1055,7 @@ class App:
         listed as "not connected" so the choice isn't silently lost."""
         values, ids = [], []
         for p in self.found:
-            values.append(p.display(self.cfg.nickname(p.id)))
+            values.append(p.display(self.cfg.nickname(p.id), tag=True))
             ids.append(p.id)
         sel = self.cfg["selected"]
         if sel and sel not in ids:
@@ -1081,6 +1081,8 @@ class App:
             p = next((x for x in self.found if x.id == ids[idx]), None)
             if p is not None:
                 short = self.cfg.nickname(p.id) or getattr(p.family, "name", "") or p.default_name()
+                if p.alpha:
+                    short = f"{short} {printers.ALPHA_TAG}"
                 text = f"{short} \u2014 {p.port}" if p.port else short
             else:
                 text = values[idx]
@@ -1208,11 +1210,18 @@ class App:
     def printer_config(self, p) -> dict:
         """Printer.config() with the user's overrides: language ("Type") and the
         Windows "print through driver" fallback."""
-        info = self.cfg["printers"].get(p.id, {})
-        cfg = p.config(info.get("kind") or "")
-        if info.get("via_driver") and p.method == "windows_raw":
-            cfg["method"] = "windows_driver"      # fallback: picture through the driver
-        return cfg
+        return printers.printer_config(p, self.cfg["printers"].get(p.id, {}))
+
+    def alpha_ok(self, p) -> bool:
+        """The first print to an untested ("alpha") printer says so once; True = go on.
+
+        Shown once per printer (remembered as "alpha_ok", whatever the answer)."""
+        if not printers.alpha_notice_due(p, self.cfg["printers"].get(p.id, {})):
+            return True
+        self.cfg.printer_info(p.id)["alpha_ok"] = True
+        self.cfg.save()
+        return bool(ask(self.root, "Not tested yet", printers.ALPHA_NOTICE,
+                        [("OK, print", True, "primary"), ("Cancel", False, "normal")]))
 
     def _highlight_printer_box(self):
         self.printer_box.configure(highlightbackground=WARN)
@@ -1269,6 +1278,8 @@ class App:
                        f"This printer might not take \u201c{stock.name}\u201d labels. Print anyway?",
                        [("Print anyway", True, "primary"), ("Cancel", False, "normal")]):
                 return
+        if not self.alpha_ok(p):
+            return
         ps = self.print_settings_for(p)
         img = printsettings.adjust_image(res.image, stock, ps)
         try:
@@ -1285,6 +1296,8 @@ class App:
 
     def print_text_label(self, p, lines, stock_id=None):
         """Test / identify labels (only ever on a click)."""
+        if not self.alpha_ok(p):
+            return
         stock = stocks.get(stock_id or self.cfg["printers"].get(p.id, {}).get("stock")
                            or self.doc.stock, self.printer_dpi(p))
         ps = self.print_settings_for(p)
