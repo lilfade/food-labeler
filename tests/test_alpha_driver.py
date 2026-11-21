@@ -36,7 +36,8 @@ def test_only_our_two_printers_are_tested():
 
 
 def test_tag_only_for_alpha_printers():
-    lp = printers.Printer(id="usb:1-1.3", port="USB port 1-1.3", family=K.defs["lp610bt-compatible"])
+    lp = printers.Printer(id="usb:1-1.3", port="USB port 1-1.3",
+                          family=K.defs["lp610bt-compatible"])
     zz = printers.Printer(id="win:z|USB001", family=K.defs["zebra-zp450"])
     generic = printers.Printer(id="win:g|USB002", family=K.defs["zebra-zpl"])
     unknown = printers.Printer(id="usb:1-1.9", model="Mystery 9000", kind="tspl")

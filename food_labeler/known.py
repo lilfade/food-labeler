@@ -226,13 +226,14 @@ def validate_entry(e) -> Definition:
     if width_mm is not None:
         if (isinstance(width_mm, bool) or not isinstance(width_mm, (int, float))
                 or not MAX_WIDTH_MM_RANGE[0] <= width_mm <= MAX_WIDTH_MM_RANGE[1]):
-            raise DefinitionError(f"Printer “{name}” has a bad “max_width_mm” (it should be "
-                                  "the print width in mm, like 104).")
+            raise DefinitionError(f"Printer “{name}” has a bad “max_width_mm” (it should "
+                                  "be the print width in mm, like 104).")
         if not width:                    # dots win when both are given
             width = int(width_mm * int(dpi) / 25.4)
     verified = e.get("verified_on_paper", False)
     if not isinstance(verified, bool):
-        raise DefinitionError(f"Printer “{name}” has a bad “verified_on_paper” (true or false).")
+        raise DefinitionError(f"Printer “{name}” has a bad “verified_on_paper” "
+                              "(true or false).")
     media = e.get("media", "gap")
     if media not in ("gap", "continuous", "black-mark"):
         raise DefinitionError(f"Printer “{name}” has an unknown media type.")
