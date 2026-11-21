@@ -144,7 +144,8 @@ def check_dpi(dpi) -> int:
 def get(stock_id: str, dpi: int = BASE_DPI) -> Stock:
     """Stock by id at a printer resolution (203 or 300 dpi); unknown ids fall back
     to the default so old files still open."""
-    base = STOCKS.get(stock_id) or STOCKS[DEFAULT_STOCK]
+    base = (STOCKS.get(stock_id) if isinstance(stock_id, str) else None) \
+        or STOCKS[DEFAULT_STOCK]
     if dpi == BASE_DPI:
         return base
     dpi = check_dpi(dpi)

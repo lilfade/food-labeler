@@ -23,6 +23,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from . import values
+
 log = logging.getLogger("food_labeler.cottage")
 
 BUILTIN = Path(__file__).resolve().parent / "cottage_rules.json"
@@ -199,6 +201,39 @@ def validate_state(e) -> StateRule:
         min_statement_pt=_pt(e.get("min_statement_pt"), what),
         metric_required=e.get("metric_required", False), notes=e.get("notes", ""),
         source_url=url, extra_sources=list(extra_src), checked_on=checked)
+
+
+def _text_list(v) -> list:
+    return [x for x in v if isinstance(x, str)] if isinstance(v, list) else []
+
+
+def _tidy_state(ov: dict) -> dict:
+    """One state's edits from cottage_overrides.json, with any part that can't be
+    what Food Labeler wrote left out (other keys are kept as they are)."""
+    out = dict(ov)
+    if "statements" in out:
+        sov = out["statements"]
+        out["statements"] = {k: o for k, o in sov.items()
+                             if isinstance(o, dict) and isinstance(o.get("text"), str)
+                             and isinstance(o.get("based_on"), (str, type(None)))} \
+            if isinstance(sov, dict) else {}
+    if "own" in out:
+        own = []
+        for o in out["own"] if isinstance(out["own"], list) else []:
+            if isinstance(o, dict) and isinstance(o.get("text"), str):
+                o = dict(o, id=str(o.get("id", "own"))[:40])
+                mp = o.get("min_pt")
+                o["min_pt"] = mp if values.is_number(mp) and 4 <= mp <= 36 else None
+                own.append(o)
+        out["own"] = own
+    if "required" in out:
+        rov = out["required"]
+        if isinstance(rov, dict) and isinstance(rov.get("value"), list):
+            out["required"] = {"value": _text_list(rov["value"]),
+                               "based_on": _text_list(rov.get("based_on"))}
+        else:
+            del out["required"]
+    return out
 
 
 def _read_update(path) -> str:
@@ -390,14 +425,15 @@ class Overrides:
             got = json.loads(read_text_limited(self.path, MAX_BACKUP_BYTES).lstrip("﻿"))
             if not isinstance(got, dict) or got.get("format") != OVERRIDES_FORMAT:
                 raise ValueError("not an overrides file")
-            if int(got.get("version", 0)) > OVERRIDES_VERSION:
+            ver = got.get("version", 0)
+            if not values.is_number(ver) or ver > OVERRIDES_VERSION:
                 # Written by a newer version: use what we understand, never write it back.
                 self.read_only = True
             states = got.get("states") or {}
             if isinstance(states, dict):
-                self.data = {k: v for k, v in states.items() if isinstance(v, dict)}
+                self.data = {k: _tidy_state(v) for k, v in states.items() if isinstance(v, dict)}
             self.extra = {k: v for k, v in got.items() if k not in ("format", "version", "states")}
-        except (OSError, ValueError, TypeError, RecursionError):
+        except (OSError, ValueError, TypeError, OverflowError, RecursionError):
             log.exception("cottage overrides unreadable; keeping a copy and carrying on")
             try:
                 self.path.replace(self.path.with_suffix(".json.broken"))

@@ -37,6 +37,8 @@ from pathlib import Path
 
 from PIL import Image, ImageEnhance, ImageOps
 
+from . import values
+
 log = logging.getLogger("food_labeler.pictures")
 
 MAX_FILE_BYTES = 25 * 1024 * 1024        # refuse picture files bigger than 25 MB
@@ -314,10 +316,7 @@ def compact(pic: dict | None) -> dict | None:
 _B64_RE = re.compile(r"^[A-Za-z0-9+/=\s]+$")
 
 
-def _int(v, lo, hi, default):
-    if isinstance(v, bool) or not isinstance(v, (int, float)):
-        return default
-    return max(lo, min(hi, int(round(v))))
+_int = values.to_int
 
 
 def clean(value) -> dict | None:
@@ -327,11 +326,11 @@ def clean(value) -> dict | None:
     png = value.get("png")
     if not isinstance(png, str) or not png or not _B64_RE.match(png[:200]):
         return None
-    out = {"png": png, "name": str(value.get("name") or "")[:120]}
-    place = value.get("place")
-    out["place"] = place if place in PLACES else DEFAULTS["place"]
+    name = value.get("name")
+    out = {"png": png, "name": values.text(name, 120) if isinstance(name, str) else ""}
+    out["place"] = values.choice(value.get("place"), PLACES, DEFAULTS["place"])
     out["size"] = _int(value.get("size"), *SIZE_RANGE, DEFAULTS["size"])
-    out["mode"] = value.get("mode") if value.get("mode") in MODES else "logo"
+    out["mode"] = values.choice(value.get("mode"), MODES, "logo")
     t = value.get("threshold")
     out["threshold"] = None if t is None else _int(t, 1, 254, None)
     out["brightness"] = _int(value.get("brightness"), -100, 100, 0)

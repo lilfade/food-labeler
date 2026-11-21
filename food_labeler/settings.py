@@ -22,7 +22,7 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from . import model
+from . import model, values
 
 log = logging.getLogger("food_labeler")
 
@@ -144,11 +144,44 @@ def _merge(base: dict, got: dict) -> dict:
         if isinstance(v, dict) and isinstance(got.get(k), dict) and v:
             out[k] = _merge(v, got[k])
         elif k in got and (type(got[k]) is type(v) or v is None or v == {} or
-                           isinstance(v, float) and isinstance(got[k], int)):
+                           isinstance(v, float) and isinstance(got[k], int)) and \
+                (not isinstance(v, float) or values.is_number(got[k])):
             out[k] = got[k]
         else:
             out[k] = json.loads(json.dumps(v))
     return out
+
+
+_PRINTER_DICT_KEYS = ("print", "roll")    # the only parts of a printer entry that are dicts
+
+
+def _tidy(data: dict) -> dict:
+    """Drop the parts of a merged settings file that can't be what this version wrote:
+    recent files that aren't {"path": ..., "name": ...}, printer entries that aren't
+    dicts, lists or objects (or NaN) where a printer setting is a word, number or yes/no,
+    and Advanced numbers that aren't finite numbers."""
+    data["recent"] = [r for r in data["recent"]
+                      if isinstance(r, dict) and isinstance(r.get("path"), str)
+                      and isinstance(r.get("name", ""), str)][:MAX_RECENT]
+    printers = {}
+    got = data["printers"] if isinstance(data["printers"], dict) else {}
+    for pid, info in got.items():
+        if not isinstance(info, dict):
+            continue
+        printers[pid] = {k: v for k, v in info.items()
+                         if (isinstance(v, dict) and k in _PRINTER_DICT_KEYS)
+                         or (not isinstance(v, (dict, list)) and k not in _PRINTER_DICT_KEYS
+                             and (not isinstance(v, float) or values.is_number(v)))}
+    data["printers"] = printers
+    adv = data["advanced"]
+    for k in ("density", "speed", "gap"):
+        adv[k] = {sid: n for sid, n in adv[k].items() if values.is_number(n)} \
+            if isinstance(adv[k], dict) else {}
+    if adv["zpl_darkness"] is not None and not values.is_number(adv["zpl_darkness"]):
+        adv["zpl_darkness"] = None
+    if not isinstance(data["lettering"], dict):
+        data["lettering"] = {}
+    return data
 
 
 class Settings:
@@ -168,7 +201,7 @@ class Settings:
         try:
             got = json.loads(model.read_text_limited(self.path, model.MAX_SETTINGS_BYTES))
             if isinstance(got, dict):
-                self.data = _merge(DEFAULTS, got)
+                self.data = _tidy(_merge(DEFAULTS, got))
                 if "ui_scale" not in got:     # an older file: keep the size it had
                     self.data["ui_scale"] = 1.0
         except FileNotFoundError:

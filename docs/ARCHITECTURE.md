@@ -15,6 +15,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `food_labeler/__main__.py` | command line: `--selftest`, `--version`, or start the window (optionally opening a `.label` file) |
 | `food_labeler_main.py` | tiny entry script used by PyInstaller and the Linux menu entry |
 | `model.py` | `LabelDoc` (template, size, fields, copies), `.label` JSON load/save, atomic writes |
+| `values.py` | small checks for values read from files (finite numbers, words from a list, text that can be saved) and for device names shown to the user |
 | `dates.py` | date parsing, quick "use by" offsets, date formats |
 | `stocks.py` | label sizes (`Stock`) in mm and in dots at 203 or 300 dpi, `dots()` scaling, per-size printer defaults, which way round (`natural`, `turned`, `rotated`) |
 | `templates.py` | per-template text blocks and the auto-fit layout engine |

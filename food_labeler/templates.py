@@ -185,16 +185,38 @@ def region_for(stock: stocks.Stock) -> Region:
 # --------------------------------------------------------------------------
 
 def _break_word(word: str, size: int, bold: bool, width: float, face: str = "") -> list[str]:
-    parts, cur = [], ""
-    for ch in word:
-        if cur and text_width(cur + ch, size, bold, face) > width:
-            parts.append(cur)
-            cur = ch
-        else:
-            cur += ch
-    if cur:
-        parts.append(cur)
-    return parts
+    """See _pieces (remembered: fitting asks for the same word many times)."""
+    return list(_pieces(word, size, bold, width, face, lettering.face_for(face).regular))
+
+
+@lru_cache(maxsize=256)
+def _pieces(word: str, size: int, bold: bool, width: float, face: str, _file: str) -> tuple:
+    """A word too long for its line, cut into pieces that fit: each piece is the
+    longest start of what is left that fits (at least one letter).
+
+    Found by doubling and then halving instead of letter by letter: the same
+    pieces (a longer piece is never narrower), but a very long word no longer
+    takes thousands of measurements."""
+    parts, start, n = [], 0, len(word)
+
+    def fits(end):
+        return text_width(word[start:end], size, bold, face) <= width
+
+    while start < n:
+        lo, step = start + 1, 1               # word[start:lo] fits (or is one letter)
+        while lo + step <= n and fits(lo + step):
+            lo += step
+            step *= 2
+        hi = min(n + 1, lo + step)            # word[start:hi] doesn't fit (or is past the end)
+        while hi - lo > 1:
+            mid = (lo + hi) // 2
+            if mid <= n and fits(mid):
+                lo = mid
+            else:
+                hi = mid
+        parts.append(word[start:lo])
+        start = lo
+    return tuple(parts)
 
 
 def wrap(text: str, size: int, bold: bool, width_for_line, allow_break=False, face: str = ""):

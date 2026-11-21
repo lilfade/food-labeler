@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from PIL import Image
 
-from . import stocks
+from . import stocks, values
 from .stocks import Stock
 
 TSPL_DARKNESS = (0, 15)
@@ -44,8 +44,7 @@ DEFAULT_FEED_MM = 3.0
 ZPL_MEDIA = {"gap": "W", "mark": "M", "continuous": "N"}
 
 
-def _num(v):
-    return isinstance(v, (int, float)) and not isinstance(v, bool)
+_num = values.is_number          # finite numbers only (no NaN or infinity from a file)
 
 
 def _clamp(v, lo, hi):
@@ -78,9 +77,9 @@ def clean(value) -> dict:
              if k in stocks.STOCKS and _num(v)}
         if g:
             out["gap"] = g
-    if value.get("media") in MEDIA:
+    if values.choice(value.get("media"), MEDIA, None):
         out["media"] = value["media"]
-    if value.get("after") in AFTER:
+    if values.choice(value.get("after"), AFTER, None):
         out["after"] = value["after"]
         if value["after"] == "feed":
             f = value.get("feed_mm")

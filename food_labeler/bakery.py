@@ -247,7 +247,8 @@ def _new_id() -> str:
 def _clean_allergens(v) -> list[str]:
     if not isinstance(v, list):
         return []
-    return [str(a).strip()[:60] for a in v if str(a).strip()][:20]
+    return [str(a).strip()[:60] for a in v[:200]
+            if isinstance(a, str) and a.strip()][:20]
 
 
 def clean_ingredient(e) -> dict | None:
@@ -281,7 +282,8 @@ def clean_product(e) -> dict | None:
     return {"id": str(e.get("id") or _new_id())[:40], "name": name,
             "net": str(e.get("net") or "").strip()[:80],
             "ingredients": str(e.get("ingredients") or "").strip()[:3000],
-            "ingredient_ids": [str(x) for x in ids][:200] if isinstance(ids, list) else [],
+            "ingredient_ids": [str(x)[:40] for x in ids[:200] if isinstance(x, (str, int))
+                               and not isinstance(x, bool)] if isinstance(ids, list) else [],
             "contains": str(e.get("contains") or "").strip()[:300],
             "no_allergens": bool(e.get("no_allergens", False)),
             "storage": str(e.get("storage") or "").strip()[:200],

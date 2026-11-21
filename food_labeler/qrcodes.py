@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 
-from . import stocks
+from . import stocks, values
 
 WHAT = {"link": "A website link", "phone": "My phone number", "email": "My email",
         "text": "Some text"}
@@ -32,25 +32,29 @@ SIZE_RANGE = (10, 100)
 DEFAULTS = {"what": "link", "value": "", "caption": "", "place": "right", "size": 35}
 MIN_MODULE_203 = 3            # smallest square, in 203 dpi dots (0.375 mm)
 QUIET = 4                     # quiet zone around the code, in modules
-MAX_VALUE = 1200              # characters
+MAX_VALUE = 1200              # characters, and at most this many bytes (UTF-8): any
+                              # code this long fits a QR code (2331 bytes at level M)
 TOO_SMALL = ("This is too much for a QR code this small — make it bigger or shorten "
              "the link.")
 
 
-def _int(v, lo, hi, default):
-    if isinstance(v, bool) or not isinstance(v, (int, float)):
-        return default
-    return max(lo, min(hi, int(round(v))))
+_int = values.to_int
+
+
+def _text(v, limit: int) -> str:
+    if v is None or v is False or isinstance(v, (dict, list)):
+        return ""
+    return values.text(str(v), limit)
 
 
 def clean(value) -> dict | None:
     """A valid QR dict, or None. Never raises."""
     if not isinstance(value, dict):
         return None
-    out = {"what": value.get("what") if value.get("what") in WHAT else "link",
-           "value": str(value.get("value") or "")[:MAX_VALUE],
-           "caption": str(value.get("caption") or "")[:120],
-           "place": value.get("place") if value.get("place") in PLACES else DEFAULTS["place"],
+    out = {"what": values.choice(value.get("what"), WHAT, "link"),
+           "value": values.utf8_prefix(_text(value.get("value"), MAX_VALUE), MAX_VALUE),
+           "caption": _text(value.get("caption"), 120),
+           "place": values.choice(value.get("place"), PLACES, DEFAULTS["place"]),
            "size": _int(value.get("size"), *SIZE_RANGE, DEFAULTS["size"])}
     return out
 

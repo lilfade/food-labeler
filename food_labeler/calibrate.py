@@ -32,7 +32,7 @@ import datetime as _dt
 
 from PIL import ImageDraw
 
-from . import printsettings, stocks, templates, tspl, zpl
+from . import printsettings, stocks, templates, tspl, values, zpl
 from .stocks import Stock
 
 MEDIA = printsettings.MEDIA            # "gap" / "mark" / "continuous" in plain words
@@ -63,7 +63,7 @@ CONTINUOUS_NOTE = ("A continuous roll has no gaps to find, so there is nothing t
 
 def clean_media(media) -> str:
     """One of "gap", "mark", "continuous" (anything else: "gap")."""
-    return media if media in MEDIA else "gap"
+    return values.choice(media, MEDIA, "gap")
 
 
 def uses_labels(media) -> bool:
@@ -220,12 +220,13 @@ def notice_text(printer_name: str) -> str:
 def last_roll(info: dict | None) -> dict | None:
     """The last roll set up on this printer ({"stock", "media", "date", "same"}) or None."""
     r = (info or {}).get("roll")
-    if not isinstance(r, dict) or r.get("stock") not in stocks.STOCKS:
+    if not isinstance(r, dict) or values.choice(r.get("stock"), stocks.STOCKS, None) is None:
         return None
     same = r.get("same")
     return {"stock": r["stock"], "media": clean_media(r.get("media")),
             "date": r.get("date") if isinstance(r.get("date"), str) else "",
-            "same": [s for s in same if s in stocks.STOCKS] if isinstance(same, list) else []}
+            "same": [s for s in same if values.choice(s, stocks.STOCKS, None)]
+            if isinstance(same, list) else []}
 
 
 def remember_roll(info: dict, stock_id: str, media, when: _dt.date | None = None) -> dict:

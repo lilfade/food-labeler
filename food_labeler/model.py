@@ -32,12 +32,15 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import json
+import logging
 import os
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from . import dates, stocks
+from . import dates, stocks, values
+
+log = logging.getLogger("food_labeler.model")
 
 APP_KEY = "easy-labels"   # file format id (the project's original name; never change it,
                           # or existing .label files stop opening)
@@ -226,7 +229,7 @@ class LabelDoc:
         """Force copies into 1..200 (it comes from typing and from files)."""
         try:
             n = int(self.copies)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             n = 1
         self.copies = max(1, min(200, n))
 
@@ -245,7 +248,10 @@ class LabelDoc:
         if mk and made:
             self.fields[mk] = today.isoformat()
             if uk and use:
-                self.fields[uk] = (today + (use - made)).isoformat()
+                try:
+                    self.fields[uk] = (today + (use - made)).isoformat()
+                except OverflowError:       # a date thousands of years away: leave it
+                    pass
         if "lot" in self.fields and made:
             if self.fields["lot"] == default_lot(made):
                 self.fields["lot"] = default_lot(today)
@@ -278,37 +284,49 @@ class LabelDoc:
 
     @classmethod
     def from_dict(cls, data: dict) -> "LabelDoc":
-        """Validate and load file contents. Raises LabelFileError with a friendly message."""
+        """Validate and load file contents. Raises LabelFileError with a friendly message.
+
+        Anything odd inside a real label file (a list where a word should be,
+        NaN, a number too big to use) falls back to the default for that part;
+        if something still can't be read, the file is called damaged — no other
+        error ever comes out of here."""
         if not isinstance(data, dict) or data.get("app") != APP_KEY:
             raise LabelFileError("This file isn't a Food Labeler label.")
         try:
-            ver = int(data.get("version", 0))
-        except (TypeError, ValueError):
-            ver = 0
+            return cls._from_dict(data)
+        except LabelFileError:
+            raise
+        except (TypeError, ValueError, OverflowError, KeyError, AttributeError,
+                RecursionError):
+            log.exception("label file content unreadable")
+            raise LabelFileError("This label file is damaged and can't be opened.") from None
+
+    @classmethod
+    def _from_dict(cls, data: dict) -> "LabelDoc":
+        ver = data.get("version", 0)
+        ver = int(ver) if values.is_number(ver) else 0
         if ver < 1 or ver > VERSION:
             raise LabelFileError("This label was made with a newer version of Food Labeler. "
                                  "Please update the program to open it.")
-        template = data.get("template")
-        if template not in TEMPLATES:
-            template = "simple"
+        template = values.choice(data.get("template"), TEMPLATES, "simple")
         fields = default_fields(template)
         got = data.get("fields") or {}
         if isinstance(got, dict):
             for k, v in got.items():
                 if k in fields:
-                    fields[k] = v
-        stock = data.get("stock") if data.get("stock") in stocks.STOCKS else stocks.DEFAULT_STOCK
+                    fields[k] = _field_value(v, fields[k])
+        stock = values.choice(data.get("stock"), stocks.STOCKS, stocks.DEFAULT_STOCK)
         from . import pictures, qrcodes
         qr = qrcodes.clean(data.get("qr"))
         if template == "package" and str(fields.get("qr") or "").strip():
             if qr is None:
-                qr = legacy_qr(fields["qr"])
+                qr = qrcodes.clean(legacy_qr(fields["qr"]))
             fields["qr"] = ""
-        doc = cls(template, stock, fields, data.get("copies", 1),
+        copies = data.get("copies", 1)
+        doc = cls(template, stock, fields, copies if values.is_number(copies) else 1,
                   clean_lettering(data.get("lettering")),
                   pictures.compact(pictures.clean(data.get("picture"))), qr,
-                  data.get("orientation") if data.get("orientation") in stocks.ORIENTATIONS
-                  else "")
+                  values.choice(data.get("orientation"), stocks.ORIENTATIONS, ""))
         doc.clamp_copies()
         return doc
 
@@ -347,6 +365,20 @@ class LabelDoc:
 
 _BLOBS: dict[str, str] = {}       # picture data by digest, for undo snapshots
 
+MAX_FIELD_CHARS = 3000            # far more than any label can show (as My products)
+
+
+def _field_value(v, default):
+    """One field from a file, the same kind as its default: text stays text (a number
+    becomes its digits), a yes/no stays True/False; anything else is the default."""
+    if isinstance(default, bool):
+        return v if isinstance(v, bool) else default
+    if isinstance(v, str):
+        return values.text(v, MAX_FIELD_CHARS)
+    if values.is_number(v):
+        return str(v)
+    return default
+
 
 def legacy_qr(text: str) -> dict:
     """The QR object for a package label's old ``fields["qr"]`` text (top-right corner,
@@ -375,7 +407,9 @@ def atomic_write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=".tmp-", suffix=path.suffix, dir=str(path.parent))
     try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
+        # errors="replace": a lone half of a character pair (JSON allows "\ud800")
+        # is written as "?" instead of failing the whole save
+        with os.fdopen(fd, "w", encoding="utf-8", errors="replace") as f:
             f.write(text)
             f.flush()
             os.fsync(f.fileno())

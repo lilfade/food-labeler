@@ -39,6 +39,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from . import values
+
 log = logging.getLogger("food_labeler.lettering")
 
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
@@ -231,7 +233,7 @@ def clean(lettering) -> dict:
         for k in ("name", "other"):
             v = lettering.get(k)
             if isinstance(v, str) and v.strip() and len(v) <= 100:
-                out[k] = v.strip()
+                out[k] = values.text(v.strip())
     return out
 
 
