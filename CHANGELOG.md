@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.3.0 — unreleased
+## 1.3.0 — 2026-11-21
 
 New roll? Set it up.
 
@@ -35,6 +35,9 @@ New roll? Set it up.
   roll with that printer's own button, shown in the window. The built-in
   LP610BT-compatible, Zebra ZP450 and Zebra entries have it.
 - `--selftest` also checks the set-up jobs and the test label.
+- The new-roll reminder under the printer keeps its buttons on their own
+  line, so *Set up* and *No, same roll* are never cut off.
+- A long printer name no longer pushes the list's arrow onto its own line.
 
 ## 1.2.0 — 2026-11-21
 

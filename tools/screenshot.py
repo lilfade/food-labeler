@@ -271,6 +271,33 @@ def print_settings():
     return True
 
 
+@step
+def roll_setup():
+    from food_labeler import printers
+    from food_labeler.picture_dialogs import RollSetupDialog
+    p = printers.Printer(id="usb:1-1.4", kind="tspl", model="4B-LP610BT", method="device",
+                         target="/dev/usb/lp0", port="USB port 1-1.4", vidpid="0483:2025")
+    d = RollSetupDialog(root, app, p)
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-roll-setup.png", d), d.destroy(), nxt()))
+    return True
+
+
+@step
+def roll_notice():
+    # the printer "is connected" and last had a different roll set up
+    from food_labeler import printers
+    p = printers.Printer(id="usb:1-1.4", kind="tspl", model="4B-LP610BT", method="device",
+                         target="/dev/usb/lp0", port="USB port 1-1.4", vidpid="0483:2025")
+    app.found = [p]
+    cfg.printer_info("usb:1-1.4")["roll"] = {"stock": "medium", "media": "gap",
+                                             "date": "2026-11-01", "same": []}
+    app.refresh_printer_combo()
+    app.refresh_roll_notice()
+    root.after(900, lambda: (grab("screenshot-roll-notice.png"), nxt()))
+    return True
+
+
 def nxt():
     if not steps:
         root.after(100, root.destroy)

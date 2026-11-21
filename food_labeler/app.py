@@ -266,12 +266,13 @@ class App:
         # shown only when the label size differs from the roll last set up here
         self.roll_notice = tk.Frame(pp, bg=WARN_BG, padx=8, pady=4)
         self.roll_lbl = tk.Label(self.roll_notice, text="", font="ui", bg=WARN_BG, fg=INK,
-                                 anchor="w", justify="left", wraplength=420)
-        self.roll_lbl.pack(side="left", fill="x", expand=True)
-        button(self.roll_notice, "No, same roll", self._same_roll, "quiet").pack(
-            side="right", padx=(6, 0))
-        button(self.roll_notice, "Set up", self._roll_notice_clicked, "chip").pack(
-            side="right")
+                                 anchor="w", justify="left", wraplength=520)
+        self.roll_lbl.pack(anchor="w", fill="x")
+        # buttons on their own line under the words, so neither gets cut off
+        nb = tk.Frame(self.roll_notice, bg=WARN_BG)
+        nb.pack(anchor="w", pady=(4, 0))
+        button(nb, "Set up", self._roll_notice_clicked, "chip").pack(side="left")
+        button(nb, "No, same roll", self._same_roll, "quiet").pack(side="left", padx=(6, 0))
 
         # --- bottom: copies + PRINT
         bottom = tk.Frame(r, bg=BG, padx=14, pady=8)
@@ -1087,7 +1088,7 @@ class App:
             text = "No printer found \u2014 plug it in, then press \u201cLook for printers again\u201d"
         else:
             text = "Pick your printer here"
-        self.printer_btn.configure(text=text + "  \u25BE")
+        self.printer_btn.configure(text=text + "\u00A0\u00A0\u25BE")  # no-break spaces: the arrow stays with the name
         self.refresh_status()
         self.refresh_roll_notice()
         self._rerender_if_dpi_changed()

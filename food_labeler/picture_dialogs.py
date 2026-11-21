@@ -687,26 +687,32 @@ class RollSetupDialog(Modal):
 
         for text, pady in (("1.  " + calibrate.STEP1, (14, 2)),
                            ("2.  " + calibrate.STEP2, (12, 2))):
-            tk.Label(left, text=text, font="ui_bold", bg=BG, fg=INK, wraplength=340,
+            tk.Label(left, text=text, font="ui_bold", bg=BG, fg=INK, wraplength=600,
                      justify="left").pack(anchor="w", pady=pady)
         tk.Label(left, text="Label size", font="ui", bg=BG, fg=MUTED).pack(anchor="w")
         self.stock = tk.StringVar(value=app.doc.stock if app.doc.stock in stocks.STOCKS
                                   else stocks.DEFAULT_STOCK)
-        for sid in stocks.ORDER:
-            tk.Radiobutton(left, text=stocks.STOCKS[sid].name, variable=self.stock, value=sid,
-                           font="ui", bg=BG, activebackground=BG).pack(anchor="w")
+        sizes = tk.Frame(left, bg=BG)       # two columns, so the window fits a laptop
+        sizes.pack(anchor="w")
+        for n, sid in enumerate(stocks.ORDER):
+            tk.Radiobutton(sizes, text=stocks.STOCKS[sid].name, variable=self.stock, value=sid,
+                           font="ui", bg=BG, activebackground=BG).grid(
+                row=n // 2, column=n % 2, sticky="w", padx=(0, 12))
         tk.Label(left, text="Kind of roll", font="ui", bg=BG, fg=MUTED).pack(anchor="w",
                                                                              pady=(8, 0))
         self.media = tk.StringVar(value=calibrate.clean_media(self.ps.get("media")))
-        for k, text in calibrate.MEDIA.items():
-            tk.Radiobutton(left, text=text, variable=self.media, value=k, font="ui", bg=BG,
-                           activebackground=BG, command=self._media_changed).pack(anchor="w")
+        kinds = tk.Frame(left, bg=BG)
+        kinds.pack(anchor="w")
+        for n, (k, text) in enumerate(calibrate.MEDIA.items()):
+            tk.Radiobutton(kinds, text=text, variable=self.media, value=k, font="ui", bg=BG,
+                           activebackground=BG, command=self._media_changed).grid(
+                row=n // 2, column=n % 2, sticky="w", padx=(0, 12))
 
         _heading(right, "3.  " + calibrate.STEP3, pady=(14, 2))
         self.note = tk.Label(right, text="", font="ui", bg=BG, fg=INK, wraplength=360,
                              justify="left")
         self.note.pack(anchor="w")
-        self.go = button(right, "Set it up", self._setup, "primary", font="big")
+        self.go = button(right, "Set it up", self._set_it_up, "primary", font="big")
         self.go.pack(anchor="w", pady=(8, 0))
         # shown once the roll has been set up
         self.after_frame = tk.Frame(right, bg=BG)
@@ -722,7 +728,7 @@ class RollSetupDialog(Modal):
         button(row, "It's off — help me", self._help, "warn").pack(side="left")
 
         self.fallback = tk.Label(b, text=calibrate.still_not_right(fam), font="small", bg=BG,
-                                 fg=MUTED, wraplength=680, justify="left")
+                                 fg=MUTED, wraplength=980, justify="left")
         self.fallback.pack(anchor="w", pady=(16, 0))
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(14, 0))
@@ -754,7 +760,7 @@ class RollSetupDialog(Modal):
             info["print"] = ps
         self.ps = ps
 
-    def _setup(self):
+    def _set_it_up(self):  # not "_setup": tkinter uses that name itself
         stock, media = self._stock(), self.media.get()
         cfgp = self.app.printer_config(self.p)
         try:

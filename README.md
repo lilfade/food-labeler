@@ -258,6 +258,8 @@ printing lands on the labels and not across the gaps between them.
    box sits on the label, press **Looks right**. If not, press **It's off —
    help me** for what to try.
 
+![Setting up a new roll](docs/screenshot-roll-setup.png)
+
 The window also says how to set up a roll with the printer's own feed
 button, in case that is ever needed. Food Labeler remembers which roll you
 set up on each printer. When you pick a different label size, a short line
