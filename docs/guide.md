@@ -72,12 +72,22 @@ Use shorter words or a bigger label.
   *Free text*, *Picture label* (one big picture), or *Cottage food label*
   (for home bakers, see [below](#for-home-bakers-cottage-food-labels)).
 - **Label size → Change…**: pick the size of the labels in your printer.
+- **Which way?**: *Wide* or *Tall*, for every kind of label (not on round
+  ones). Labels on a 4 × 2 or 3 × 2 roll are wide unless you pick *Tall*:
+  then the label is laid out 2 inches wide and 4 inches tall and printed
+  sideways on the roll. A 4 × 6 label is tall unless you pick *Wide* (6 × 4).
+  The picture on the right always shows the label the way you read it; when
+  it prints sideways, a small arrow shows which edge comes out of the
+  printer first. The choice is saved in the label file.
 - **Save** keeps the label so you can print it again. Saved labels appear
   under **My saved labels** at the top: one click opens them. When you open
   an old label, Food Labeler asks if the dates should change to today.
 - **Undo** takes back the last change.
 - **A−** and **A+** make all the writing on the screen smaller or bigger.
-- **Save as picture** makes a picture of the label to send to someone.
+- **Save as picture** makes a picture of the label to send to someone (the
+  way it is read, even if it prints sideways).
+- **Printer on your network?** Use **My printers… → Add a network
+  printer…**; see [Network printers](printer.md#network-printers).
 - Your work is kept safe automatically, even if the computer switches off.
 - Your saved labels are in `Documents\My Food Labels` (Linux:
   `~/Documents/My Food Labels`). Updates to Food Labeler never change them.
@@ -115,13 +125,25 @@ Details for helpers: [fonts.md](fonts.md).
 ![A label with a logo and a QR code](screenshot-picture-qr.png)
 
 - **Picture → Add a picture…** puts your logo (or any picture) on the label:
-  above the name, on the left or right side, or in the top-left corner, as
-  big as you like. Thermal printers only print black, so you choose how it
-  turns black and white: *Logo / drawing (solid black)* with a *Lighter ↔
-  Darker* slider, or *Photo (tiny dots)*. The picture on the right is exactly
-  what prints. **Keep in My pictures** makes your logo one click next time.
-  The picture is saved inside the label file. If there isn't room, the
-  writing your state asks for keeps its size and the picture gets smaller.
+  above the name, below the writing, on the left or right side, or in any of
+  the four corners, as big as you like. The writing flows around it.
+  (On round labels: above or below the writing.) Thermal printers only print
+  black, so you choose how it turns black and white: *Logo / drawing (solid
+  black)* with a *Lighter ↔ Darker* slider, or *Photo (tiny dots)*. The
+  picture on the right is exactly what prints. **Keep in My pictures** makes
+  your logo one click next time. The picture is saved inside the label file
+  (in black and white shades, so the file stays small). If there isn't
+  room, the writing your state asks for keeps its size and the picture gets
+  smaller.
+- **Which pictures?** PNG, JPG, GIF, BMP, WebP, TIFF and icon (ICO) files.
+  A picture you made with **Save as picture** works too and prints just like
+  the label it came from. iPhone photos (HEIC) and SVG drawings can't be
+  opened yet: open them in a photo or drawing program and save them as PNG
+  or JPG first. A white logo on a see-through background prints as a black
+  shape (on white paper it would otherwise vanish).
+- **Swap black and white** makes a negative: what is light prints black.
+  It is off unless you switch it on, and the picture window says so while it
+  is on.
 - **Kind of label → Picture label** is one big picture (a logo sticker or a
   round seal) with a line of words under it if you want.
 
@@ -132,9 +154,13 @@ Details for helpers: [fonts.md](fonts.md).
 **QR code → Add a QR code…** adds a code people can scan with their
 phone: your website, your phone number, your email, or some text (for
 example how to reheat it), with words under it like *Scan for our menu*.
-What the code holds is shown in small print under the label picture. If
-the code would be too small to scan, Food Labeler says so instead of
-printing it.
+What the code holds is shown in small print under the label picture. It
+can go in the same places as a picture. The **How big?** slider only offers
+sizes that print: it starts at the smallest size phones can still scan for
+what the code holds (a longer link needs a bigger code) and stops before the
+code crowds out the writing. Under it you see the size in centimetres and
+inches. If what the code holds is too much for the label, Food Labeler says
+so instead of printing it.
 
 ![Adding a QR code](screenshot-qr.png)
 
@@ -151,7 +177,8 @@ This is what that label prints (4 × 2 inch):
 
 1. **Set up my bakery** (Food Labeler offers this the first time):
    pick your state, then type your bakery's name, full address (street,
-   city, state and ZIP), phone, email and permit number if you have one.
+   city, state and ZIP; the state is filled in for you), phone, email and
+   permit number if you have one.
    You can change these any time in **Settings → My bakery**.
 
    ![Set up my bakery: pick your state](screenshot-bakery-setup.png)

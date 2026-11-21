@@ -61,6 +61,7 @@ Save files as UTF-8 (with or without a byte-order mark).
 | `max_width_mm` | no | the same in mm (e.g. `104`), when the maker gives the width in mm; turned into dots at `dpi` (rounded down). If both are given, `max_width_dots` wins. |
 | `verified_on_paper` | no | `true` only when we have printed real labels on this model. Default `false`: the printer is shown as *alpha — not tested yet* and the first print to it shows a one-time notice. Only the LP610BT-compatible and Zebra ZP450 entries are `true`. |
 | `verified_bluetooth` | no | `true` only when we have also printed real labels on this model **over Bluetooth**. Default `false`: reached over Bluetooth, the printer is *alpha* even if `verified_on_paper` is `true`. Only counts together with `verified_on_paper`. |
+| `verified_network` | no | `true` only when we have also printed real labels on this model **over the network** (raw TCP to the printer, a print server or a network bridge). Default `false`: reached over the network, the printer is *alpha* even if `verified_on_paper` is `true`. Only counts together with `verified_on_paper`. The LP610BT-compatible entry is `true` (printed through a raw TCP bridge on port 9101). |
 | `bt_chunk` | no | how many bytes to send at a time over Bluetooth, 64–65536 (default 4096). Cheap printers have small buffers; LP610BT-type printers use 2048. |
 | `bt_delay_ms` | no | pause between those pieces in milliseconds, 0–1000 (default 20; LP610BT-type 30). |
 | `media` | no | `"gap"` (default), `"continuous"`, `"black-mark"` (informational for now) |
@@ -110,6 +111,12 @@ unless its entry has both `"verified_on_paper": true` and
 Bluetooth hasn't been tested yet. A Bluetooth printer has its own id
 (`bt:<address>`), so the notice is shown once for it even if the same
 printer was already used over USB. No entry has `verified_bluetooth` yet.
+
+The network counts separately too. A network printer is one the person adds
+with *Add a network printer…*, saying what kind it is (LP610BT-type, Zebra,
+or another TSPL printer: settings `"model"`). It is alpha unless that entry
+has `"verified_on_paper": true` and `"verified_network": true`; so far only
+the LP610BT-compatible entry has.
 
 ## Driver-only printers
 

@@ -10,13 +10,16 @@ iDPRT, Phomemo, Jadens, Xprinter and more) should work too, but are
 it, and the first time you print to one, Food Labeler says so once. See
 [Printers we know about](printer-list.md), and please tell us how it goes.
 
-Printers connect with a **USB** cable, or over **Bluetooth (alpha)**: see
+Printers connect with a **USB** cable, over your **network** (a printer with
+its own network socket, a print server or a small network bridge), or over
+**Bluetooth (alpha)**: see [Network printers](#network-printers) and
 [Bluetooth printers](#bluetooth-printers-alpha).
 
 - [Picking your printer](#picking-your-printer)
 - [Print settings](#print-settings)
 - [Sharpness: 203 or 300 dpi](#sharpness-203-or-300-dpi)
 - [New roll? Set it up](#new-roll-set-it-up)
+- [Network printers](#network-printers)
 - [Bluetooth printers (alpha)](#bluetooth-printers-alpha)
 - [My printer isn't in the list](#my-printer-isnt-in-the-list)
 - [Getting help](#getting-help)
@@ -87,6 +90,36 @@ under the printer asks *"New roll in the … printer? Set it up"*; press
 ever sent to the printer until you press **Set it up** and say OK.
 (**Settings → Advanced… → Feed / calibrate…** opens the same window.)
 
+## Network printers
+
+A label printer on your network works like one on a cable. That can be a
+printer with its own network socket, a USB printer plugged into a print
+server, or a USB printer behind a small "network bridge" that passes print
+jobs straight through (often on port 9100). **Tested on paper**: an
+LP610BT-type printer behind a network bridge. Other printers over the network
+are *alpha — not tested yet* until someone has printed on them that way.
+
+1. Find the printer's address: your helper, the print server's own page or
+   the bridge's instructions give it. It looks like `192.168.1.50:9100`: the
+   part before the colon is where the printer is on your network, the number
+   after it is the port (9100 if nothing else is said).
+2. In Food Labeler, open **My printers… → Add a network printer…** (it is
+   also in **My printer isn't in the list** and in **Set up my printer**).
+3. Type the address and press **Test the connection**. This only checks that
+   something answers there, within a few seconds; it never prints anything.
+4. Say what kind of printer it is (*Label printer like the LP610BT*, *Zebra
+   label printer*, or *Another label printer*), give it a name if you like,
+   and press **Add this printer**. It is chosen as your printer straight
+   away.
+
+Your network printers are listed in the same window, with their address and
+a **Remove** button. Print settings, **New roll? Set it up**, the darkness
+test, **Feed one blank label** and **Which one is it?** all work with them.
+Food Labeler never looks for printers on the network by itself; it only
+connects when you print (or press **Test the connection**). If printing says
+the printer isn't answering at its address, check the printer and its print
+server or bridge are switched on and on the same network as the computer.
+
 ## Bluetooth printers (alpha)
 
 LP610BT-type printers with Bluetooth can print without the cable. This is
@@ -148,6 +181,10 @@ Mac computers aren't supported.
    happened, and we'll try to help. It only lists the printers plugged in. If
    we ask you to, tick **Also list everything else plugged in** to add the
    other USB things (their names only, never their serial numbers).
+
+A printer on your network isn't in the USB list either: press **Add a
+network printer…** in the same window, or see
+[Network printers](#network-printers).
 
 A Bluetooth printer isn't in the USB list: press **How to connect a
 Bluetooth printer** in the same window, or see

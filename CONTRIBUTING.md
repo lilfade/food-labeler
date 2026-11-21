@@ -115,6 +115,15 @@ the data and labels folders at a temporary directory, sets
 connection fail the test. Printer discovery is tested against a fake Linux
 `/sys` tree and fake `win32print`/`lpstat` objects.
 
+Pictures: `tests/test_picture_polarity.py` checks every picture mode and
+file type prints the right way round (a label saved with *Save as picture*
+included) and that pictures are stored small; `tests/test_placements.py`
+checks that pictures, QR codes and writing never overlap;
+`tests/test_orientation.py` covers wide and tall labels. Links, scrolling
+and the network printer window are tested through their logic
+(`tests/test_links_and_scrolling.py`, `tests/test_network.py`), without
+opening windows.
+
 Bluetooth is never used by the tests either: `conftest.py` removes
 `socket.AF_BLUETOOTH` (as on a Python built without Bluetooth, which is
 also what Windows CI may have) and replaces the Bluetooth scan with an empty
@@ -325,9 +334,11 @@ locked and not installed by CI.
 ## Code style
 
 - Python 3.11+, `from __future__ import annotations`, standard library plus
-  Pillow and segno (pywin32 on Windows). Network code (only `fontget.py`)
+  Pillow and segno (pywin32 on Windows). Internet code (only `fontget.py`)
   uses `urllib` from the standard library, never runs on the Tk thread, and
-  is tested with fake HTTP answers. New dependencies need a good reason:
+  is tested with fake HTTP answers. Network printers are reached with plain
+  sockets (`printers.send_network`, `printers.check_network`), tested with
+  fake connections. New dependencies need a good reason:
   they all end up inside the one-file program.
 - Lines up to about 100 characters; pyflakes must be clean.
 - Every module has a docstring saying what it is for; public functions and

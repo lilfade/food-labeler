@@ -6,6 +6,17 @@
 Go to **Settings → Advanced…**, tick **Invert colours**, and press **Save**.
 Some printers use the opposite colours; this switch fixes that.
 
+**A picture prints with black and white swapped.**
+Press **Picture → Change…** and check **Swap black and white** is off: while
+it is on, the window says *Black and white are swapped*. The picture on the
+right of the main window is exactly what prints, so if it looks right there
+but not on paper, the whole label is swapped: see the entry above.
+
+**My picture won't open.**
+Food Labeler opens PNG, JPG, GIF, BMP, WebP, TIFF and ICO pictures. iPhone
+photos (HEIC) and SVG drawings can't be opened yet: open them in a photo or
+drawing program and save them as PNG or JPG first.
+
 **The printing is too pale or too dark.**
 Press **Print settings…** (under the printer list) and move *Darkness*
 towards *Darker* or *Lighter*, then **Save**. Not sure which is best? Press
@@ -27,6 +38,13 @@ again**. Still nothing? Follow
 [My printer isn't in the list](printer.md#my-printer-isnt-in-the-list):
 it finds the printer when you plug it back in, or makes a short report and
 opens a help form on GitHub where you paste it, and we'll try to help.
+
+**My network printer isn't answering.**
+Check the printer and its print server or network bridge are switched on and
+on the same network as the computer. **My printers… → Add a network
+printer…** lists it with its address; type the address again and press **Test
+the connection** to check it (nothing is printed). See
+[Network printers](printer.md#network-printers).
 
 **On Windows, nothing prints but there is no error.**
 **Settings → Advanced…** → tick **Print through Windows driver** → **Save**.

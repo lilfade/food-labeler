@@ -6,7 +6,65 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 
 ## 1.5.0 — unreleased
 
-Bluetooth printing (alpha).
+Bluetooth printing (alpha), network printers, wide or tall labels, and
+fixes from testing with real printers.
+
+- **Network printers.** A label printer on your network (with its own
+  network socket, through a print server, or behind a small network
+  bridge) is now easy to add: **My printers → Add a network printer…**
+  (also in *My printer isn't in the list* and *Set up my printer*). Type
+  its address, like `192.168.1.50:9100`, and press **Test the connection**:
+  it only checks that something answers and never prints. Say what kind
+  of printer it is and press **Add this printer**; it becomes your printer
+  straight away. The window lists your network printers with a **Remove**
+  button. LP610BT-type printers are **tested on paper** this way (through
+  a network bridge); other printers over the network are alpha. See
+  [Network printers](docs/printer.md#network-printers).
+- Network printers now work with everything: print settings, **New roll?
+  Set it up**, the darkness test, **Feed one blank label** and **Which one
+  is it?**. Before, adding one under Advanced didn't choose it, and the
+  Advanced window showed an empty box afterwards; it now lists them.
+- **Wide or tall.** A new **Which way?** choice (next to the label size)
+  lays any label out *Wide* or *Tall* (not round ones). A tall label on a
+  4 × 2 roll is 2 inches wide and 4 inches tall and prints sideways; a
+  4 × 6 label can be wide (6 × 4). The preview shows it the way you read
+  it, with a small arrow at the edge that comes out of the printer first.
+  Labels you made before look and print exactly as they did.
+- **More places for pictures and QR codes**: *Below the writing*,
+  *Bottom-left corner* and *Bottom-right corner*, as well as above, the
+  sides and the top corners. The writing flows around them, and a picture
+  and a QR code never overlap. Round labels offer above or below.
+- **QR code size.** The *How big?* slider only goes from the smallest size
+  phones can still scan (a longer link needs a bigger code) to the biggest
+  that leaves room for your writing, and shows the size in centimetres and
+  inches. You can no longer pick a size that won't print.
+- **Pictures print the right way round.** We tested every kind of picture
+  file, including a label saved with **Save as picture** and opened again as
+  a picture: black stays black. If a picture still prints swapped, check
+  **Swap black and white**: the picture window now says when it is on. The
+  slider's *Automatic* setting also no longer switches itself off when the
+  window opens. A white logo on a see-through background now prints as a
+  black shape instead of vanishing.
+- **More picture files**: TIFF and icon (ICO) files open too, and the file
+  picker lists each kind by name. iPhone photos (HEIC) and SVG drawings get a
+  plain message: save them as PNG or JPG first.
+- **Smaller label files.** Pictures are kept in black-and-white shades, and
+  no bigger than a label needs, so a label with a phone photo is about a
+  fifth of the size it was (a 12 megapixel photo used to add over 6 MB). A
+  label saved as a picture and used as a picture adds only a few kilobytes.
+  Labels saved with earlier versions open as before and get smaller the next
+  time you save them.
+- **Clickable links.** Every web address in the program (your state's rule
+  sources, About, Get more fonts, help messages) can be clicked, or reached
+  with Tab and opened with Enter.
+- **Scrolling forms.** In *Set up my bakery*, *My bakery*, *Settings* and
+  the main window, the box you move to with Tab (or click) scrolls into
+  view instead of staying hidden below the bottom.
+- **Your state, filled in.** Picking your state in *Set up my bakery* or
+  *My bakery* fills in the *State* part of your address (Nebraska: NE),
+  unless you already typed something else there.
+- Help text speaks for the Food Labeler project instead of naming the
+  kitchen; the name stays as the small credit.
 
 - **Print over Bluetooth.** LP610BT-type printers with Bluetooth can now
   print without the USB cable, on Windows and Linux. Pair the printer once

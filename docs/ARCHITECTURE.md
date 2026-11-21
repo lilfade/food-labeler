@@ -1,8 +1,10 @@
 # Architecture
 
 Food Labeler is a single-process Python program: a Tk window, Pillow for
-drawing, and no server or network service. The only network use is the
-optional *Get more fonts…* (`fontget.py`), which the user starts by hand. It is packaged with PyInstaller as
+drawing, and no server or network service. The only internet use is the
+optional *Get more fonts…* (`fontget.py`), which the user starts by hand; a
+network printer the person added is only connected to when printing (or
+*Test the connection*). It is packaged with PyInstaller as
 one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 
 ## Module map
@@ -14,19 +16,19 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `food_labeler_main.py` | tiny entry script used by PyInstaller and the Linux menu entry |
 | `model.py` | `LabelDoc` (template, size, fields, copies), `.label` JSON load/save, atomic writes |
 | `dates.py` | date parsing, quick "use by" offsets, date formats |
-| `stocks.py` | label sizes (`Stock`) in mm and in dots at 203 or 300 dpi, `dots()` scaling, per-size printer defaults |
+| `stocks.py` | label sizes (`Stock`) in mm and in dots at 203 or 300 dpi, `dots()` scaling, per-size printer defaults, which way round (`natural`, `turned`, `rotated`) |
 | `templates.py` | per-template text blocks and the auto-fit layout engine |
 | `lettering.py` | font registry (bundled + user fonts), font loading (variable fonts too), which block gets which font, per-font minimum sizes, legal-text rule |
 | `fontget.py` | *Get more fonts*: find and download a Google Fonts family from github.com/google/fonts, add a local font file, install/remove user fonts |
-| `pictures.py` | pictures on labels: reading files (EXIF, transparency, CMYK, 16-bit, animations, size limits), the embedded picture dict, colour → black and white (threshold with Otsu, Floyd–Steinberg dither), *My pictures* |
+| `pictures.py` | pictures on labels: reading files (PNG, JPG, GIF, BMP, WebP, TIFF, ICO; EXIF, transparency, CMYK, 16-bit, animations, size limits; a plain message for HEIC/SVG), the embedded picture dict and how it is stored small (`for_storing`, `compact`), colour → black and white (threshold with Otsu, Floyd–Steinberg dither), *My pictures* |
 | `qrcodes.py` | QR codes: what they hold (link / phone / email / text), segno matrix, whole-dot module sizes, minimum size |
-| `extras.py` | places a picture and/or QR code on a label (above, left, right, corners; inside the circle on round labels), text flowing around them, the Picture label, shrinking them before the wording |
+| `extras.py` | places a picture and/or QR code on a label (above, below, left, right, all four corners; top or bottom of the circle on round labels), text flowing around them, the Picture label, shrinking them before the wording, the QR size slider's range (`qr_size_range`) |
 | `printsettings.py` | per-printer print settings (darkness, speed, nudge, upside down, gap, media, after printing) → TSPL/ZPL values; nudging/turning the picture |
 | `calibrate.py` | setting up a new roll: set-up jobs per language and kind of roll, the line-up label, by-hand instructions, the per-printer "last roll" and the *New roll?* notice logic |
-| `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
+| `render.py` | draws a layout as the exact 1-bit printer bitmap (turned a quarter turn for a label laid out the other way round); on-screen preview (always upright); PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
-| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network; adds paired Bluetooth printers from `btscan.py`), resolution detection, sending jobs (spooler, CUPS, device file, TCP, Bluetooth RFCOMM socket, COM port), status |
+| `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler; adds paired Bluetooth printers from `btscan.py` and the network printers the person added), resolution detection, sending jobs (spooler, CUPS, device file, TCP, Bluetooth RFCOMM socket, COM port), status, network printers (`add_network_printer`, `network_printers`, `check_network`) |
 | `btscan.py` | lists paired Bluetooth devices without connecting (`bluetoothctl devices`/`info` on Linux, PnP `BTHENUM` entries on Windows) and turns the printers among them into `Printer`s |
 | `known.py` | known printer models: bundled `known_printers.json` + the user's update file |
 | `cottage.py` | cottage food state rules (bundled `cottage_rules.json` < imported update < the user's own edits), "Label check", net quantity wording |
@@ -36,10 +38,10 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `report.py` | the plain-text printer report a user pastes into a GitHub issue when asking for help (no label content); the new-issue link (https://github.com only, report never in the address) and the e-mail fallback |
 | `settings.py` | settings file, data/labels folders, log file, autosave |
 | `app.py` | main window: form, preview, printer menu, PRINT |
-| `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
+| `dialogs.py` | all other windows: pickers, save/open, settings, printers, Add a network printer, USB devices, report |
 | `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
 | `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings, Set up a new roll windows |
-| `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell`, calendar, toggles |
+| `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell` (web addresses in the message become links), calendar, toggles, `LinkLabel` (http/https only, `safe_url`), `ScrollFrame` (scrolls the focused widget into view, `scroll_target`) |
 
 Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py`, `picture_dialogs.py` and `widgets.py` imports Tk, so
 everything else is tested headless.
@@ -78,7 +80,7 @@ everything else is tested headless.
    ├── windows_driver             picture drawn through the Windows driver (fallback)
    ├── cups                       lp -o raw
    ├── device                     write to /dev/usb/lpN (or a udev symlink)
-   └── network                    raw TCP to host:9100
+   └── network                    raw TCP to host:port (9100 unless the address says otherwise)
 ```
 
 `FOOD_LABELER_DRY_RUN=<folder>` short-circuits `printers.send()`: jobs are
@@ -127,17 +129,27 @@ are always paper and *Remove the background* makes near-white paper too.
 Results are cached per picture, settings and size, because the label is
 redrawn on every key press.
 
-`extras.arrange()` gives each item its box: *Above the name* is a band
-across the top (several items side by side), *Left/Right side* a column
-(at most 45 % of the width) whose height is the text area, the corners just
-their box; the space becomes `Region.top` or a `Region.exclusions` entry,
-so wrapping flows around it. On round labels everything goes above, inside
-the circle, and pictures are masked to the circle. QR codes are drawn from
-segno's matrix with an integer module (≥ 3 dots at 203 dpi, scaled for 300)
-and a 4-module quiet zone that is kept white; a size that can't give that
-is refused with a plain message. If the text doesn't fit, `fit()` shrinks
-it as usual (never below each block's minimum, so legal wording keeps its
-size); only then are the picture and code made 15 % smaller at a time, down
+`extras.arrange()` gives each item its box. The bands come first: *Above
+the name* across the top and *Below the writing* across the bottom (several
+items side by side, centred); their space comes off `Region.top` /
+`Region.bottom`. Then each side, inside what is left: *Left/Right side* is a
+column (at most 45 % of the width) the height of the text area, and the four
+corners just their own box at the top or bottom of that side; a corner and a
+column on the same side share one column, so nothing overlaps. Side space
+becomes `Region.exclusions` entries, so wrapping flows around it. On round
+labels (`extras.where`) bottom places go across the bottom of the circle and
+everything else across the top, and pictures are masked to the circle.
+`tests/test_placements.py` checks that no picture, QR code and line of
+writing overlap, for every placement and pair of placements on every size.
+QR codes are drawn from segno's matrix with an integer module (≥ 3 dots
+at 203 dpi, scaled for 300) and a 4-module quiet zone that is kept white;
+a size that can't give that is refused with a plain message. The QR window's *How big?* slider only
+covers `extras.qr_size_range()`: from the first size whose module is at
+least the minimum for what the code holds (at this size and dpi) to the
+last size at which the layout still prints the code as asked and everything
+fits, at most 60 % of the text area's height when there is writing.
+If the text doesn't fit, `fit()` shrinks it as usual (never below each
+block's minimum, so legal wording keeps its size); only then are the picture and code made 15 % smaller at a time, down
 to 6 mm / 3-dot modules, and if it still doesn't fit the overflow names the
 picture or QR code. The *Picture label* (`template == "picture"`) puts one
 picture in the area left after its words (bottom 28 %) and any QR column:
@@ -146,6 +158,42 @@ the area and cuts off what sticks out.
 
 *My pictures* is `<data>/pictures/` (one PNG per picture plus
 `pictures.json`); choosing one gives exactly the same embedded PNG.
+
+The embedded PNG is kept small (`pictures.for_storing`): greyscale ("L"),
+with alpha ("LA") only when part of it is see-through, exact black and
+white dots ("1") when that is all it has, at most 1600 pixels on its
+longest side (3600 for black and white), never enlarged. That gives the same
+greys the print conversion makes from colour, so what prints doesn't
+change; a 12 megapixel photo goes in at well under 1.5 MB instead of
+several. Pictures in older files (colour, up to 2000 pixels) open as they
+are and `pictures.compact` (in `LabelDoc.from_dict`, remembered per
+picture) stores them the small way, so the next save is small.
+
+Black stays black: nothing in the conversion ever swaps light and dark
+except *Swap black and white*. `tests/test_picture_polarity.py` opens a
+label saved with *Save as picture* as a picture and checks it prints the
+same way round, in every PNG mode (1-bit, grey, palette with and without
+a see-through colour, RGB, RGBA, LA, 16-bit, 2 × 2 with dpi) and file type,
+and with every setting. A white or very light logo on a see-through
+background (`pictures._light_shape`) prints its shape in black instead of
+vanishing on white paper.
+
+### Which way round (wide or tall)
+
+`LabelDoc.orientation` is `""` (the roll's own way: `stocks.natural`, wide
+for every size but 4 × 6) or `"wide"`/`"tall"` when the label is laid out
+the other way round (never on round labels). `LabelDoc.set_orientation`
+stores the roll's own way as `""`, so only turned labels say so in the file.
+For a turned label `render.render()` lays out on `stocks.rotated(stock)`
+(width and height swapped, everything else the label's own), draws it
+upright and turns the picture a quarter turn clockwise into the roll's
+size: `RenderResult.image` is always `stock.w × stock.h` (what TSPL/ZPL
+get), `upright` is the label as read (the preview and *Save as picture*),
+and the layout's coordinates belong to `layout_stock`. The upright label's
+left edge comes out of the printer first (its right edge when the printer
+prints upside down); the preview draws an arrow there. Nudge and upside down
+still work on the printed picture. With no orientation set, every label is
+byte-for-byte what it was (the 203 dpi baseline is unchanged).
 
 ### Print settings
 
@@ -316,6 +364,22 @@ which devices are paired and never pairs or connects to look.
   `verified_bluetooth` as well as `verified_on_paper`; `status()` never
   connects. `auto_pick` prefers a cable over Bluetooth.
 
+### Network printers
+
+A network printer is a printer the person added with *Add a network
+printer…* (My printers, My printer isn't in the list, Set up my printer;
+Advanced lists them and opens the same window): `printers[<id>]` in
+settings.json with `"manual": true, "method": "network", "target":
+"host:port", "kind"` and the kind of printer they said it is (`"model"`, a
+known printer id). `App.set_found` adds them to what discovery found, so
+they count as connected for printing, test labels, print settings, setting
+up a roll, the darkness test and feeding. Nothing looks for printers on the
+network. *Test the connection* (`printers.check_network`) opens a TCP
+connection with a 3 s timeout on a worker thread and closes it without
+sending anything. A network printer is alpha unless its model has
+`verified_network` as well as `verified_on_paper` (the LP610BT-compatible
+entry has, from printing through a raw TCP bridge).
+
 ### Background work
 
 Tk may only be used from the main thread. Printer discovery (every 15 s and
@@ -338,7 +402,7 @@ fsync + rename).
 
 | file | where | format |
 |------|-------|--------|
-| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}`, plus optional `"lettering": {"name", "other"}` (font family names; only written when not the standard look), `"picture": {"png" (base64), "name", "place", "size", "mode", "threshold", "brightness", "contrast", "invert", "remove_bg"}` and `"qr": {"what", "value", "caption", "place", "size"}` (only written when the label has them) |
+| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}`, plus optional `"orientation": "wide" \| "tall"` (only when turned), `"lettering": {"name", "other"}` (font family names; only written when not the standard look), `"picture": {"png" (base64), "name", "place", "size", "mode", "threshold", "brightness", "contrast", "invert", "remove_bg"}` and `"qr": {"what", "value", "caption", "place", "size"}` (only written when the label has them) |
 | `pictures/` | data folder | *My pictures*: `<id>.png` files and `pictures.json` `{"format": "food-labeler-pictures", "version": 1, "pictures": [{"id", "name", "file"}]}` |
 | `fonts/<folder>/` | data folder | fonts the user added: the font file(s), license, `font.json` `{"format": "food-labeler-font", "version": 1, "name", "regular", "bold", "variable", "category", "license", "source", "min_scale"}` |
 | `settings.json` | data folder | JSON, merged over built-in defaults key by key (unknown keys and wrong types are ignored) |
@@ -374,7 +438,10 @@ refused. `tests/test_cottage.py` keeps 1.0.0 files of every kind opening. Letter
 (1.2.0) is likewise an optional key: older files open in the standard
 lettering and save back byte for byte (`tests/test_fonts.py`). So are
 `"picture"` and `"qr"` (1.2.0); a picture label opened in an older version
-falls back to a simple label. A package label's old `fields["qr"]` web
+falls back to a simple label. `"orientation"` (1.5.0) is optional too: an
+older version lays a turned label out the roll's way, and the new places
+(`"bottom"`, `"corner_bottom_left"`, `"corner_bottom_right"`) fall back to
+*above* there. A package label's old `fields["qr"]` web
 address becomes a `"qr"` object when opened (the file on disk only changes
 when saved), and saving keeps writing the code's text to `fields["qr"]` so
 older versions still print the code (`tests/test_qr.py`).

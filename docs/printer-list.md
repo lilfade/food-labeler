@@ -22,7 +22,7 @@ account; or email hello@highthymekitchen.com if you're stuck.
 
 | Printer | How Food Labeler talks to it | Tested on paper | Notes |
 |---|---|---|---|
-| LP610BT-type label printers (Labelnize, Flexyva, Polono LP610BT and others) | TSPL | **yes** | 203 dpi, 4 in (104 mm) wide. |
+| LP610BT-type label printers (Labelnize, Flexyva, Polono LP610BT and others) | TSPL | **yes** (USB, and over the network through a raw TCP bridge) | 203 dpi, 4 in (104 mm) wide. Bluetooth is still alpha. |
 | Zebra ZP450 | ZPL | **yes** | 203 dpi, 4.09 in (104 mm) wide. |
 
 ## Alpha (not tested yet)
