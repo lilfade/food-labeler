@@ -311,6 +311,18 @@ def report_dialog():
     return True
 
 
+@step
+def advanced_dialog():
+    from food_labeler.dialogs import AdvancedDialog
+    try:
+        d = AdvancedDialog(root, app)
+    except TypeError:
+        d = AdvancedDialog(root, app, app.doc)
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-advanced.png", d), d.destroy(), nxt()))
+    return True
+
+
 def nxt():
     if not steps:
         root.after(100, root.destroy)
