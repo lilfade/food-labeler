@@ -223,6 +223,54 @@ def get_fonts():
     return True
 
 
+@step
+def picture_and_qr():
+    from PIL import Image
+    from food_labeler import pictures
+    app.doc.lettering = {}
+    app.doc.set_template("simple")
+    app.doc.fields.update(food="Lemon Thyme Shortbread", contains="Milk, Wheat",
+                          note="Keep refrigerated", made_by="")
+    logo = Image.open(ROOT / "food_labeler" / "assets" / "icon.png")
+    app.doc.picture = pictures.new_picture(pictures.normalise(logo), "Our logo",
+                                           place="left", size=70)
+    app.doc.qr = {"what": "link", "value": "https://example.com/menu",
+                  "caption": "Scan for our menu", "place": "right", "size": 45}
+    app._sync_ui_from_doc()
+    root.after(900, lambda: (grab("screenshot-picture-qr.png"), nxt()))
+    return True
+
+
+@step
+def picture_dialog():
+    from food_labeler.picture_dialogs import PictureDialog
+    d = PictureDialog(root, app)
+    d.deiconify()
+    root.after(1200, lambda: (grab("screenshot-picture.png", d), d.destroy(), nxt()))
+    return True
+
+
+@step
+def qr_dialog():
+    from food_labeler.picture_dialogs import QrDialog
+    d = QrDialog(root, app)
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-qr.png", d), d.destroy(), nxt()))
+    return True
+
+
+@step
+def print_settings():
+    from food_labeler import printers
+    from food_labeler.picture_dialogs import PrintSettingsDialog
+    p = printers.Printer(id="usb:1-1.4", kind="tspl", model="4B-LP610BT", method="device",
+                         target="/dev/usb/lp0", port="USB port 1-1.4", vidpid="0483:2025")
+    d = PrintSettingsDialog(root, app, p)
+    d.deiconify()
+    root.after(900, lambda: (grab("screenshot-print-settings.png", d), d.destroy(), nxt()))
+    return True
+
+
 def nxt():
     if not steps:
         root.after(100, root.destroy)

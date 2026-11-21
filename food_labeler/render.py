@@ -40,12 +40,15 @@ class RenderResult:
         return self.layout.message + extra
 
 
-def draw_layout(lay: Layout, w: int, h: int) -> Image.Image:
+def draw_layout(lay: Layout, w: int, h: int, smooth: bool = False) -> Image.Image:
     """Draw straight into a 1-bit image at final size.
 
     We compared this with drawing in greyscale and thresholding at 128: at
-    12-dot text, direct 1-bit drawing (FreeType's hinted monochrome mode) gave
-    more even strokes and spacing, so that is what we use.
+    12-dot text on 203 dpi, direct 1-bit drawing (FreeType's hinted monochrome
+    mode) gave more even strokes and spacing, so that is what we use there.
+    At 300 dpi the hinted mode rounds each letter's position on its own and
+    can leave a visible gap inside a word ("Prod uced"), so with ``smooth``
+    the text is drawn in greyscale and thresholded instead.
     """
     img = Image.new("1", (w, h), 1)
     for (x, y, pic) in lay.images:          # pictures, already black and white
@@ -53,9 +56,17 @@ def draw_layout(lay: Layout, w: int, h: int) -> Image.Image:
     d = ImageDraw.Draw(img)
     if lay.qr_box:                           # the QR code's quiet zone stays paper
         d.rectangle(lay.qr_box, fill=1)
-    for ln in lay.lines:
-        d.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold, ln.font), fill=0,
-               anchor="la")
+    if smooth and lay.lines:
+        grey = Image.new("L", (w, h), 255)
+        gd = ImageDraw.Draw(grey)
+        for ln in lay.lines:
+            gd.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold, ln.font),
+                    fill=0, anchor="la")
+        img.paste(0, (0, 0), grey.point(lambda v: 255 if v < 128 else 0))
+    else:
+        for ln in lay.lines:
+            d.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold, ln.font),
+                   fill=0, anchor="la")
     if lay.qr:
         qx, qy, mod, matrix = lay.qr
         for r, row in enumerate(matrix):
@@ -73,7 +84,8 @@ def render(doc, ctx: dict | None = None, dpi: int = stocks.BASE_DPI) -> RenderRe
     size and only gets more dots. It is never stored in the document."""
     stock = stocks.get(doc.stock, dpi)
     lay = templates.layout(doc, stock, ctx or {})
-    return RenderResult(draw_layout(lay, stock.w, stock.h), lay, stock)
+    return RenderResult(draw_layout(lay, stock.w, stock.h, stock.dpi > stocks.BASE_DPI),
+                        lay, stock)
 
 
 def render_text_label(lines: list[str], stock: stocks.Stock) -> Image.Image:
@@ -86,7 +98,7 @@ def render_text_label(lines: list[str], stock: stocks.Stock) -> Image.Image:
     for b in blocks:
         b.pref = base * (0.24 if b.bold else 0.15)
     lay = templates.fit(blocks, region, "center")
-    return draw_layout(lay, stock.w, stock.h)
+    return draw_layout(lay, stock.w, stock.h, stock.dpi > stocks.BASE_DPI)
 
 
 # ---------------------------------------------------------------------------

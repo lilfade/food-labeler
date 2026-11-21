@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.2.0 — unreleased
+## 1.2.0 — 2026-11-21
 
 Lettering: choose the fonts on your labels.
 
@@ -76,6 +76,11 @@ Pictures, QR codes and print settings.
   or *Feed a little extra*. **Darkness test** (3 labels, only when you press
   it) and **Feed one blank label**. **Reset to normal** puts it all back.
   Nothing changes for printers whose settings you never touch.
+- The Picture, QR code and Print settings windows fit a laptop screen, and
+  every button under the printer list is fully visible.
+- At 300 dpi, letters no longer show a small gap inside words.
+- Closing a window that was opened from another window gives the click lock
+  back to the window underneath.
 
 ## 1.1.1 — 2026-11-20
 

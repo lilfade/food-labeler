@@ -117,21 +117,28 @@ class PictureDialog(Modal):
         self.auto = pic["threshold"] is None
         self.brightness = tk.IntVar(value=pic["brightness"])
         self.contrast = tk.IntVar(value=pic["contrast"])
-        self.invert = Toggle(left, "Swap black and white", self._changed, pic["invert"])
-        self.invert.pack(anchor="w", pady=(8, 2))
-        self.remove_bg = Toggle(left, "Remove the background (light parts become paper)",
-                                self._changed, pic["remove_bg"])
-        self.remove_bg.pack(anchor="w", pady=2)
 
         tk.Label(right, text="This is exactly what prints", font="ui_bold", bg=BG,
                  fg=INK).pack(anchor="w")
         self.preview = tk.Label(right, bg=BG)
         self.preview.pack(pady=(6, 4))
-        self.zoom = tk.Label(right, bg=BG)
-        self.zoom.pack(pady=(4, 4))
+        under = tk.Frame(right, bg=BG)
+        under.pack(anchor="w", fill="x", pady=(4, 4))
+        self.zoom = tk.Label(under, bg=BG)
+        self.zoom.pack(side="left", anchor="n")
+        toggles = tk.Frame(under, bg=BG)
+        toggles.pack(side="left", anchor="n", padx=(14, 0))
         self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN, wraplength=PREVIEW_W,
                             justify="left")
         self.msg.pack(anchor="w")
+        # beside the close-up (not in the left column) so the window fits a laptop screen
+        self.invert = Toggle(toggles, "Swap black and white", self._changed, pic["invert"])
+        self.invert.pack(anchor="w", pady=(0, 4))
+        self.remove_bg = Toggle(toggles, "Remove the background", self._changed,
+                                pic["remove_bg"])
+        self.remove_bg.pack(anchor="w")
+        tk.Label(toggles, text="(light parts become paper)", font="small", bg=BG,
+                 fg=MUTED).pack(anchor="w")
 
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(16, 0))
@@ -254,8 +261,8 @@ class PictureDialog(Modal):
         self.preview.configure(image=ph)
         zoom = None
         for (_x, _y, pic) in res.layout.images[:1]:
-            k = min(1.0, PREVIEW_W / max(1, pic.width), 200 / max(1, pic.height))
-            k = max(k, min(3.0, 200 / max(1, pic.height)))
+            k = min(1.0, 160 / max(1, pic.width), 160 / max(1, pic.height))
+            k = max(k, min(3.0, 160 / max(1, pic.height)))
             zoom = render.scaled(pic, k)
         if zoom is not None:
             zph = ImageTk.PhotoImage(zoom)
@@ -373,17 +380,10 @@ class QrDialog(Modal):
         for text in ("Scan for our menu", "Scan for ingredients", "Scan to reorder"):
             button(chips, text, lambda t=text: self.caption.set(t), "chip").pack(
                 side="left", padx=(0, 4))
-        _heading(left, "Where does it go?")
-        self.place = tk.StringVar(value=qr["place"])
-        for p in qrcodes.PLACES:
-            tk.Radiobutton(left, text=pictures.PLACES[p], variable=self.place, value=p,
-                           font="ui", bg=BG, activebackground=BG,
-                           command=self._changed).pack(anchor="w")
         _heading(left, "How big?")
         self.size = tk.IntVar(value=qr["size"])
         _scale(left, self.size, *qrcodes.SIZE_RANGE, "Smaller", "Bigger",
                command=self._changed).pack(anchor="w")
-
         tk.Label(right, text="This is exactly what prints", font="ui_bold", bg=BG,
                  fg=INK).pack(anchor="w")
         self.preview = tk.Label(right, bg=BG)
@@ -394,6 +394,16 @@ class QrDialog(Modal):
         self.msg = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN, wraplength=PREVIEW_W,
                             justify="left")
         self.msg.pack(anchor="w", pady=(6, 0))
+        _heading(right, "Where does it go?")
+        self.place = tk.StringVar(value=qr["place"])
+        grid = tk.Frame(right, bg=BG)
+        grid.pack(anchor="w")
+        for n, p in enumerate(qrcodes.PLACES):   # two columns, to keep the window short
+            tk.Radiobutton(grid, text=pictures.PLACES[p], variable=self.place, value=p,
+                           font="ui", bg=BG, activebackground=BG,
+                           command=self._changed).grid(row=n // 2, column=n % 2, sticky="w",
+                                                       padx=(0, 16))
+
 
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(16, 0))
@@ -479,6 +489,14 @@ class PrintSettingsDialog(Modal):
         tk.Label(b, text="Remembered for this printer. If you are not sure, leave them as "
                  "they are.", font="small", bg=BG, fg=MUTED).pack(anchor="w")
 
+        # two columns, so the window fits a laptop screen
+        cols = tk.Frame(b, bg=BG)
+        cols.pack(fill="x")
+        b = tk.Frame(cols, bg=BG)
+        b.pack(side="left", anchor="n", padx=(0, 30))
+        right = tk.Frame(cols, bg=BG)
+        right.pack(side="left", anchor="n")
+
         _heading(b, "Darkness")
         lo, hi = printsettings.ZPL_DARKNESS if kind == "zpl" else printsettings.TSPL_DARKNESS
         self.dark = tk.IntVar(value=printsettings.effective_darkness(kind, st, ps, adv, fam))
@@ -500,6 +518,7 @@ class PrintSettingsDialog(Modal):
                              None, ps.get("upside_down", False))
         self.upside.pack(anchor="w", pady=(6, 0))
 
+        b = right
         _heading(b, "Labels in the printer")
         self.media = tk.StringVar(value=ps.get("media", "gap"))
         for k, text in printsettings.MEDIA.items():
@@ -509,7 +528,7 @@ class PrintSettingsDialog(Modal):
         if kind == "tspl":
             row = tk.Frame(b, bg=BG)
             row.pack(anchor="w", pady=(4, 0))
-            tk.Label(row, text=f"Space between {st.name} labels (mm):", font="ui",
+            tk.Label(row, text="Gap between labels (mm):", font="ui",
                      bg=BG).pack(side="left")
             tk.Entry(row, textvariable=self.gap, font="ui", width=6).pack(side="left", padx=6)
 
@@ -524,7 +543,7 @@ class PrintSettingsDialog(Modal):
         button(row, "Feed one blank label", self._feed, "chip").pack(side="left", padx=(0, 6))
         button(row, "Darkness test", self._test, "chip").pack(side="left")
 
-        row = tk.Frame(b, bg=BG)
+        row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(14, 0))
         button(row, "Save", self._save, "primary").pack(side="left", padx=(0, 8))
         button(row, "Reset to normal", self._reset).pack(side="left")

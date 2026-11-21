@@ -255,10 +255,13 @@ class App:
         button(prow, "Look for printers again", lambda: self.rescan_printers(user=True),
                "chip").pack(side="left", padx=(0, 6))
         button(prow, "My printers\u2026", self.my_printers, "quiet").pack(side="left")
-        button(prow, "Print settings\u2026", self.print_settings, "quiet").pack(side="left",
-                                                                                padx=(6, 0))
-        button(pp, "My printer isn't in the list", self.usb_devices, "quiet").grid(
-            row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        # second row, so no button gets cut off on a laptop-size window
+        prow2 = tk.Frame(pp, bg=PANEL)
+        prow2.grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
+        button(prow2, "Print settings\u2026", self.print_settings, "quiet").pack(
+            side="left", padx=(0, 6))
+        button(prow2, "My printer isn't in the list", self.usb_devices, "quiet").pack(
+            side="left")
 
         # --- bottom: copies + PRINT
         bottom = tk.Frame(r, bg=BG, padx=14, pady=8)
