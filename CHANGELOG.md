@@ -4,6 +4,32 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.3.2 — unreleased
+
+Safety fixes.
+
+- Printer update files: the printer names in them are now plain words
+  (put `|` between alternatives) instead of patterns, so any update file
+  is safe to add and printers are found as quickly as ever. Update files
+  made for earlier versions still work; see
+  [printer definitions](docs/printer-definitions.md) if one of yours used
+  special characters.
+- Files that are far too big, or damaged in unusual ways, are refused with
+  the same plain message as any other file that can't be opened, instead
+  of slowing the program down. If your settings file is ever damaged, a
+  copy is kept as `settings.json.broken`.
+- State rules from an update file you imported now say so ("From an update
+  file you imported (checked … by whoever made it)") instead of looking
+  like the rules checked by Food Labeler.
+- The printer report lists only printers. To add the other things plugged
+  in, tick **Also list everything else plugged in**; their serial numbers
+  are never included.
+- *My pictures* only ever uses its own folder, and printing straight to a
+  USB printer only goes to a printer device.
+- The release notes and the guide now say to download Food Labeler only
+  from the Releases page, never from a link someone sends you.
+- The program is built from exact, checked versions of the parts it uses.
+
 ## 1.3.1 — 2026-11-21
 
 - 3 × 2 and 4 × 2 labels are drawn 50.0 mm tall instead of 50.8 mm. "2 inch"
