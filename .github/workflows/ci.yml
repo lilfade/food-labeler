@@ -40,5 +40,9 @@ jobs:
       - name: Pyflakes
         run: python -m pyflakes food_labeler tests tools food_labeler_main.py
 
+      # Failing tests also show as annotations on the run, readable without signing in.
+      - name: Test-failure annotations
+        run: python -m pip install pytest-github-actions-annotate-failures
+
       - name: Tests (headless; the opt-in UI tests stay skipped)
         run: python -m pytest -q -rs
