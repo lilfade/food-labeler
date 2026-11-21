@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.6.0 — unreleased
+## 1.6.0 — 2026-11-21
 
 - **Check for updates.** *Settings → Check for updates…* asks GitHub whether
   there is a newer Food Labeler. If there is, it shows what's new and a
