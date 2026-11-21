@@ -240,6 +240,51 @@ def test_send_network():
     assert printers.parse_hostport("[::1]:9101") == ("::1", 9101)
 
 
+class DripSock(FakeSock):
+    """Sends its reply one byte at a time, each byte taking ``step`` (pretend) seconds,
+    and never a newline."""
+
+    def __init__(self, clock, step=0.4):
+        super().__init__()
+        self.clock, self.step, self.timeouts = clock, step, []
+
+    def settimeout(self, t):
+        self.timeouts.append(t)
+
+    def recv(self, n):
+        import socket
+        if self.timeouts[-1] < self.step:
+            self.clock.now += self.timeouts[-1]
+            raise socket.timeout()
+        self.clock.now += self.step
+        return b"x"
+
+
+class FakeClock:
+    now = 100.0
+
+    def __call__(self):
+        return self.now
+
+
+def test_send_network_slow_reply_has_one_deadline():
+    clock = FakeClock()
+    s = DripSock(clock)
+    got = printers.send_network("h:9100", b"JOB", connect=lambda a, timeout: s,
+                                reply_timeout=1.5, clock=clock)
+    assert got == "xxx" and s.sent == b"JOB"
+    # all the waiting together stays within the one reply time
+    assert clock.now - 100.0 <= 1.5 + 1e-9
+    assert s.timeouts == sorted(s.timeouts, reverse=True) and all(t > 0 for t in s.timeouts)
+
+
+def test_send_network_endless_reply_stops():
+    clock = FakeClock()
+    s = DripSock(clock, step=0.0)              # bytes as fast as asked, forever
+    got = printers.send_network("h:9100", b"J", connect=lambda a, timeout: s, clock=clock)
+    assert got == "x" * 512
+
+
 def test_send_dispatch_dry_run(tmp_path):
     # conftest sets FOOD_LABELER_DRY_RUN: nothing reaches a transport
     printers.send({"method": "network", "target": "192.0.2.10:9100", "kind": "tspl"}, b"JOB")

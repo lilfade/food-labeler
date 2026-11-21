@@ -956,8 +956,11 @@ MSG_NET_NOT_ANSWERING = ("The printer isn't answering at {addr}. Check it (and i
 
 
 def send_network(target: str, data: bytes, connect=socket.create_connection,
-                 reply_timeout: float = 1.5) -> str:
-    """Send over raw TCP; return the first reply line if the printer sends one quickly."""
+                 reply_timeout: float = 1.5, clock=time.monotonic) -> str:
+    """Send over raw TCP; return the first reply line if the printer sends one quickly.
+
+    ``reply_timeout`` is the whole time spent waiting for a reply, however it
+    arrives: something that sends one byte at a time can't hold the print up."""
     host, port = parse_hostport(target)
     try:
         s = connect((host, port), timeout=5)
@@ -970,9 +973,13 @@ def send_network(target: str, data: bytes, connect=socket.create_connection,
             s.shutdown(socket.SHUT_WR)
         except OSError:
             pass
-        s.settimeout(reply_timeout)
+        deadline = clock() + reply_timeout
         try:
             while b"\n" not in reply and len(reply) < 512:
+                left = deadline - clock()
+                if left <= 0:
+                    break
+                s.settimeout(left)
                 chunk = s.recv(256)
                 if not chunk:
                     break
