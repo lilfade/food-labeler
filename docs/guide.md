@@ -29,6 +29,7 @@ Printer help is in [Your printer](printer.md), and quick fixes are in
    [Releases page](https://github.com/lilfade/food-labeler/releases/latest)
    (on Linux, download `food-labeler`). `SHA256SUMS.txt` on the same page
    lets a helper check the download is intact.
+   Only download Food Labeler from https://github.com/lilfade/food-labeler/releases — never from a link someone sends you.
 3. **Move it to your Desktop** (drag it from your *Downloads* folder), so it is
    easy to find next time.
 4. **Double-click it.**
