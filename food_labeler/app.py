@@ -23,8 +23,10 @@ from PIL import Image, ImageTk
 
 from . import APP_NAME, BRAND, dates, known, model, printers, render, settings as settings_mod, stocks
 from . import bakery, calibrate, cottage, printsettings, templates
+from . import ui_text
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, WARN_BG,
-                      CalendarDialog, ScrollFrame, Toggle, ask, button, tell)
+                      CalendarDialog, FlowFrame, HintEntry, ScrollFrame, Toggle, ask, button,
+                      card, menu_button, tell)
 
 log = logging.getLogger("food_labeler.app")
 
@@ -32,17 +34,19 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 FONT_SIZES = {"ui": (16, "normal"), "ui_bold": (16, "bold"), "field": (20, "normal"),
               "big": (22, "bold"), "huge": (30, "bold"), "title": (22, "bold"),
               "small": (13, "normal"), "link": (14, "normal")}   # "link" is underlined
-SCALES = [0.8, 0.9, 1.0, 1.1, 1.2, 1.35, 1.5, 1.7]
+SCALES = ui_text.SCALES
 RENDER_DELAY_MS = 150
 AUTOSAVE_MS = 4000
 
 
-def way_icon(way: str, selected: bool = False) -> Image.Image:
-    """A tiny label outline for the Which way? buttons: wide or tall."""
+def way_icon(way: str, selected: bool = False, scale: float = 1.0) -> Image.Image:
+    """A tiny label outline for the Wide / Tall buttons, sized with the text."""
     from PIL import ImageDraw
-    img = Image.new("RGBA", (30, 30), (0, 0, 0, 0))
-    w, h = (26, 16) if way == "wide" else (16, 26)
-    x0, y0 = (30 - w) // 2, (30 - h) // 2
+    n = max(18, int(round(30 * scale)))
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    long_, short = int(n * 0.86), int(n * 0.54)
+    w, h = (long_, short) if way == "wide" else (short, long_)
+    x0, y0 = (n - w) // 2, (n - h) // 2
     ink = (255, 255, 255, 255) if selected else (30, 30, 30, 255)
     ImageDraw.Draw(img).rounded_rectangle((x0, y0, x0 + w, y0 + h), radius=3, outline=ink,
                                           width=2)
@@ -120,19 +124,25 @@ class App:
 
     def apply_scale(self, scale: float, save=True):
         """Resize every named font (all windows use them) to the nearest SCALES step."""
-        scale = min(SCALES, key=lambda s: abs(s - float(scale)))
+        scale = ui_text.nearest_scale(scale)
         self.cfg["ui_scale"] = scale
         for name, (size, _w) in FONT_SIZES.items():
             self.fonts[name].configure(size=int(round(size * scale)))
         if save:
             self.cfg.save()
+            self._build_chips()              # the Wide / Tall pictures follow the text
             self.schedule_render()
 
     def bigger_text(self, step: int):
         """A− / A+: one step down or up the SCALES list."""
-        i = SCALES.index(min(SCALES, key=lambda s: abs(s - self.cfg["ui_scale"])))
-        i = max(0, min(len(SCALES) - 1, i + step))
-        self.apply_scale(SCALES[i])
+        scale = ui_text.step_scale(self.cfg["ui_scale"], step)
+        self.apply_scale(scale)
+        self.flash(f"Text size: {ui_text.text_size_words(scale)}. (Settings has the choices.)",
+                   4000)
+
+    def set_text_size(self, size_id: str):
+        """Settings → Text size: Small, Normal, Large or Extra large."""
+        self.apply_scale(ui_text.scale_for(size_id))
 
     def _setup_window(self):
         r = self.root
@@ -167,13 +177,13 @@ class App:
     def _build(self):
         r = self.root
         r.grid_columnconfigure(0, weight=1)
-        r.grid_rowconfigure(2, weight=1)
+        r.grid_rowconfigure(1, weight=1)
 
-        # --- top bar: brand + big buttons
-        top = tk.Frame(r, bg=BG, padx=14, pady=10)
+        # --- toolbar: brand, the file buttons, and text size + Settings on the right
+        top = tk.Frame(r, bg=BG, padx=14, pady=6)
         top.grid(row=0, column=0, sticky="ew")
         brand = tk.Frame(top, bg=BG)
-        brand.pack(side="left", padx=(0, 18))
+        brand.pack(side="left", padx=(0, 16))
         try:
             self._seal = ImageTk.PhotoImage(Image.open(ASSETS / "seal-header.png"))
             tk.Label(brand, image=self._seal, bg=BG).pack(side="left", padx=(0, 8))
@@ -184,35 +194,76 @@ class App:
         tk.Label(names, text=APP_NAME, font="title", bg=BG, fg=GREEN_DARK).pack(anchor="w")
         tk.Label(names, text=f"by {BRAND}", font="small", bg=BG, fg=MUTED).pack(anchor="w")
 
-        for text, cmd in [("New", self.new_label), ("Open", self.open_dialog),
-                          ("Save", self.save), ("Print…", self.print_dialog),
-                          ("Undo", self.undo)]:
-            button(top, text, cmd).pack(side="left", padx=4)
-        button(top, "Settings", self.settings_dialog).pack(side="right", padx=4)
-        button(top, "A+", lambda: self.bigger_text(1), width=3).pack(side="right", padx=2)
-        button(top, "A−", lambda: self.bigger_text(-1), width=3).pack(side="right", padx=2)
-        tk.Label(top, text="Text size", font="small", bg=BG, fg=MUTED).pack(side="right", padx=6)
+        button(top, "New", self.new_label).pack(side="left", padx=3)
+        # Open ▾: the labels saved most recently, then "All my saved labels…"
+        self.open_btn = menu_button(top, "Open ▾", self._fill_open_menu)
+        self.open_btn.pack(side="left", padx=3)
+        button(top, "Save", self.save).pack(side="left", padx=3)
+        button(top, "Undo", self.undo).pack(side="left", padx=3)
+        button(top, "Settings", self.settings_dialog).pack(side="right", padx=(10, 0))
+        button(top, "A+", lambda: self.bigger_text(1), "chip", width=2).pack(side="right",
+                                                                             padx=2)
+        button(top, "A−", lambda: self.bigger_text(-1), "chip", width=2).pack(
+            side="right", padx=2)
+        tk.Label(top, text="Text size", font="small", bg=BG, fg=MUTED).pack(side="right",
+                                                                           padx=6)
 
-        # --- my saved labels
-        self.recent_bar = tk.Frame(r, bg=BG, padx=14)
-        self.recent_bar.grid(row=1, column=0, sticky="ew")
-
-        # --- main: form (left) + preview (right)
-        main = tk.Frame(r, bg=BG, padx=14, pady=8)
-        main.grid(row=2, column=0, sticky="nsew")
+        # --- main: My products and the label's chips and form (left), preview and
+        # printer (right)
+        main = tk.Frame(r, bg=BG, padx=14)
+        main.grid(row=1, column=0, sticky="nsew")
         main.grid_rowconfigure(0, weight=1)
-        # "uniform" keeps the 6:5 split no matter how wide the form's contents ask
-        # to be (the cottage label check would otherwise squeeze the preview).
+        # "uniform" keeps the split no matter how wide the form's contents ask to
+        # be (the cottage label check would otherwise squeeze the preview).
         main.grid_columnconfigure(0, weight=6, uniform="main")
         main.grid_columnconfigure(1, weight=5, uniform="main")
 
-        left = tk.Frame(main, bg=PANEL, highlightthickness=1, highlightbackground=BORDER)
-        left.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
+        left = tk.Frame(main, bg=BG)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 14))
         left.grid_rowconfigure(1, weight=1)
         left.grid_columnconfigure(0, weight=1)
-        self.kind_bar = tk.Frame(left, bg=PANEL, padx=14, pady=10)
+
+        # My products: find one, or one click on the favourites and the ones used
+        # most lately (pick product → how many → PRINT)
+        pc = card(left, padx=12, pady=8)
+        pc.grid(row=0, column=0, sticky="ew", pady=(0, 10))
+        self.products_card = pc
+        head = tk.Frame(pc, bg=PANEL)
+        head.pack(fill="x")
+        tk.Label(head, text="My products", font="ui_bold", bg=PANEL, fg=GREEN_DARK).pack(
+            side="left", padx=(0, 10))
+        b = button(head, "Manage\u2026", self.manage_products, "quiet", font="small")
+        b.configure(bg=PANEL, activebackground="#F4EFE6")
+        b.pack(side="right", padx=(6, 0))
+        self.save_product_btn = button(head, "Save as product", self.save_product, "quiet",
+                                       font="small")
+        self.save_product_btn.configure(bg=PANEL, activebackground="#F4EFE6")
+        self.find_var = tk.StringVar(master=r)
+        self.find_entry = HintEntry(head, "Find a product\u2026", self.find_var, font="ui",
+                                    width=8, relief="flat", highlightthickness=2,
+                                    highlightbackground=BORDER, highlightcolor=GREEN,
+                                    bg="#FFFFFF", fg=INK, insertwidth=2)
+        self.find_entry.pack(side="left", fill="x", expand=True, ipady=4)
+        for seq in ("<Return>", "<KP_Enter>"):
+            self.find_entry.bind(seq, lambda e: (self._find_enter(), "break")[1])
+        self.find_entry.bind("<Escape>", lambda e: (self.find_var.set(""), "break")[1])
+        self.find_var.trace_add("write", lambda *a: self.refresh_products())
+        # Tab goes: Find a product…, Save as product, Manage…, then the products
+        self.save_product_btn.lift()
+        b.lift()
+        # two rows at most, so the form keeps its room; the rest are a search away
+        self.product_flow = FlowFrame(pc, bg=PANEL, max_rows=2)
+        self.product_flow.pack(fill="x", pady=(8, 0))
+
+        # the label: kind, size, which way and extras as chips, then the form
+        lc = card(left)
+        lc.grid(row=1, column=0, sticky="nsew")
+        lc.grid_rowconfigure(1, weight=1)
+        lc.grid_columnconfigure(0, weight=1)
+        self.kind_bar = tk.Frame(lc, bg=PANEL, padx=12, pady=10)
         self.kind_bar.grid(row=0, column=0, sticky="ew")
-        self.scroll = ScrollFrame(left)
+        self.scroll = ScrollFrame(lc)
+        self.scroll.canvas.configure(height=100)     # it grows to the room there is
         self.scroll.grid(row=1, column=0, sticky="nsew")
         self.form = self.scroll.inner
 
@@ -224,74 +275,81 @@ class App:
         head.grid(row=0, column=0, sticky="ew")
         tk.Label(head, text="This is how your label will look", font="ui_bold", bg=BG,
                  fg=INK).pack(side="left")
-        button(head, "Save as picture", self.export_picture, "quiet").pack(side="right")
-        self.canvas = tk.Canvas(right, bg="#E2DED6", highlightthickness=0, bd=0, width=300,
-                                height=180)
+        button(head, "Save as picture", self.export_picture, "quiet", font="small").pack(
+            side="right")
+        self.canvas = tk.Canvas(right, bg="#E8E3D9", highlightthickness=0, bd=0, width=300,
+                                height=120)
         self.canvas.grid(row=1, column=0, sticky="nsew", pady=(6, 6))
         self.canvas.bind("<Configure>", lambda e: self.schedule_render())
-        notes = tk.Frame(right, bg=BG)
+        notes = self.notes = tk.Frame(right, bg=BG)
         notes.grid(row=2, column=0, sticky="ew")
+        notes.grid_columnconfigure(0, weight=1)
         self.qr_lbl = tk.Label(notes, text="", font="small", bg=BG, fg=MUTED,
                                wraplength=600, justify="left", anchor="w")
-        self.qr_lbl.pack(fill="x")
+        self.qr_lbl.grid(row=0, column=0, sticky="ew")
         self.warn_lbl = tk.Label(notes, text="", font="ui_bold", bg=BG, fg=WARN,
-                                 wraplength=600, justify="left")
-        self.warn_lbl.pack(fill="x")
-        right.bind("<Configure>", lambda e: [w.configure(wraplength=max(200, e.width - 20))
-                                             for w in (self.warn_lbl, self.qr_lbl)])
+                                 wraplength=600, justify="left", anchor="w")
+        self.warn_lbl.grid(row=1, column=0, sticky="ew")
 
-        # printer choice (right above the PRINT button)
-        pp = tk.Frame(right, bg=PANEL, highlightthickness=1, highlightbackground=BORDER,
-                      padx=12, pady=8)
+        # the printer: one line to choose it, one line saying how it is, and a
+        # "Printer options" menu with everything else
+        pp = card(right, padx=12, pady=8)
         pp.grid(row=3, column=0, sticky="ew", pady=(6, 0))
         pp.grid_columnconfigure(1, weight=1)
         tk.Label(pp, text="Printer:", font="ui_bold", bg=PANEL, fg=INK).grid(row=0, column=0,
                                                                             sticky="w")
         self.printer_box = tk.Frame(pp, bg=PANEL, highlightthickness=3,
                                     highlightbackground=PANEL)
-        self.printer_box.grid(row=0, column=1, sticky="ew", padx=(8, 0))
+        self.printer_box.grid(row=0, column=1, columnspan=2, sticky="ew", padx=(8, 0))
         self.printer_btn = tk.Menubutton(self.printer_box, text="", font="ui", bg="#FFFFFF",
                                          fg=INK, relief="flat", highlightthickness=2,
-                                         highlightbackground=BORDER, anchor="w", padx=10,
-                                         pady=6, cursor="hand2", direction="above",
-                                         wraplength=420, justify="left",
-                                         activebackground="#EFE9DD")
+                                         highlightbackground=BORDER, highlightcolor=GREEN,
+                                         anchor="w", padx=10, pady=5, cursor="hand2",
+                                         direction="above", wraplength=260, justify="left",
+                                         activebackground="#EFE9DD", takefocus=True)
         self.printer_menu = tk.Menu(self.printer_btn, tearoff=False, font="ui")
         self.printer_btn.configure(menu=self.printer_menu)
         self.printer_btn.pack(fill="x")
         self.status_lbl = tk.Label(pp, text="", font="ui", bg=PANEL, fg=MUTED, cursor="hand2",
-                                   anchor="w", justify="left")
-        self.status_lbl.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(4, 0))
+                                   anchor="w", justify="left", wraplength=200)
+        self.status_lbl.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(6, 0))
         self.status_lbl.bind("<Button-1>", lambda e: self._status_clicked())
-        prow = tk.Frame(pp, bg=PANEL)
-        prow.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 0))
-        button(prow, "Look for printers again", lambda: self.rescan_printers(user=True),
-               "chip").pack(side="left", padx=(0, 6))
-        button(prow, "My printers\u2026", self.my_printers, "quiet").pack(side="left")
-        # second row, so no button gets cut off on a laptop-size window
-        prow2 = tk.Frame(pp, bg=PANEL)
-        prow2.grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
-        button(prow2, "Print settings\u2026", self.print_settings, "quiet").pack(
-            side="left", padx=(0, 6))
-        button(prow2, "My printer isn't in the list", self.usb_devices, "quiet").pack(
-            side="left")
-        # "New roll in the …? Set it up" — a gentle one-line notice, never a popup,
-        # shown only when the label size differs from the roll last set up here
+        self.options_btn = menu_button(pp, "Printer options ▾",
+                                       self._fill_printer_options, "chip")
+        self.options_btn.grid(row=1, column=2, sticky="e", padx=(8, 0), pady=(6, 0))
+        # "New roll in the …? Set it up" — a slim notice, never a popup, shown
+        # only when the label size differs from the roll last set up here
         self.roll_notice = tk.Frame(pp, bg=WARN_BG, padx=8, pady=4)
-        self.roll_lbl = tk.Label(self.roll_notice, text="", font="ui", bg=WARN_BG, fg=INK,
-                                 anchor="w", justify="left", wraplength=520)
-        self.roll_lbl.pack(anchor="w", fill="x")
-        # buttons on their own line under the words, so neither gets cut off
-        nb = tk.Frame(self.roll_notice, bg=WARN_BG)
-        nb.pack(anchor="w", pady=(4, 0))
-        button(nb, "Set up", self._roll_notice_clicked, "chip").pack(side="left")
-        button(nb, "No, same roll", self._same_roll, "quiet").pack(side="left", padx=(6, 0))
+        self.roll_notice.grid_columnconfigure(0, weight=1)
+        self.roll_lbl = tk.Label(self.roll_notice, text="", font="small", bg=WARN_BG, fg=INK,
+                                 anchor="w", justify="left", wraplength=160)
+        self.roll_lbl.grid(row=0, column=0, sticky="w")
+        b = self.roll_set_btn = button(self.roll_notice, "Set it up",
+                                       self._roll_notice_clicked, "chip", font="small")
+        b.configure(bg="#FFFFFF", highlightbackground="#FFFFFF", pady=2)
+        b.grid(row=0, column=1, padx=(6, 0))
+        b = self.roll_same_btn = button(self.roll_notice, "No, same roll", self._same_roll, "link",
+                                        font="small")
+        b.configure(bg=WARN_BG, activebackground=WARN_BG, highlightbackground=WARN_BG)
+        b.grid(row=0, column=2, padx=(4, 0))
+
+        def wrap(e):
+            w = max(200, e.width - 20)
+            for lbl in (self.warn_lbl, self.qr_lbl):
+                lbl.configure(wraplength=w)
+            self.printer_btn.configure(wraplength=max(200, e.width - 150))
+            self.status_lbl.configure(wraplength=max(160, e.width - 60
+                                                     - self.options_btn.winfo_reqwidth()))
+            self.roll_lbl.configure(wraplength=max(
+                140, e.width - 60 - self.roll_set_btn.winfo_reqwidth()
+                - self.roll_same_btn.winfo_reqwidth()))
+        right.bind("<Configure>", wrap)
 
         # --- bottom: copies + PRINT
         bottom = tk.Frame(r, bg=BG, padx=14, pady=8)
-        bottom.grid(row=3, column=0, sticky="ew")
+        bottom.grid(row=2, column=0, sticky="ew")
         tk.Label(bottom, text="How many labels?", font="big", bg=BG, fg=INK).pack(side="left")
-        button(bottom, "\u2212", lambda: self.change_copies(-1), font="huge", width=2).pack(
+        button(bottom, "−", lambda: self.change_copies(-1), font="huge", width=2).pack(
             side="left", padx=(12, 4))
         self.copies_var = tk.StringVar(value="1")
         self.copies_entry = tk.Entry(bottom, textvariable=self.copies_var, font="huge", width=3,
@@ -302,11 +360,40 @@ class App:
         button(bottom, "+", lambda: self.change_copies(1), font="huge", width=2).pack(
             side="left", padx=(4, 18))
         self.print_btn = button(bottom, "PRINT", self.print_now, "print", font="huge")
-        self.print_btn.configure(padx=60, pady=10)
+        self.print_btn.configure(padx=60, pady=8)
         self.print_btn.pack(side="right")
         self.message_lbl = tk.Label(bottom, text="", font="ui", bg=BG, fg=GREEN_DARK,
-                                    anchor="w", justify="left", wraplength=420)
+                                    anchor="w", justify="left", wraplength=200)
         self.message_lbl.pack(side="left", fill="x", expand=True, padx=10)
+
+        def wrap_message(e):
+            used = sum(w.winfo_reqwidth() + 20 for w in bottom.winfo_children()
+                       if w is not self.message_lbl)
+            self.message_lbl.configure(wraplength=max(160, e.width - used - 40))
+        bottom.bind("<Configure>", wrap_message)
+
+    def _fill_open_menu(self, m):
+        """Open ▾: the labels saved or opened most recently, then all of them."""
+        items = ui_text.recent_menu(self.cfg.recent())
+        if items:
+            m.add_command(label="Recent labels:", state="disabled")
+            for words, path in items:
+                m.add_command(label="   " + words, command=lambda p=path: self.open_path(p))
+        else:
+            m.add_command(label="No saved labels yet", state="disabled")
+        m.add_separator()
+        m.add_command(label="All my saved labels…", command=self.open_dialog)
+
+    def _fill_printer_options(self, m):
+        """Printer options ▾: everything about printers that isn't choosing one."""
+        m.add_command(label="Look for printers again",
+                      command=lambda: self.rescan_printers(user=True))
+        m.add_command(label="My printers…", command=self.my_printers)
+        m.add_command(label="Print settings…", command=self.print_settings)
+        m.add_command(label="New roll? Set it up…", command=self._roll_notice_clicked)
+        m.add_separator()
+        m.add_command(label="Add a network printer…", command=self.add_network_printer)
+        m.add_command(label="My printer isn't in the list…", command=self.usb_devices)
 
     def _bind_keys(self):
         r = self.root
@@ -371,7 +458,7 @@ class App:
         try:
             self.copies_var.set(str(self.doc.copies))
             self.build_form()
-            self.refresh_recent()
+            self.refresh_products()
         finally:
             self._loading = False
         self._update_title()
@@ -470,74 +557,13 @@ class App:
 
     # ------------------------------------------------------------------ form
     def build_form(self):
-        """(Re)create the form for the current template from scratch."""
-        for w in self.kind_bar.winfo_children():
-            w.destroy()
+        """(Re)create the chips and the form for the current template from scratch."""
         for w in self.form.winfo_children():
             w.destroy()
         self.field_frames.clear()
         self.field_setters.clear()
 
-        st = stocks.get(self.doc.stock)
-        tname = templates.TEMPLATE_INFO[self.doc.template][0]
-        kb = self.kind_bar
-        kb.grid_columnconfigure(1, weight=1)
-        tk.Label(kb, text="Kind of label:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=0, column=0, sticky="w")
-        tk.Label(kb, text=tname, font="ui_bold", bg=PANEL, fg=INK, wraplength=240,
-                 justify="left").grid(row=0, column=1,
-                                                                        sticky="w", padx=8)
-        button(kb, "Change…", self.pick_template, "chip").grid(row=0, column=2, sticky="e")
-        tk.Label(kb, text="Label size:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=1, column=0, sticky="w", pady=(8, 0))
-        tk.Label(kb, text=st.name, font="ui_bold", bg=PANEL, fg=INK, wraplength=240,
-                 justify="left").grid(
-            row=1, column=1, sticky="w", padx=8, pady=(8, 0))
-        button(kb, "Change…", self.pick_stock, "chip").grid(row=1, column=2, sticky="e",
-                                                                 pady=(8, 0))
-        # which way round (not on round labels): wide or tall, two small pictures
-        off = 0
-        if not st.round:
-            off = 1
-            tk.Label(kb, text="Which way?", font="ui", bg=PANEL, fg=MUTED).grid(
-                row=2, column=0, sticky="w", pady=(8, 0))
-            ways = tk.Frame(kb, bg=PANEL)
-            ways.grid(row=2, column=1, columnspan=2, sticky="w", padx=8, pady=(8, 0))
-            now = self.doc.effective_orientation()
-            self._way_icons = []
-            for way, words in (("wide", "Wide (landscape)"), ("tall", "Tall (portrait)")):
-                icon = ImageTk.PhotoImage(way_icon(way, way == now))
-                self._way_icons.append(icon)
-                wb = button(ways, words, lambda w=way: self.set_orientation(w),
-                            "primary" if way == now else "chip")
-                wb.configure(image=icon, compound="left", padx=10)
-                wb.pack(side="left", padx=(0, 6))
-        tk.Label(kb, text="Lettering:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=2 + off, column=0, sticky="w", pady=(8, 0))
-        from .font_dialogs import summary
-        tk.Label(kb, text=summary(self.doc), font="ui_bold", bg=PANEL, fg=INK, wraplength=240,
-                 justify="left").grid(row=2 + off, column=1, sticky="w", padx=8, pady=(8, 0))
-        button(kb, "Change…", self.pick_lettering, "chip").grid(row=2 + off, column=2, sticky="e",
-                                                                     pady=(8, 0))
-        # picture and QR code: on every kind of label
-        pic = self.doc.picture
-        tk.Label(kb, text="Picture:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=3 + off, column=0, sticky="w", pady=(8, 0))
-        tk.Label(kb, text=(pic.get("name") or "Yes") if pic else "None", font="ui_bold",
-                 bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
-            row=3 + off, column=1, sticky="w", padx=8, pady=(8, 0))
-        button(kb, "Change…" if pic else "Add a picture…", self.pick_picture, "chip").grid(
-            row=3 + off, column=2, sticky="e", pady=(8, 0))
-        from . import qrcodes
-        qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
-        tk.Label(kb, text="QR code:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=4 + off, column=0, sticky="w", pady=(8, 0))
-        tk.Label(kb, text=qrcodes.WHAT[qrcodes.clean(self.doc.qr)["what"]] if qtext else "None",
-                 font="ui_bold", bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
-            row=4 + off, column=1, sticky="w", padx=8, pady=(8, 0))
-        button(kb, "Change…" if qtext else "Add a QR code…", self.pick_qr, "chip").grid(
-            row=4 + off, column=2, sticky="e", pady=(8, 0))
-        ttk.Separator(kb).grid(row=5 + off, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        self._build_chips()
 
         t = self.doc.template
         f = self.form
@@ -581,11 +607,76 @@ class App:
         tk.Frame(f, bg=PANEL, height=30).pack()
         self.scroll.canvas.yview_moveto(0)
 
+    def _build_chips(self):
+        """The two rows of chips above the form: [Kind ▾] [Size ▾] [Wide | Tall], and
+        Extras: [+ Picture] [+ QR code] [Lettering ▾]. Each opens the same window
+        the "Change…" buttons used to."""
+        kb = self.kind_bar
+        for w in kb.winfo_children():
+            w.destroy()
+        doc = self.doc
+        st = stocks.get(doc.stock)
+        row = FlowFrame(kb, bg=PANEL)
+        row.pack(fill="x")
+        row.add(button(row, ui_text.kind_chip(doc.template) + "  \u25BE", self.pick_template,
+                       "chip"))
+        row.add(button(row, ui_text.size_chip(doc.stock) + "  \u25BE", self.pick_stock,
+                       "chip"))
+        self._way_icons = []
+        if not st.round:                 # which way round: not on round labels
+            seg = tk.Frame(row, bg=PANEL)
+            now = doc.effective_orientation()
+            scale = float(self.cfg["ui_scale"])
+            for way, words in (("wide", "Wide"), ("tall", "Tall")):
+                icon = ImageTk.PhotoImage(way_icon(way, way == now, scale))
+                self._way_icons.append(icon)
+                wb = button(seg, words, lambda w=way: self.set_orientation(w),
+                            "primary" if way == now else "chip")
+                wb.configure(image=icon, compound="left", padx=10)
+                wb.pack(side="left", padx=(0, 2))
+            row.add(seg)
+        row2 = FlowFrame(kb, bg=PANEL)            # the extras
+        row2.pack(fill="x", pady=(6, 0))
+        row2.add(self._extra_chip(row2, ui_text.picture_chip(doc.picture), self.pick_picture,
+                                  self.remove_picture if doc.picture else None))
+        has_qr = ui_text.qr_chip(doc.qr) != "+ QR code"
+        row2.add(self._extra_chip(row2, ui_text.qr_chip(doc.qr), self.pick_qr,
+                                  self.remove_qr if has_qr else None))
+        row2.add(button(row2, ui_text.lettering_chip(doc.template, doc.lettering) + "  \u25BE",
+                        self.pick_lettering, "chip"))
+
+    def _extra_chip(self, parent, text, command, remove=None):
+        """An Extras chip; with ``remove``, a "✕ Remove" joined on to its right."""
+        if remove is None:
+            return button(parent, text, command, "chip")
+        group = tk.Frame(parent, bg=PANEL)
+        button(group, text, command, "chip").pack(side="left")
+        tk.Frame(group, bg=PANEL, width=2).pack(side="left", fill="y")
+        b = button(group, "\u2715 Remove", remove, "chip", font="small")
+        b.configure(fg=GREEN_DARK, padx=8)
+        b.pack(side="left", fill="y")
+        return group
+
+    def remove_picture(self):
+        """Extras → ✕ Remove next to the picture (Undo brings it back)."""
+        self.doc.picture = None
+        self._sync_ui_from_doc()
+        self._snapshot()
+        self.flash("Picture taken off. Undo puts it back.")
+
+    def remove_qr(self):
+        """Extras → ✕ Remove next to the QR code (Undo brings it back)."""
+        self.doc.qr = None
+        self._sync_ui_from_doc()
+        self._snapshot()
+        self.flash("QR code taken off. Undo puts it back.")
+
     def _section(self, parent, key, title):
         fr = tk.Frame(parent, bg=PANEL, padx=14, pady=4, highlightthickness=3,
                       highlightbackground=PANEL)
         fr.pack(fill="x", pady=(6, 0))
-        tk.Label(fr, text=title, font="ui_bold", bg=PANEL, fg=INK).pack(anchor="w")
+        tk.Label(fr, text=title, font="ui_bold", bg=PANEL, fg=INK, wraplength=540,
+                 justify="left").pack(anchor="w")
         self.field_frames[key] = fr
         return fr
 
@@ -604,7 +695,7 @@ class App:
     def text_field(self, parent, key, title, height, big=False):
         """Multi-line text field bound to doc.fields[key]."""
         fr = self._section(parent, key, title)
-        t = tk.Text(fr, font="big" if big else "field", height=height, wrap="word",
+        t = tk.Text(fr, font="big" if big else "field", height=height, width=10, wrap="word",
                     relief="flat", highlightthickness=2, highlightbackground=BORDER,
                     highlightcolor=GREEN, bg="#FFFFFF", fg=INK, insertwidth=3, undo=False,
                     padx=6, pady=4)
@@ -719,13 +810,10 @@ class App:
 
     def chips(self, parent, key, options):
         """Buttons that fill a field with a ready-made text (e.g. "Keep frozen")."""
-        row = tk.Frame(parent, bg=PANEL, padx=16)
-        row.pack(fill="x", pady=(6, 0))
-        for i, text in enumerate(options):
-            b = button(row, text, lambda t=text: self.field_setters[key](t), "chip")
-            b.grid(row=i // 2, column=i % 2, sticky="ew", padx=3, pady=3)
-        row.grid_columnconfigure(0, weight=1, uniform="c")
-        row.grid_columnconfigure(1, weight=1, uniform="c")
+        row = FlowFrame(parent, bg=PANEL)       # as many to a row as fit
+        row.pack(fill="x", pady=(6, 0), padx=16)
+        for text in options:
+            row.add(button(row, text, lambda t=text: self.field_setters[key](t), "chip"))
 
     def kitchen_toggle(self, parent):
         """Simple labels: switch to add the kitchen name (kept in settings, not the doc)."""
@@ -764,6 +852,10 @@ class App:
         t = TemplatePicker(self.root, self.doc, self.render_ctx()).run()
         if not t or t == self.doc.template:
             return
+        self._switch_template(t)
+
+    def _switch_template(self, t: str):
+        """Make this label another kind (carrying over what it can)."""
         self.doc.set_template(t)
         remembered = self.cfg.lettering_for(t)
         if remembered:
@@ -782,7 +874,7 @@ class App:
             self.pick_picture()
 
     def pick_lettering(self):
-        """Kind bar → Lettering → Change…: the fonts of this label (remembered as the
+        """Extras → Lettering: the fonts of this label (remembered as the
         default for new labels of this kind)."""
         from .font_dialogs import LetteringDialog
         got = LetteringDialog(self.root, self.doc, self.render_ctx()).run()
@@ -805,7 +897,7 @@ class App:
         self._snapshot()
 
     def set_orientation(self, way: str):
-        """Kind bar → Which way?: lay the label out wide or tall (printed turned
+        """Wide / Tall above the form: lay the label out wide or tall (printed turned
         when it is the other way round from the roll)."""
         if way == self.doc.effective_orientation():
             return
@@ -838,13 +930,19 @@ class App:
             bad = res.overflow and key == res.problem_field
             fr.configure(highlightbackground=WARN if bad else PANEL,
                          bg=WARN_BG if bad else PANEL)
-        self.warn_lbl.configure(text=("⚠ " + res.message) if res.overflow else "")
         from . import qrcodes
         qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
         notes = [render.out_edge_words(res, upside)]
         if qtext:
             notes.append(f"The QR code holds: {qtext}")
-        self.qr_lbl.configure(text="\n".join(n for n in notes if n))
+        # an empty line takes no room, so the preview gets it
+        for lbl, text in ((self.warn_lbl, ("⚠ " + res.message) if res.overflow else ""),
+                          (self.qr_lbl, "\n".join(n for n in notes if n))):
+            lbl.configure(text=text)
+            if text:
+                lbl.grid()
+            else:
+                lbl.grid_remove()
         if self.doc.template == "cottage":
             self.refresh_check(res)
         return res
@@ -872,26 +970,6 @@ class App:
             self.changed()
 
     # ------------------------------------------------------------------ files
-    def refresh_recent(self):
-        """Redraw the "My saved labels" bar (three most recent files)."""
-        bar = self.recent_bar
-        for w in bar.winfo_children():
-            w.destroy()
-        tk.Label(bar, text="My saved labels:", font="ui_bold", bg=BG, fg=INK).pack(
-            side="left", padx=(0, 8))
-        rec = self.cfg.recent()[:3]
-        if not rec:
-            tk.Label(bar, text="none yet — press Save to keep a label here",
-                     font="ui", bg=BG, fg=MUTED).pack(side="left")
-            return
-        for r in rec:
-            name = r.get("name") or Path(r["path"]).stem
-            if len(name) > 16:
-                name = name[:15] + "\u2026"
-            button(bar, name, lambda p=r["path"]: self.open_path(p), "chip").pack(
-                side="left", padx=3)
-        button(bar, "More…", self.open_dialog, "quiet").pack(side="left", padx=3)
-
     def _ask_save_first(self, question="Save your label first?") -> bool:
         """Returns False if the user cancelled."""
         if not self.dirty:
@@ -939,7 +1017,6 @@ class App:
         self.path = str(p)
         self.saved_json = self.doc.dumps()
         self.cfg.add_recent(p, self.doc.title() or p.stem)
-        self.refresh_recent()
         self._update_title()
         settings_mod.write_autosave(self.doc, self.path, False)
         self.flash(f"✔ Saved “{p.stem}” in {p.parent.name}.")
@@ -962,7 +1039,6 @@ class App:
             doc = model.load(path)
         except model.LabelFileError as e:
             self.cfg.remove_recent(path)
-            self.refresh_recent()
             tell(self.root, "Couldn't open", str(e))
             return
         made = doc.made_date()
@@ -977,7 +1053,6 @@ class App:
                 doc.refresh_dates(today)
         self.set_doc(doc, str(Path(path).resolve()))
         self.cfg.add_recent(path, doc.title() or Path(path).stem)
-        self.refresh_recent()
         self.flash(f"Opened “{Path(path).stem}”.")
         # A font this computer doesn't have: say so gently and offer to get it.
         from .font_dialogs import offer_missing_fonts
@@ -1003,7 +1078,7 @@ class App:
 
     # ------------------------------------------------------------------ printing
     def print_dialog(self):
-        """Ctrl+P / Print…: confirm, then print_now()."""
+        """Ctrl+P: confirm how many, then print_now()."""
         from .dialogs import PrintDialog
         ans = PrintDialog(self.root, self).run()
         if ans == "print":
@@ -1172,7 +1247,7 @@ class App:
         info = self.cfg["printers"].get(p.id, {}) if p is not None else {}
         if p is not None and calibrate.show_notice(info, self.doc.stock):
             self.roll_lbl.configure(text=calibrate.notice_text(self.printer_name(p)))
-            self.roll_notice.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+            self.roll_notice.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(6, 0))
         else:
             self.roll_notice.grid_remove()
 
@@ -1184,9 +1259,8 @@ class App:
         self.refresh_roll_notice()
 
     def _roll_notice_clicked(self):
-        p = self.current_printer()
-        if p is not None:
-            self.setup_roll(self.root, p)
+        """"Set it up" on the new-roll notice, and Printer options → New roll?"""
+        self.setup_roll(self.root, self.current_printer())
 
     def setup_roll(self, parent, p=None):
         """Open "Set up a new roll" for printer ``p`` (default: the chosen one).
@@ -1228,7 +1302,7 @@ class App:
         self.refresh_roll_notice()
 
     def pick_picture(self):
-        """Kind bar → Picture: add, change or take off the label's picture."""
+        """Extras → Picture: add, change or take off the label's picture."""
         from .picture_dialogs import PictureDialog
         got = PictureDialog(self.root, self).run()
         if got is None:
@@ -1238,7 +1312,7 @@ class App:
         self._snapshot()
 
     def pick_qr(self):
-        """Kind bar → QR code: add, change or take off the label's QR code."""
+        """Extras → QR code: add, change or take off the label's QR code."""
         from .picture_dialogs import QrDialog
         got = QrDialog(self.root, self).run()
         if got is None:
@@ -1498,10 +1572,6 @@ class App:
                                     highlightbackground=BORDER)
         self.check_frame.pack(fill="x", padx=14, pady=(4, 0))
         self._check_sig = None
-        row = tk.Frame(f, bg=PANEL, padx=14)
-        row.pack(fill="x", pady=(10, 0))
-        button(row, "Choose from My products…", self.choose_product).pack(side="left")
-        button(row, "Save to My products", self.save_product, "chip").pack(side="left", padx=8)
         self.entry_field(f, "product", "Product name", big=True)
         fr = self.entry_field(f, "net", "Net weight (for example 8 oz, 1.5 lb or 12 cookies)")
         self.net_hint = tk.Label(fr, text="", font="ui", bg=PANEL, fg=MUTED, anchor="w",
@@ -1566,31 +1636,31 @@ class App:
             title = f"Label check: {len(bad)} thing{'s' if len(bad) != 1 else ''} missing"
         else:
             title = f"Label check: all {len(items)} things are there"
-        tk.Label(fr, text=title, font="ui_bold", bg=PANEL, wraplength=520, justify="left",
+        tk.Label(fr, text=title, font="ui_bold", bg=PANEL, wraplength=420, justify="left",
                  fg=WARN if bad else GREEN_DARK).pack(anchor="w")
         # Only the missing items are listed, so the form below stays in view on a
         # laptop screen; "About ...'s rules" shows everything the state asks for.
         for it in bad:
             text = "✘ " + it.label + (f" — {it.hint}" if it.hint else "")
             tk.Label(fr, text=text, font="ui", bg=PANEL, fg=GREEN_DARK if it.ok else WARN,
-                     wraplength=520, justify="left").pack(anchor="w")
+                     wraplength=420, justify="left").pack(anchor="w")
         if res.overflow:
             tk.Label(fr, text="✘ It doesn't fit on this label size (see the message on the "
-                     "right)", font="ui", bg=PANEL, fg=WARN, wraplength=520,
+                     "right)", font="ui", bg=PANEL, fg=WARN, wraplength=420,
                      justify="left").pack(anchor="w")
         rule = eff.rule
         if not self.profile["state"]:
             tk.Label(fr, text="Choose your state in My bakery to get its wording.", font="ui",
-                     bg=PANEL, fg=WARN, wraplength=520, justify="left").pack(anchor="w")
+                     bg=PANEL, fg=WARN, wraplength=420, justify="left").pack(anchor="w")
         elif rule.sales_allowed is False:
             tk.Label(fr, text="The public guidance we found says home-baked goods can't be "
                      "sold this way here. Please check with your state.", font="ui", bg=PANEL,
-                     fg=WARN, wraplength=520, justify="left").pack(anchor="w")
+                     fg=WARN, wraplength=420, justify="left").pack(anchor="w")
         elif cottage.check_status(rule)[1]:
             tk.Label(fr, text=cottage.check_status(rule)[0], font="ui", bg=PANEL,
-                     fg=WARN, wraplength=520, justify="left").pack(anchor="w")
+                     fg=WARN, wraplength=420, justify="left").pack(anchor="w")
         tk.Label(fr, text=cottage.RESPONSIBILITY, font="small", bg=PANEL, fg=MUTED,
-                 wraplength=520, justify="left").pack(anchor="w", pady=(4, 0))
+                 wraplength=420, justify="left").pack(anchor="w", pady=(4, 0))
         button(fr, f"About {rule.name}'s rules…", self.about_rules, "quiet").pack(anchor="w")
 
     def about_rules(self):
@@ -1648,44 +1718,108 @@ class App:
             self.flash("Some ingredients are starter examples: check them against your "
                        "packages (My ingredients → Change…).", 10000)
 
-    def choose_product(self):
-        from .bakery_dialogs import ProductPicker
-        p = ProductPicker(self.root, self).run()
-        if not p:
+    # ---- My products (the card above the form) -------------------------------
+    def refresh_products(self):
+        """Redraw the product buttons: what matches "Find a product…", else the
+        favourites and the ones used most recently."""
+        flow = getattr(self, "product_flow", None)
+        if flow is None:
             return
-        self.doc.fields = bakery.apply_product(self.doc.fields, p)
+        flow.clear()
+        lib = self.products
+        q = self.find_var.get().strip()
+        items = lib.search(q) if q else lib.quick()
+        if not lib.items:
+            flow.add(tk.Label(flow, text="Save a product once and it's one click next time.",
+                              font="ui", bg=PANEL, fg=MUTED))
+        elif not items:
+            flow.add(tk.Label(flow, text=f"No product called \u201c{ui_text.shorten(q, 24)}\u201d.",
+                              font="ui", bg=PANEL, fg=MUTED))
+        for p in items:
+            text = ("\u2605 " if p.get("favourite") else "") + ui_text.shorten(p["name"], 26)
+            flow.add(button(flow, text, lambda p=p: self.use_product(p), "chip"))
+        # "Save as product" sits next to Manage… on labels that can be products
+        if self.doc.template in bakery.PRODUCT_KINDS:
+            if not self.save_product_btn.winfo_manager():
+                self.save_product_btn.pack(side="right", padx=(6, 0),
+                                           before=self.find_entry)
+        else:
+            self.save_product_btn.pack_forget()
+
+    def _find_enter(self):
+        """Enter in "Find a product…": use the first match."""
+        q = self.find_var.get().strip()
+        if not q:
+            return
+        hits = self.products.search(q, 1)
+        if hits:
+            self.use_product(hits[0])
+
+    def use_product(self, p: dict):
+        """Put a saved product on the label. A kind of label that can't take one
+        (date sticker, free text, picture) is changed only if the person says so."""
+        t = self.doc.template
+        if t not in bakery.PRODUCT_KINDS:
+            kind = bakery.product_kind(p)
+            words = templates.TEMPLATE_INFO[kind][0]
+            now = templates.TEMPLATE_INFO[t][0]
+            if not ask(self.root, "Make it a product label?",
+                       f"\u201c{p['name']}\u201d goes on a {words.lower()}. This label is a "
+                       f"{now.lower()}.\n\nChange it to a {words.lower()}?",
+                       [(f"Yes, make it a {words.lower()}", True, "primary"),
+                        ("No, leave it", False, "normal")]):
+                return
+            self._switch_template(kind)
+            if self.doc.template != kind:
+                return
+        self.doc.fields = bakery.apply_to_label(self.doc.template, self.doc.fields, p)
+        self.products.mark_used(p["id"])
+        if self.find_var.get():
+            self.find_var.set("")            # also redraws the product buttons
         self._sync_ui_from_doc()
-        self.changed()
+        self._snapshot()
+        self.flash(f"\u2714 {p['name']}. How many labels?", 6000)
+        self.copies_entry.focus_set()
+        self.copies_entry.select_range(0, "end")
 
     def save_product(self):
+        """"Save as product": keep this label's product details in My products."""
         from .bakery_dialogs import ask_text
-        name = str(self.doc.fields.get("product") or "").strip()
-        name = ask_text(self.root, "Save to My products", "What is this product called?", name)
+        t = self.doc.template
+        if t not in bakery.PRODUCT_KINDS:
+            tell(self.root, "Save as product", "Products are for simple food labels, "
+                 "package labels and cottage food labels.")
+            return
+        key = "food" if t == "simple" else "product"
+        name = str(self.doc.fields.get(key) or "").strip()
+        name = ask_text(self.root, "Save as product", "What is this product called?", name)
         if not name:
             return
         existing = self.products.find(name)
-        if existing and not ask(self.root, "Replace?",
-                                f"You already have “{name}” in My products. Replace it?",
-                                [("Replace it", True, "primary"), ("Cancel", False, "normal")]):
+        if existing and not ask(self.root, "Update it?",
+                                f"You already have \u201c{name}\u201d in My products. "
+                                "Update it with this label?",
+                                [("Update it", True, "primary"), ("Cancel", False, "normal")]):
             return
-        entry = bakery.product_from_fields(self.doc.fields, name,
-                                           existing["id"] if existing else None)
-        self.products.put(entry)
-        self.flash(f"✔ Saved “{name}” to My products.")
+        entry = bakery.product_from_label(t, self.doc.fields, name, existing)
+        try:
+            stored = self.products.put(entry)
+        except bakery.LibraryError as e:
+            tell(self.root, "Save as product", str(e))
+            return
+        self.products.mark_used(stored["id"])
+        self.refresh_products()
+        self.flash(f"\u2714 Saved \u201c{name}\u201d. Next time it's one click under "
+                   "My products.", 8000)
 
-    def my_products(self):
-        """Settings → My products (choosing one switches to a cottage label)."""
+    def manage_products(self):
+        """"Manage…" (and Settings → My products): the My products window. Choosing
+        one there puts it on the label."""
         from .bakery_dialogs import ProductPicker
         p = ProductPicker(self.root, self).run()
-        if not p:
-            return
-        if self.doc.template != "cottage":
-            self.doc.set_template("cottage")
-            if self.doc.stock not in templates.ALLOWED_STOCKS["cottage"]:
-                self.doc.stock = "large"
-        self.doc.fields = bakery.apply_product(self.doc.fields, p)
-        self._sync_ui_from_doc()
-        self.changed()
+        self.refresh_products()              # favourites or deletions may have changed
+        if p:
+            self.use_product(p)
 
     def settings_dialog(self):
         """Settings; afterwards re-apply kitchen details and redraw."""

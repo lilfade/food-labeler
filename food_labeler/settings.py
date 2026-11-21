@@ -27,7 +27,9 @@ from . import model
 log = logging.getLogger("food_labeler")
 
 DEFAULTS = {
-    "ui_scale": 1.0,
+    # Text size (see ui_text.TEXT_SIZES): Normal for new installs. A settings
+    # file from before 1.5.0 always has it, so people keep the size they had.
+    "ui_scale": 0.8,
     "date_style": "us",
     "kitchen": {
         "business": "",
@@ -167,6 +169,8 @@ class Settings:
             got = json.loads(model.read_text_limited(self.path, model.MAX_SETTINGS_BYTES))
             if isinstance(got, dict):
                 self.data = _merge(DEFAULTS, got)
+                if "ui_scale" not in got:     # an older file: keep the size it had
+                    self.data["ui_scale"] = 1.0
         except FileNotFoundError:
             pass
         except (model.FileTooBigError, ValueError, RecursionError):

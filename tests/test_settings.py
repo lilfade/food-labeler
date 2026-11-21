@@ -3,7 +3,7 @@ from food_labeler import model, settings
 
 def test_settings_roundtrip_and_defaults():
     s = settings.Settings()
-    assert s["ui_scale"] == 1.0 and s["printers"] == {}
+    assert s["ui_scale"] == 0.8 and s["printers"] == {}
     s["ui_scale"] = 1.35
     s.printer_info("usb:1-1.4").update(nickname="White label printer", stock="small")
     s.save()

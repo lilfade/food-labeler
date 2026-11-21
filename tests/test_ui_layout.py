@@ -1,5 +1,5 @@
 """Builds the real main window WITHDRAWN (never shown on screen) and checks
-that everything fits a 1280x720 screen at normal and bigger text sizes.
+that everything fits a 1280x720 screen at the Small, Normal and Large text sizes.
 
 If nothing needs more room than the window has, pack/grid never squeeze a
 button, so no button text can be clipped. Skipped when there is no display.
@@ -38,7 +38,7 @@ FAKE = [
 ]
 
 
-@pytest.mark.parametrize("scale", [1.0, 1.1])
+@pytest.mark.parametrize("scale", [0.7, 0.8, 1.0])
 @pytest.mark.parametrize("template", model.TEMPLATES)
 def test_main_window_fits_small_screen(scale, template):
     from food_labeler import app as appmod, known
@@ -59,7 +59,6 @@ def test_main_window_fits_small_screen(scale, template):
         for i in range(4):                      # long recent-file names
             path = model.save(doc, settings.labels_dir() / f"A very long label name {i}")
             cfg.add_recent(path, f"A very long label name number {i}")
-        a.refresh_recent()
         a.flash("Package labels need a bigger label, so I picked Large — 4 × 2 inches.")
         root.update_idletasks()
         w, h = root.winfo_reqwidth(), root.winfo_reqheight()
