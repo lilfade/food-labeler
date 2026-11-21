@@ -210,7 +210,7 @@ def help_text(family, kind: str = "tspl", media: str = "gap") -> str:
 
 def notice_text(printer_name: str) -> str:
     """The one-line notice under the printer when the size changed."""
-    return (f"New roll in the {printer_name}? Set it up so labels line up —")
+    return f"New roll in the {printer_name}? Set it up so the labels line up."
 
 
 # ---------------------------------------------------------------------------

@@ -333,7 +333,8 @@ def test_notice_widget_logic_sends_nothing(tmp_path, monkeypatch):
     calibrate.remember_roll(cfg.printer_info(p.id), "medium", "gap")
     fake.refresh_roll_notice()
     assert fake.roll_notice.shown
-    assert fake.roll_lbl.text.startswith("New roll in the White label printer? Set it up")
+    assert fake.roll_lbl.text == ("New roll in the White label printer? Set it up so the "
+                                  "labels line up.")
     app_mod.App._same_roll(fake)                            # "No, same roll"
     assert not fake.roll_notice.shown
     again = settings_mod.Settings(tmp_path / "s.json")
