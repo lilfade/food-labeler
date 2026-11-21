@@ -1,7 +1,8 @@
 # Architecture
 
 Food Labeler is a single-process Python program: a Tk window, Pillow for
-drawing, and no server or network service. It is packaged with PyInstaller as
+drawing, and no server or network service. The only network use is the
+optional *Get more fonts…* (`fontget.py`), which the user starts by hand. It is packaged with PyInstaller as
 one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 
 ## Module map
@@ -15,6 +16,8 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `dates.py` | date parsing, quick "use by" offsets, date formats |
 | `stocks.py` | label sizes (`Stock`) in dots and mm, per-size printer defaults |
 | `templates.py` | per-template text blocks and the auto-fit layout engine |
+| `lettering.py` | font registry (bundled + user fonts), font loading (variable fonts too), which block gets which font, per-font minimum sizes, legal-text rule |
+| `fontget.py` | *Get more fonts*: find and download a Google Fonts family from github.com/google/fonts, add a local font file, install/remove user fonts |
 | `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
@@ -28,9 +31,10 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `settings.py` | settings file, data/labels folders, log file, autosave |
 | `app.py` | main window: form, preview, printer menu, PRINT |
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
+| `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
 | `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell`, calendar, toggles |
 
-Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py` and `widgets.py` imports Tk, so
+Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py` and `widgets.py` imports Tk, so
 everything else is tested headless.
 
 ## Data flow
@@ -43,6 +47,8 @@ everything else is tested headless.
    │
    ▼
  templates.build_blocks()         fields → text Blocks with preferred/minimum sizes
+ lettering.apply()                each Block gets its font (doc.lettering); minimums × font's
+                                  min_scale; required wording forced to a readable sans
  templates.layout() / fit()       blocks → placed Lines that fit the Region
    │                              (rectangle inside margins, or circle on round labels;
    │                               a QR code is an exclusion the text flows around)
@@ -83,6 +89,30 @@ size, so one template scales from 32 mm to 4 × 6 in) and a minimum size.
 On round labels each line's width depends on its height in the circle, which
 depends on vertical centring, which depends on the wrapping — `_try()`
 iterates until the top edge stops moving.
+
+### Lettering (fonts)
+
+Every Block and Line carries a `font` (a family name; `""` = DejaVu Sans,
+so the standard look is byte-identical to earlier versions). `lettering.py`
+keeps a registry of `Face`s: the bundled ones (`BUNDLED`, files in
+`food_labeler/fonts/`) and the user's (`<data>/fonts/<folder>/font.json`).
+Fonts are read into memory once and cached per (file, size, bold); variable
+fonts get their weight axis set to 400 or 700. Text widths and line heights
+used by `fit()` come from the same fonts that `render.draw_layout()` draws
+with, so wrapping stays exact.
+
+`lettering.apply()` gives the name block (food / product / lot / free text)
+the label's *name* font and every other block the *other* font, which must
+be `readable`; blocks in `LEGAL_KEYS` (and `statement:*`) fall back to DejaVu
+Sans if they would otherwise get a non-readable font. Each block's minimum
+size is multiplied by the face's `min_scale` (script fonts 1.3–1.6), so
+auto-shrink never goes below a legible size for that font. A font the
+computer doesn't have resolves to DejaVu Sans; `lettering.missing()` names
+it and the window offers to get it.
+
+*Get more fonts* runs `fontget.fetch_family()` on a worker thread (results
+via a queue, like printing); see [fonts.md](fonts.md) for how a family is
+found and checked.
 
 ### Cottage food labels
 
@@ -155,7 +185,8 @@ fsync + rename).
 
 | file | where | format |
 |------|-------|--------|
-| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}` |
+| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}`, plus optional `"lettering": {"name", "other"}` (font family names; only written when not the standard look) |
+| `fonts/<folder>/` | data folder | fonts the user added: the font file(s), license, `font.json` `{"format": "food-labeler-font", "version": 1, "name", "regular", "bold", "variable", "category", "license", "source", "min_scale"}` |
 | `settings.json` | data folder | JSON, merged over built-in defaults key by key (unknown keys and wrong types are ignored) |
 | `autosave.json` | data folder | `{"doc": <label>, "path": "...", "dirty": bool}` |
 | `known_printers.json` | bundled in the package, and optionally in the data folder | see [printer-definitions.md](printer-definitions.md) |
@@ -167,11 +198,17 @@ fsync + rename).
 | `my_products.json` | data folder | `{"format": "food-labeler-products", "version": 1, "products": [{"id", "name", "net", "ingredients", "contains", "no_allergens", "storage", "best_by_days", ...}]}`; also the backup file format |
 | `food-labeler.log` | data folder | text log, rotated at 512 kB (3 files) |
 
+`settings.json` also keeps the last lettering per kind of label
+(`"lettering": {"simple": {"name", "other"}, ...}`) as the default for new
+labels.
+
 The `.label` format id `easy-labels` is the project's original name and must
 not change, or existing files stop opening. Adding the cottage template did
 not change the format version (still 1): 1.0.0 files open unchanged, and a
 cottage label opened in 1.0.0 falls back to a simple label instead of being
-refused. `tests/test_cottage.py` keeps 1.0.0 files of every kind opening.
+refused. `tests/test_cottage.py` keeps 1.0.0 files of every kind opening. Lettering
+(1.2.0) is likewise an optional key: older files open in the standard
+lettering and save back byte for byte (`tests/test_fonts.py`).
 
 ## Settings locations
 
@@ -186,7 +223,8 @@ Environment overrides: `FOOD_LABELER_DATA`, `FOOD_LABELER_LABELS`,
 ## Packaging
 
 `food_labeler.spec` builds a one-file, windowed program and bundles the
-fonts, icons, `known_printers.json`, `app_config.json`, `cottage_rules.json`
+fonts (the whole `fonts/` folder with one sub-folder per family; the spec
+refuses to build if a family folder lacks its font files or `OFL.txt`), icons, `known_printers.json`, `app_config.json`, `cottage_rules.json`
 and `starter_ingredients.json`. On Windows it also
 embeds a version resource (file/product version from `__version__`, product
 "Food Labeler", company "High Thyme Kitchen"). `--selftest` is run on every

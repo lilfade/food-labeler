@@ -132,10 +132,34 @@ printer update file…*.
 Only 203 dpi printers are supported for now: every layout is computed in
 203 dpi dots.
 
+## Adding a bundled font
+
+Bundled fonts must be licensed under the SIL Open Font License or Apache 2.0
+and keep the program small (prefer static Regular + Bold files; use the
+variable file only when Google's repository has nothing else).
+
+1. Download the files, unmodified, from
+   [github.com/google/fonts](https://github.com/google/fonts) at a fixed
+   commit: `raw.githubusercontent.com/google/fonts/<commit>/ofl/<folder>/…`.
+2. Put them with the license file in `food_labeler/fonts/<folder>/`
+   (`OFL.txt` — the spec refuses to build a family folder without it).
+3. Add a `Face` to `BUNDLED` in `food_labeler/lettering.py`: `readable=True`
+   only for a plain, easy-to-read sans (it may then be used for everything
+   else, including required wording); `variable=True` for a variable font;
+   `min_scale` from its x-height compared with DejaVu Sans (55 at size 100)
+   and more for script/handwriting fonts.
+4. Add it to the table in `docs/fonts.md` (license, size, exact source path
+   and commit), to the README's license paragraph and to the CHANGELOG.
+5. Run the tests (`tests/test_fonts.py` checks every bundled font loads,
+   draws and has a real bold) and `python tools/render_samples.py --fonts`,
+   then look at `docs/samples/fonts-contact-sheet.png`.
+
 ## Code style
 
 - Python 3.11+, `from __future__ import annotations`, standard library plus
-  Pillow and segno (pywin32 on Windows). New dependencies need a good reason:
+  Pillow and segno (pywin32 on Windows). Network code (only `fontget.py`)
+  uses `urllib` from the standard library, never runs on the Tk thread, and
+  is tested with fake HTTP answers. New dependencies need a good reason:
   they all end up inside the one-file program.
 - Lines up to about 100 characters; pyflakes must be clean.
 - Every module has a docstring saying what it is for; public functions and

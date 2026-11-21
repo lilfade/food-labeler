@@ -20,7 +20,7 @@ from pathlib import Path
 
 from PIL import ImageFont
 
-from . import dates, stocks
+from . import dates, lettering, stocks
 
 FONT_DIR = Path(__file__).resolve().parent / "fonts"
 FONT_REGULAR = FONT_DIR / "DejaVuSans.ttf"
@@ -60,22 +60,29 @@ FIELD_NAMES = {
 # Label statements of the cottage template are keyed "statement:<id>".
 
 
-@lru_cache(maxsize=512)
-def font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    """The bundled DejaVu Sans at ``size`` dots (cached; fitting asks for many sizes)."""
-    return ImageFont.truetype(str(FONT_BOLD if bold else FONT_REGULAR), max(4, int(size)))
+def font(size: int, bold: bool = False, face: str = "") -> ImageFont.FreeTypeFont:
+    """A font at ``size`` dots: the bundled DejaVu Sans, or the lettering ``face``
+    (a family name, see lettering.py; a missing one falls back to DejaVu Sans).
+    Cached in lettering; fitting asks for many sizes."""
+    return lettering.font(face, size, bold)
 
 
-@lru_cache(maxsize=512)
-def line_height(size: int, bold: bool = False) -> int:
-    """Distance between baselines of wrapped lines: ascent + descent."""
-    asc, desc = font(size, bold).getmetrics()
+@lru_cache(maxsize=2048)
+def _line_height(regular: str, size: int, bold: bool, face: str) -> int:
+    asc, desc = font(size, bold, face).getmetrics()
     return asc + desc
 
 
-def text_width(text: str, size: int, bold: bool = False) -> float:
+def line_height(size: int, bold: bool = False, face: str = "") -> int:
+    """Distance between baselines of wrapped lines: ascent + descent."""
+    # keyed on the file too, so a font removed or added under the same name never
+    # returns a stale height
+    return _line_height(lettering.face_for(face).regular, int(size), bool(bold), face)
+
+
+def text_width(text: str, size: int, bold: bool = False, face: str = "") -> float:
     """Advance width of ``text`` in dots."""
-    return font(size, bold).getlength(text)
+    return font(size, bold, face).getlength(text)
 
 
 @dataclass
@@ -89,6 +96,7 @@ class Block:
     align: str = "center"
     gap: float = 0.28              # space before the block, as a fraction of its size
     fit_word: bool = False         # shrink this block alone so its longest word fits
+    font: str = ""                 # lettering face (family name); "" = DejaVu Sans
 
 
 @dataclass
@@ -100,6 +108,7 @@ class Line:
     size: int
     bold: bool
     key: str
+    font: str = ""                 # lettering face; "" = DejaVu Sans
 
 
 @dataclass
@@ -167,10 +176,10 @@ def region_for(stock: stocks.Stock) -> Region:
 # wrapping
 # --------------------------------------------------------------------------
 
-def _break_word(word: str, size: int, bold: bool, width: float) -> list[str]:
+def _break_word(word: str, size: int, bold: bool, width: float, face: str = "") -> list[str]:
     parts, cur = [], ""
     for ch in word:
-        if cur and text_width(cur + ch, size, bold) > width:
+        if cur and text_width(cur + ch, size, bold, face) > width:
             parts.append(cur)
             cur = ch
         else:
@@ -180,7 +189,7 @@ def _break_word(word: str, size: int, bold: bool, width: float) -> list[str]:
     return parts
 
 
-def wrap(text: str, size: int, bold: bool, width_for_line, allow_break=False):
+def wrap(text: str, size: int, bold: bool, width_for_line, allow_break=False, face: str = ""):
     """Greedy wrap. width_for_line(i) gives the allowed width of line i.
 
     Returns (lines, ok). ok is False if a single word is wider than its line
@@ -196,21 +205,21 @@ def wrap(text: str, size: int, bold: bool, width_for_line, allow_break=False):
         for w in words:
             trial = f"{cur} {w}" if cur else w
             width = width_for_line(len(out))
-            if text_width(trial, size, bold) <= width:
+            if text_width(trial, size, bold, face) <= width:
                 cur = trial
                 continue
             if cur:
                 out.append(cur)
                 cur = ""
                 width = width_for_line(len(out))
-            if text_width(w, size, bold) <= width:
+            if text_width(w, size, bold, face) <= width:
                 cur = w
             else:
                 ok = False
                 if not allow_break:
                     cur = w
                     continue
-                pieces = _break_word(w, size, bold, max(1.0, width))
+                pieces = _break_word(w, size, bold, max(1.0, width), face)
                 out.extend(pieces[:-1])
                 cur = pieces[-1]
         if cur:
@@ -234,7 +243,7 @@ def _try(blocks, sizes, region: Region, valign: str, allow_break=False):
     for _ in range(6):
         placed, heights, ok, y = [], [], True, 0.0
         for bi, (b, size) in enumerate(zip(blocks, sizes)):
-            lh = line_height(size, b.bold)
+            lh = line_height(size, b.bold, b.font)
             if placed:
                 y += b.gap * size
             start = y
@@ -247,7 +256,7 @@ def _try(blocks, sizes, region: Region, valign: str, allow_break=False):
                     xl, xr = region.span(yy, yy + lh)
                 return xr - xl
 
-            wrapped, wok = wrap(b.text, size, b.bold, wf, allow_break)
+            wrapped, wok = wrap(b.text, size, b.bold, wf, allow_break, b.font)
             ok = ok and wok
             for i, t in enumerate(wrapped):
                 placed.append((bi, t, start + i * lh, size, lh))
@@ -266,11 +275,11 @@ def _try(blocks, sizes, region: Region, valign: str, allow_break=False):
         b = blocks[bi]
         yy = top + ly
         xl, xr = region.span(yy, yy + lh)
-        w = text_width(t, size, b.bold)
+        w = text_width(t, size, b.bold, b.font)
         if w > xr - xl + 0.5:
             ok = False
         x = xl if b.align == "left" else xl + (xr - xl - w) / 2
-        out.append(Line(t, round(x), round(yy), size, b.bold, b.key))
+        out.append(Line(t, round(x), round(yy), size, b.bold, b.key, b.font))
     return out, ok and fits, heights
 
 
@@ -295,10 +304,11 @@ def fit(blocks: list[Block], region: Region, valign: str = "center") -> Layout:
     for b in blocks:
         p = float(b.pref)
         if b.fit_word:
-            longest = max(str(b.text).split(), key=lambda w: text_width(w, int(p), b.bold))
+            longest = max(str(b.text).split(),
+                          key=lambda w: text_width(w, int(p), b.bold, b.font))
             for _ in range(60):
                 xl, xr = region.span(mid - p * 0.6, mid + p * 0.6)
-                if p <= b.min or text_width(longest, int(p), b.bold) <= (xr - xl):
+                if p <= b.min or text_width(longest, int(p), b.bold, b.font) <= (xr - xl):
                     break
                 p *= 0.95
         prefs.append(max(b.min, p))
@@ -529,6 +539,8 @@ def layout(doc, stock: stocks.Stock, ctx: dict | None = None) -> Layout:
     goes top-right, and the text flows around it via a region exclusion."""
     ctx = ctx or {}
     blocks, valign, qr_text = build_blocks(doc, stock, ctx)
+    # Fonts: the label's lettering choice; required wording stays a readable sans.
+    lettering.apply(blocks, doc.template, getattr(doc, "lettering", None))
     region = region_for(stock)
     qr = None
     if qr_text and not stock.round and stock.w >= 600:

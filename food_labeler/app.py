@@ -307,6 +307,7 @@ class App:
 
     def _fresh_doc(self, template: str, stock: str) -> model.LabelDoc:
         doc = model.LabelDoc(template, stock, model.default_fields(template))
+        doc.lettering = self.cfg.lettering_for(template)   # last choice for this kind
         self._fill_kitchen(doc)
         return doc
 
@@ -458,7 +459,14 @@ class App:
             row=1, column=1, sticky="w", padx=8, pady=(8, 0))
         button(kb, "Change…", self.pick_stock, "chip").grid(row=1, column=2, sticky="e",
                                                                  pady=(8, 0))
-        ttk.Separator(kb).grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        tk.Label(kb, text="Lettering:", font="ui", bg=PANEL, fg=MUTED).grid(
+            row=2, column=0, sticky="w", pady=(8, 0))
+        from .font_dialogs import summary
+        tk.Label(kb, text=summary(self.doc), font="ui_bold", bg=PANEL, fg=INK, wraplength=240,
+                 justify="left").grid(row=2, column=1, sticky="w", padx=8, pady=(8, 0))
+        button(kb, "Change…", self.pick_lettering, "chip").grid(row=2, column=2, sticky="e",
+                                                                     pady=(8, 0))
+        ttk.Separator(kb).grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
         t = self.doc.template
         f = self.form
@@ -682,6 +690,9 @@ class App:
         if not t or t == self.doc.template:
             return
         self.doc.set_template(t)
+        remembered = self.cfg.lettering_for(t)
+        if remembered:
+            self.doc.lettering = remembered
         self._fill_kitchen(self.doc)
         if self.doc.stock not in templates.ALLOWED_STOCKS[t]:
             self.doc.stock = "large"
@@ -692,6 +703,20 @@ class App:
         self._snapshot()
         if t == "cottage" and not self.profile["setup_done"]:
             self.bakery_wizard()
+
+    def pick_lettering(self):
+        """Kind bar → Lettering → Change…: the fonts of this label (remembered as the
+        default for new labels of this kind)."""
+        from .font_dialogs import LetteringDialog
+        got = LetteringDialog(self.root, self.doc, self.render_ctx()).run()
+        if got is None:
+            return
+        if model.clean_lettering(got) == model.clean_lettering(self.doc.lettering):
+            return
+        self.doc.lettering = model.clean_lettering(got)
+        self.cfg.remember_lettering(self.doc.template, self.doc.lettering)
+        self._sync_ui_from_doc()
+        self._snapshot()
 
     def pick_stock(self):
         from .dialogs import StockPicker
@@ -858,6 +883,10 @@ class App:
         self.cfg.add_recent(path, doc.title() or Path(path).stem)
         self.refresh_recent()
         self.flash(f"Opened “{Path(path).stem}”.")
+        # A font this computer doesn't have: say so gently and offer to get it.
+        from .font_dialogs import offer_missing_fonts
+        if offer_missing_fonts(self.root, self.doc):
+            self._sync_ui_from_doc()
 
     def export_picture(self):
         """Save the printer bitmap as a PNG."""

@@ -40,6 +40,16 @@ def selftest() -> int:
             back = zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h))
             assert back.tobytes() == res.image.tobytes()
             count += 1
+    # every bundled font is there, draws, and has a real bold where it should
+    from . import lettering
+    for face in lettering.BUNDLED:
+        assert lettering.font(face.name, 40).getlength("Soup") > 0, face.name
+        if face.has_bold:
+            assert lettering.ink(face.name, 40, True) > lettering.ink(face.name, 40), face.name
+        doc = model.LabelDoc("simple", "large", model.default_fields("simple"),
+                             lettering={"name": face.name})
+        doc.fields["food"] = "Selftest Soup"
+        assert not render.render(doc, {}).overflow, face.name
     # the bundled state rules load and every preset is usable
     from . import bakery, cottage
     rules = cottage.CottageRules()

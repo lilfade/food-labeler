@@ -5,6 +5,11 @@ A ``.label`` file is UTF-8 JSON::
     {"app": "easy-labels", "version": 1, "template": "simple",
      "stock": "large", "fields": {...}, "copies": 1}
 
+plus, only when it isn't the standard look, the optional
+``"lettering": {"name": "Pacifico", "other": "Lato"}`` (font family names, see
+lettering.py). Older versions ignore it, and files without it open in the
+standard lettering, so the format version is still 1.
+
 Dates inside ``fields`` are ISO strings. Unknown fields are dropped on load
 and missing ones get defaults, so files survive template changes. Files from
 a newer format version are refused with a friendly message rather than
@@ -99,11 +104,13 @@ class LabelDoc:
     stock: str = stocks.DEFAULT_STOCK
     fields: dict = field(default_factory=lambda: default_fields("simple"))
     copies: int = 1
+    lettering: dict = field(default_factory=dict)   # {} = standard look (DejaVu Sans)
 
     # ---- convenience -------------------------------------------------
     def copy(self) -> "LabelDoc":
         """Deep copy (fields are nested dicts)."""
-        return LabelDoc(self.template, self.stock, copy.deepcopy(self.fields), self.copies)
+        return LabelDoc(self.template, self.stock, copy.deepcopy(self.fields), self.copies,
+                        dict(self.lettering))
 
     def title(self) -> str:
         """Short name for window titles and file names: first line of the main field."""
@@ -176,9 +183,15 @@ class LabelDoc:
     def to_dict(self) -> dict:
         """The JSON-ready file contents."""
         self.clamp_copies()
-        return {"app": APP_KEY, "version": VERSION, "template": self.template,
-                "stock": self.stock, "fields": copy.deepcopy(self.fields),
-                "copies": self.copies}
+        out = {"app": APP_KEY, "version": VERSION, "template": self.template,
+               "stock": self.stock, "fields": copy.deepcopy(self.fields),
+               "copies": self.copies}
+        # Only written when it isn't the standard look, so a label in the
+        # standard lettering is byte-for-byte what earlier versions wrote.
+        lt = clean_lettering(self.lettering)
+        if lt:
+            out["lettering"] = lt
+        return out
 
     @classmethod
     def from_dict(cls, data: dict) -> "LabelDoc":
@@ -202,7 +215,8 @@ class LabelDoc:
                 if k in fields:
                     fields[k] = v
         stock = data.get("stock") if data.get("stock") in stocks.STOCKS else stocks.DEFAULT_STOCK
-        doc = cls(template, stock, fields, data.get("copies", 1))
+        doc = cls(template, stock, fields, data.get("copies", 1),
+                  clean_lettering(data.get("lettering")))
         doc.clamp_copies()
         return doc
 
@@ -216,6 +230,12 @@ class LabelDoc:
         except (ValueError, TypeError):
             raise LabelFileError("This label file is damaged and can't be opened.") from None
         return cls.from_dict(data)
+
+
+def clean_lettering(value) -> dict:
+    """The lettering choice as stored: {} for the standard look."""
+    from . import lettering
+    return {} if lettering.is_default(value) else lettering.clean(value)
 
 
 def atomic_write_text(path: Path, text: str) -> None:

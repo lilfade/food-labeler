@@ -50,7 +50,8 @@ def draw_layout(lay: Layout, w: int, h: int) -> Image.Image:
     img = Image.new("1", (w, h), 1)
     d = ImageDraw.Draw(img)
     for ln in lay.lines:
-        d.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold), fill=0, anchor="la")
+        d.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold, ln.font), fill=0,
+               anchor="la")
     if lay.qr:
         qx, qy, mod, matrix = lay.qr
         for r, row in enumerate(matrix):
@@ -134,8 +135,8 @@ def preview(res: RenderResult, max_w: int, max_h: int, highlight: bool = True) -
     if highlight and res.overflow:
         for ln in res.layout.lines:
             if ln.key == res.problem_field:
-                w = templates.text_width(ln.text, ln.size, ln.bold)
-                lh = templates.line_height(ln.size, ln.bold)
+                w = templates.text_width(ln.text, ln.size, ln.bold, ln.font)
+                lh = templates.line_height(ln.size, ln.bold, ln.font)
                 bx = (x0 + ln.x * scale - 3, y0 + ln.y * scale - 2,
                       x0 + (ln.x + w) * scale + 3, y0 + (ln.y + lh) * scale + 2)
                 d.rectangle(bx, outline=(214, 92, 0), width=3)

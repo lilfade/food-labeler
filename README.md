@@ -109,6 +109,26 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
   Use shorter words or a bigger label.
 - Your work is kept safe automatically, even if the computer switches off.
 
+#### Fonts
+
+- **Lettering → Change…** (under *Label size*) lets you pick the kind of
+  letters on your label: one for the **name of the food** and one for
+  **everything else**. Each choice is shown in its own lettering, so you can
+  see what you get. Food Labeler remembers your choice for your next label.
+- For the name you can pick fancy lettering such as *Pacifico* or *Caveat*.
+  Everything else uses only clear, easy-to-read lettering, and the wording
+  the law asks for (ingredients, allergens, your address, your state's
+  wording) always stays easy to read.
+- **Get more fonts…** (in the list of lettering) can fetch any font from
+  [fonts.google.com](https://fonts.google.com): type its name, for example
+  *Dancing Script*, look at it, and press **Add this font**. This is the only
+  part of Food Labeler that uses the internet, and you never need it.
+  **Add a font file from my computer…** adds a font you already have.
+- If you open a label made on another computer with a font you don't have,
+  Food Labeler shows it in the standard lettering and offers to get the font.
+
+Details for helpers: [docs/fonts.md](docs/fonts.md).
+
 ### For home bakers (cottage food labels)
 
 If you bake at home and sell under your state's *cottage food* law, choose
@@ -212,8 +232,8 @@ folder*, file `food-labeler.log`.
   a raw CUPS queue also works.
 - **Where things are kept:** saved labels in `Documents\My Food Labels`
   (Linux: `~/Documents/My Food Labels`); settings, autosave, log, printer
-  updates, *My bakery*, *My ingredients*, *My products* and your own
-  cottage wording in `%APPDATA%\FoodLabeler` (Linux:
+  updates, *My bakery*, *My ingredients*, *My products*, fonts you added and
+  your own cottage wording in `%APPDATA%\FoodLabeler` (Linux:
   `~/.local/share/food-labeler`). Updates to Food Labeler never change them.
 - **State cottage food rules** and how to update them:
   [docs/cottage-rules.md](docs/cottage-rules.md).
@@ -231,7 +251,10 @@ folder*, file `food-labeler.log`.
 Food Labeler is free and open source under the [MIT License](LICENSE).
 
 Bundled fonts: DejaVu Sans (Bitstream Vera license, see
-`food_labeler/fonts/LICENSE-DejaVu.txt`). The seal artwork in `assets/`
+`food_labeler/fonts/LICENSE-DejaVu.txt`); Atkinson Hyperlegible, Roboto,
+Open Sans, Lato, Playfair Display, Pacifico, Lobster and Caveat from Google
+Fonts (SIL Open Font License 1.1, each with its `OFL.txt` in
+`food_labeler/fonts/`; sources in [docs/fonts.md](docs/fonts.md)). The seal artwork in `assets/`
 uses the Parisienne typeface (SIL Open Font License 1.1). The High Thyme
 Kitchen name and seal are the kitchen's branding and are not covered by the
 MIT License; if you publish your own version, please use your own name and

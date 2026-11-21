@@ -44,7 +44,20 @@ def windows_version_info(version: str):
     )
 
 
+def check_fonts():
+    """Every bundled font family folder must have its font files and license
+    (docs/fonts.md); a missing one would make labels fall back silently."""
+    fonts = ROOT / "food_labeler" / "fonts"
+    for folder in sorted(p for p in fonts.iterdir() if p.is_dir()):
+        if not list(folder.glob("*.ttf")) or not (folder / "OFL.txt").is_file():
+            raise SystemExit(f"font folder incomplete: {folder.name}")
+
+
+check_fonts()
+
 datas = [
+    # the whole folder, sub-folders included: DejaVu Sans plus one folder per
+    # bundled family (font files + license), see food_labeler/lettering.py
     (str(ROOT / "food_labeler" / "fonts"), "food_labeler/fonts"),
     (str(ROOT / "food_labeler" / "assets"), "food_labeler/assets"),
     (str(ROOT / "food_labeler" / "known_printers.json"), "food_labeler"),

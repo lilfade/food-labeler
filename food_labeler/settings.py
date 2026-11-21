@@ -49,6 +49,9 @@ DEFAULTS = {
     },
     "recent": [],                # [{"path": ..., "name": ...}]
     "bakery_offered": False,     # the "Set up my bakery" question was asked once
+    # Last lettering chosen per kind of label, used for new labels:
+    # {"simple": {"name": "Pacifico", "other": "Lato"}, ...} (see lettering.py)
+    "lettering": {},
     "last_folder": "",
     "window": "",
 }
@@ -200,6 +203,19 @@ class Settings:
 
     def nickname(self, pid: str) -> str:
         return str(self.data["printers"].get(pid, {}).get("nickname") or "")
+
+    def lettering_for(self, template: str) -> dict:
+        """The lettering last chosen for this kind of label ({} = standard)."""
+        from . import lettering
+        got = self.data["lettering"].get(template) if isinstance(self.data["lettering"],
+                                                                 dict) else None
+        return lettering.clean(got)
+
+    def remember_lettering(self, template: str, value: dict) -> None:
+        """Keep a lettering choice as the default for new labels of this kind."""
+        from . import lettering
+        self.data["lettering"][template] = lettering.clean(value)
+        self.save()
 
     def nicknames(self) -> dict:
         return {k: v.get("nickname", "") for k, v in self.data["printers"].items()

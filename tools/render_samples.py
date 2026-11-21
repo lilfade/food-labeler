@@ -1,4 +1,10 @@
-"""Render every template x stock into docs/samples/ (exact printer bitmaps)."""
+"""Render every template x stock into docs/samples/ (exact printer bitmaps).
+
+``--fonts`` only redraws docs/samples/fonts-contact-sheet.png: every bundled
+font as the name of the food on a simple label (with the matching body font
+where the font may be used for everything else), plus a cottage label to show
+the required wording staying in a readable sans.
+"""
 import sys
 from pathlib import Path
 
@@ -7,7 +13,7 @@ sys.path.insert(0, str(ROOT))
 
 from PIL import Image, ImageDraw  # noqa: E402
 
-from food_labeler import bakery, cottage, model, render, stocks, templates  # noqa: E402
+from food_labeler import bakery, cottage, lettering, model, render, stocks, templates  # noqa: E402
 
 SAMPLE = {
     "simple": {"food": "Chicken Noodle Soup", "made_on": "2026-11-20", "use_by": "2026-11-25",
@@ -89,5 +95,42 @@ def main():
     sheet.save(out / "cottage-contact-sheet.png")
 
 
+def fonts_sheet():
+    """docs/samples/fonts-contact-sheet.png: each bundled font on a sample label."""
+    out = ROOT / "docs" / "samples"
+    rules = cottage.CottageRules()
+    tiles = []
+    for face in lettering.BUNDLED:
+        other = face.name if face.readable else lettering.DEFAULT
+        doc = model.LabelDoc("simple", "large", model.default_fields("simple"),
+                             lettering={"name": face.name, "other": other})
+        doc.fields.update(SAMPLE["simple"])
+        res = render.render(doc, CTX)
+        pv = render.preview(res, 460, 300)
+        ImageDraw.Draw(pv).text((8, 4), f"{face.name}  (min x{face.min_scale})"
+                                + ("  OVERFLOW" if res.overflow else ""), fill=(0, 0, 0))
+        tiles.append(pv)
+        print(f"{face.name:22s} overflow={res.overflow}")
+    for name in ("Pacifico", "Caveat"):
+        doc = model.LabelDoc("cottage", "large", model.default_fields("cottage"),
+                             lettering={"name": name, "other": name})
+        doc.fields.update(SAMPLE["cottage"])
+        res = render.render(doc, cottage_ctx(rules, "NE"))
+        pv = render.preview(res, 460, 300)
+        ImageDraw.Draw(pv).text((8, 4), f"cottage: {name} name, required wording stays sans",
+                                fill=(0, 0, 0))
+        tiles.append(pv)
+    cols = 3
+    rows = (len(tiles) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * 460, rows * 300), "white")
+    for i, im in enumerate(tiles):
+        sheet.paste(im, ((i % cols) * 460, (i // cols) * 300))
+    sheet.save(out / "fonts-contact-sheet.png")
+
+
 if __name__ == "__main__":
-    main()
+    if "--fonts" in sys.argv[1:]:
+        fonts_sheet()
+    else:
+        main()
+        fonts_sheet()

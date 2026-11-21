@@ -4,6 +4,30 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.2.0 — unreleased
+
+Lettering: choose the fonts on your labels.
+
+- **Lettering → Change…** on every kind of label: one font for the name of
+  the food and one for everything else. The list shows each font's name in
+  that font. The last choice is remembered for new labels of that kind.
+- Comes with Atkinson Hyperlegible, Roboto, Open Sans and Lato (easy to
+  read, for everything) and Playfair Display, Pacifico, Lobster and Caveat
+  (for the name of the food), all under the SIL Open Font License. DejaVu
+  Sans is still the standard lettering, so existing labels look the same.
+- The wording the law asks for (ingredients, allergens, address, your
+  state's statements) always stays in easy-to-read lettering.
+- Script fonts are never shrunk below a size that can still be read; each
+  font has its own smallest size.
+- **Get more fonts…** fetches a font from Google Fonts by name (it shows a
+  preview first and needs the internet only for this), and **Add a font file
+  from my computer…** adds a .ttf or .otf. Added fonts are kept with your
+  other Food Labeler files and can be removed again.
+- A label that uses a font this computer doesn't have opens in the standard
+  lettering and offers to get the font.
+- Label files from earlier versions open unchanged; the file format is still
+  version 1.
+
 ## 1.1.1 — 2026-11-20
 
 - The cottage food form no longer squeezes the label preview and printer
