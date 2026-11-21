@@ -24,7 +24,9 @@ from . import APP_NAME, BRAND, __version__
 from . import dates, known, model, printers, render, report, settings as settings_mod, stocks
 from . import btscan, templates, usbscan
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, GREEN_LIGHT, INK, MUTED, PANEL, WARN,
-                      WARN_BG, Modal, ScrollFrame, ask, button, tell)
+                      WARN_BG, LinkLabel, Modal, ScrollFrame, ask, button, tell)
+
+PROJECT_SITE = "https://lilfade.github.io/food-labeler/"
 
 log = logging.getLogger("food_labeler.dialogs")
 
@@ -356,10 +358,14 @@ class SettingsDialog(Modal):
 
         heading("About")
         support = str(known.app_config().get("support_email") or "")
-        tk.Label(b, text=f"{APP_NAME} version {__version__}, by {BRAND}"
-                 f"\nHelp: open an issue at {report.issues_url()}"
-                 + (f"\n(or email {support} if you're stuck)" if support else ""),
-                 font="ui", bg=BG, fg=INK, wraplength=700, justify="left").pack(anchor="w")
+        tk.Label(b, text=f"{APP_NAME} version {__version__}, by {BRAND}\nHelp: open an "
+                 "issue on GitHub:", font="ui", bg=BG, fg=INK, wraplength=700,
+                 justify="left").pack(anchor="w")
+        LinkLabel(b, report.issues_url(), font="ui").pack(anchor="w")
+        LinkLabel(b, PROJECT_SITE, "The Food Labeler website", font="ui").pack(anchor="w")
+        if support:
+            tk.Label(b, text=f"(or email {support} if you're stuck)", font="ui", bg=BG,
+                     fg=INK, wraplength=700, justify="left").pack(anchor="w")
         button(self.body, "Done", self._done, "primary").pack(anchor="e", pady=(12, 0))
 
     def _style(self):
@@ -1267,7 +1273,7 @@ class ReportDialog(Modal):
             webbrowser.open(report.mailto(self.text, to))
             tell(self, "Email", "Your email program should open with the report in it. "
                  "(It's also copied, in case you need to paste it.)" +
-                 ("" if to else f"\n\nPlease type {BRAND}'s email address in "
+                 ("" if to else "\n\nPlease type the email address you were given in "
                   "the “To” box."))
         except Exception:  # noqa: BLE001
             tell(self, "Email", "I couldn't open your email program. The report is copied "

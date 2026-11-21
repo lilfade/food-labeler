@@ -8,12 +8,15 @@ from __future__ import annotations
 
 import calendar
 import datetime as dt
+import re
 import tkinter as tk
+import weakref
 from tkinter import ttk
+from urllib.parse import urlsplit
 
 from . import dates
 
-# High Thyme Kitchen-ish colours, high contrast.
+# Warm, high-contrast colours.
 BG = "#F6F1E7"
 PANEL = "#FFFFFF"
 INK = "#1E1E1E"
@@ -126,13 +129,109 @@ def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
     return b
 
 
+# ---------------------------------------------------------------------------
+# web addresses
+# ---------------------------------------------------------------------------
+
+# Web addresses in a sentence: with http(s):// or a bare name like fonts.google.com
+# (not the part after the @ of an e-mail address, and not file names).
+URL_RE = re.compile(
+    r"https?://[^\s<>\"“”‘’]+"
+    r"|(?<![@\w./-])(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*"
+    r"\.(?:com|org|net|gov|edu|us|io|info|app|dev)(?:/[^\s<>\"“”‘’]*)?(?![\w@-])",
+    re.I)
+_TRAILING = ".,;:!?)]}’”'\""
+
+
+def safe_url(url: str) -> str | None:
+    """``url`` if it is a plain http/https web address that is safe to open, else None.
+
+    Only http and https (never file:, javascript:, mailto: or program links), a
+    real host name, no user name or password, no spaces or control characters."""
+    url = str(url or "").strip()
+    if not url or len(url) > 2000 or any(c.isspace() or ord(c) < 32 or ord(c) == 127
+                                         for c in url):
+        return None
+    if not re.match(r"^https?://", url, re.I):
+        return None
+    try:
+        u = urlsplit(url)
+        host = u.hostname or ""
+    except ValueError:
+        return None
+    if u.scheme.lower() not in ("http", "https") or not host or u.username or u.password:
+        return None
+    if not re.fullmatch(r"[a-z0-9.-]+|\[[0-9a-f:.]+\]", host, re.I) or ".." in host:
+        return None
+    return url
+
+
+def find_urls(text: str) -> list[tuple[str, str]]:
+    """[(as written, address to open)] for every web address in ``text``, in order,
+    without trailing punctuation; bare names get https:// in front."""
+    out = []
+    for m in URL_RE.finditer(str(text or "")):
+        shown = m.group(0).rstrip(_TRAILING)
+        url = shown if re.match(r"^https?://", shown, re.I) else "https://" + shown
+        url = safe_url(url)
+        if url and (shown, url) not in out:
+            out.append((shown, url))
+    return out
+
+
+def open_url(url: str, opener=None) -> bool:
+    """Open a web address in the browser, only if safe_url allows it. True if asked."""
+    url = safe_url(url)
+    if url is None:
+        return False
+    if opener is None:
+        import webbrowser
+        opener = webbrowser.open
+    try:
+        return bool(opener(url))
+    except Exception:  # noqa: BLE001 - no browser: nothing to do
+        return False
+
+
+class LinkLabel(tk.Label):
+    """A web address that opens in the browser when clicked, or with Enter or Space
+    when it has the keyboard focus (Tab reaches it). Underlined, with a hand
+    cursor. Addresses that aren't plain http/https are shown as text only."""
+
+    def __init__(self, parent, url: str, text: str | None = None, font="link", bg=BG,
+                 fg=GREEN_DARK, wraplength=700, opener=None, **kw):
+        self.url = safe_url(url)
+        self._opener = opener
+        super().__init__(parent, text=text or url, font=font, bg=bg,
+                         fg=fg if self.url else INK, justify="left", wraplength=wraplength,
+                         cursor="hand2" if self.url else "", takefocus=bool(self.url),
+                         highlightthickness=1, highlightbackground=bg,
+                         highlightcolor=GREEN, **kw)
+        try:
+            self.configure(font=font)
+        except tk.TclError:                  # no "link" font (outside the main window)
+            self.configure(font="small")
+        if self.url:
+            for seq in ("<Button-1>", "<Return>", "<KP_Enter>", "<space>"):
+                self.bind(seq, self.open)
+
+    def open(self, _event=None):
+        """Open the address (also used by the key bindings)."""
+        open_url(self.url, self._opener)
+        return "break"
+
+
 def ask(parent, title: str, message: str, buttons, icon: str = "") -> str | None:
     """Show a message with big buttons. buttons: [(text, value, kind), ...]."""
     m = Modal(parent, title)
     if icon:
         tk.Label(m.body, text=icon, font="huge", bg=BG, fg=GREEN).pack(pady=(0, 6))
     tk.Label(m.body, text=message, font="ui", bg=BG, fg=INK, wraplength=640,
-             justify="left").pack(anchor="w", pady=(0, 18))
+             justify="left").pack(anchor="w", pady=(0, 6))
+    # every web address in the message can be clicked
+    for shown, url in find_urls(message)[:6]:
+        LinkLabel(m.body, url, shown, wraplength=640).pack(anchor="w")
+    tk.Frame(m.body, bg=BG, height=12).pack()
     row = tk.Frame(m.body, bg=BG)
     row.pack(fill="x")
     first = None
@@ -150,8 +249,53 @@ def tell(parent, title: str, message: str, icon: str = "") -> None:
     ask(parent, title, message, [("OK", True, "primary")], icon)
 
 
+def scroll_target(top: float, height: float, view_top: float, view_height: float,
+                  total: float, margin: float = 12) -> float | None:
+    """Where to scroll so a widget (``top``..``top + height`` inside the scrolled
+    content, ``total`` tall) is fully in view, as a ``yview_moveto`` fraction;
+    None when it already is (or nothing scrolls). The view is ``view_top``..
+    ``view_top + view_height``. A small ``margin`` is kept above and below; a
+    widget taller than the view shows its top."""
+    if total <= 0 or view_height <= 0 or total <= view_height:
+        return None
+    bottom = top + height
+    if top - margin >= view_top and bottom + margin <= view_top + view_height:
+        return None
+    if top - margin < view_top or height + 2 * margin > view_height:
+        new_top = top - margin
+    else:
+        new_top = bottom + margin - view_height
+    new_top = max(0.0, min(total - view_height, new_top))
+    return new_top / total
+
+
+_SCROLL_FRAMES: "weakref.WeakSet[ScrollFrame]" = weakref.WeakSet()
+_FOCUS_BOUND: set[str] = set()
+
+
+def _focus_scroll(event) -> None:
+    """<FocusIn> anywhere: if the widget is inside a ScrollFrame, scroll it into view
+    (the innermost ScrollFrame that holds it)."""
+    w = event.widget
+    if not isinstance(w, tk.Misc):
+        return
+    best, depth = None, -1
+    for sf in list(_SCROLL_FRAMES):
+        try:
+            if not sf.winfo_exists():
+                continue
+        except tk.TclError:
+            continue
+        d = sf.holds(w)
+        if d > depth:
+            best, depth = sf, d
+    if best is not None:
+        best.show(w)
+
+
 class ScrollFrame(tk.Frame):
-    """A vertically scrolling frame; the mouse wheel works anywhere over it."""
+    """A vertically scrolling frame; the mouse wheel works anywhere over it, and the
+    widget that gets the keyboard focus (Tab, or a click) is scrolled into view."""
 
     def __init__(self, parent, bg=PANEL):
         super().__init__(parent, bg=bg)
@@ -168,6 +312,35 @@ class ScrollFrame(tk.Frame):
         self.bind_all("<MouseWheel>", self._wheel, add="+")
         self.bind_all("<Button-4>", self._wheel, add="+")
         self.bind_all("<Button-5>", self._wheel, add="+")
+        _SCROLL_FRAMES.add(self)
+        root = str(self._root())                     # bound once per program
+        if root not in _FOCUS_BOUND:
+            _FOCUS_BOUND.add(root)
+            self.bind_all("<FocusIn>", _focus_scroll, add="+")
+
+    def holds(self, widget) -> int:
+        """How deep ``widget`` is inside this frame's content (-1: not inside it)."""
+        depth, w = 0, widget
+        while w is not None:
+            if w is self.inner:
+                return depth
+            if w is self:
+                return -1
+            w = getattr(w, "master", None)
+            depth += 1
+        return -1
+
+    def show(self, widget, margin: int = 12) -> None:
+        """Scroll just enough that ``widget`` (inside .inner) is fully visible."""
+        try:
+            self.update_idletasks()
+            top = widget.winfo_rooty() - self.inner.winfo_rooty()
+            frac = scroll_target(top, widget.winfo_height(), self.canvas.canvasy(0),
+                                 self.canvas.winfo_height(), self.inner.winfo_height(), margin)
+            if frac is not None:
+                self.canvas.yview_moveto(frac)
+        except tk.TclError:
+            pass
 
     def _on_inner(self, _e=None):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))

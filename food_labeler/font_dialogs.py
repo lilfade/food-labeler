@@ -20,14 +20,13 @@ import queue
 import threading
 import tkinter as tk
 import tkinter.font as tkfont
-import webbrowser
 from tkinter import filedialog
 
 from PIL import ImageTk
 
 from . import fontget, lettering, render
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, GREEN_LIGHT, INK, MUTED, PANEL, WARN,
-                      Modal, ScrollFrame, ask, button, tell)
+                      LinkLabel, Modal, ScrollFrame, ask, button, tell)
 
 log = logging.getLogger("food_labeler.font_dialogs")
 
@@ -243,8 +242,8 @@ class GetFontsDialog(Modal):
                  "“Dancing Script”. You can look at all of them on fonts.google.com.",
                  font="ui", bg=BG, fg=INK, wraplength=600, justify="left").pack(
             anchor="w", pady=(4, 8))
-        button(self.body, "Look at fonts.google.com", lambda: webbrowser.open(GOOGLE_FONTS),
-               "quiet").pack(anchor="w")
+        LinkLabel(self.body, GOOGLE_FONTS, "Look at fonts.google.com", font="ui").pack(
+            anchor="w")
         row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(10, 0))
         self.var = tk.StringVar(master=self, value=name)

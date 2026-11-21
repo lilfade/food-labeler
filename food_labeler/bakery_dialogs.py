@@ -10,11 +10,10 @@ from __future__ import annotations
 
 import logging
 import tkinter as tk
-import webbrowser
 from tkinter import filedialog
 
 from . import bakery, cottage, model
-from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, Modal,
+from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, LinkLabel, Modal,
                       ScrollFrame, Toggle, ask, button, tell)
 
 log = logging.getLogger("food_labeler.bakery_dialogs")
@@ -58,11 +57,8 @@ def _text(parent, value, height=3, width=56):
 
 
 def link(parent, url, text=None, bg=BG):
-    """A clickable web address (opens the browser only when clicked)."""
-    lbl = tk.Label(parent, text=text or url, font="small", bg=bg, fg=GREEN_DARK,
-                   cursor="hand2", wraplength=700, justify="left")
-    lbl.bind("<Button-1>", lambda e: webbrowser.open(url))
-    return lbl
+    """A clickable web address (opens the browser only when clicked; http/https only)."""
+    return LinkLabel(parent, url, text, font="small", bg=bg)
 
 
 def responsibility(parent, rule: cottage.StateRule, bg=BG):
@@ -75,6 +71,8 @@ def responsibility(parent, rule: cottage.StateRule, bg=BG):
             anchor="w", pady=(2, 0))
     if rule.source_url:
         link(fr, rule.source_url, "Source: " + rule.source_url, bg=bg).pack(anchor="w")
+    for extra in rule.extra_sources:
+        link(fr, extra, "Also: " + extra, bg=bg).pack(anchor="w")
     return fr
 
 
@@ -176,7 +174,13 @@ class BakeryWizard(Modal):
         if not sid:
             tell(self, "Pick one", "Please tap your state in the list first.")
             return
-        self.state = sid
+        old, self.state = self.state, sid
+        # fill in the address's State box for them (never over what they typed)
+        region = self.vars["region"].get() if "region" in self.vars else \
+            self.app.profile["region"]
+        self._region = bakery.state_for_address(region, sid, old)
+        if "region" in self.vars:
+            self.vars["region"].set(self._region)
         self.step2()
 
     def step2(self):
@@ -190,7 +194,10 @@ class BakeryWizard(Modal):
         p = self.app.profile
         for key, title in DETAIL_FIELDS:
             _label(sf.inner, title, font="ui_bold").pack(anchor="w", pady=(6, 0))
-            var, e = _entry(sf.inner, self.vars[key].get() if key in self.vars else p[key])
+            value = self.vars[key].get() if key in self.vars else p[key]
+            if key == "region" and key not in self.vars:
+                value = getattr(self, "_region", value)
+            var, e = _entry(sf.inner, value)
             e.pack(fill="x", ipady=4)
             self.vars[key] = var
         row = tk.Frame(self.frame, bg=BG)
@@ -442,8 +449,10 @@ class MyBakeryDialog(Modal):
         button(row, "Cancel", m.cancel, "quiet").pack(side="right")
         sid = m.run()
         if sid:
-            self.app.profile["state"] = sid
-            self.app.profile.save()
+            p = self.app.profile
+            p["region"] = bakery.state_for_address(p["region"], sid, p["state"])
+            p["state"] = sid
+            p.save()
             self._draw()
 
     def _reset_stmt(self, stid):

@@ -204,6 +204,21 @@ class Profile:
         return bool(self.data.get("metric")) if self.data.get("metric") is not None else False
 
 
+def state_for_address(region: str, new_state: str, old_state: str = "") -> str:
+    """The address's "State" box after choosing ``new_state`` in Set up my bakery
+    or My bakery: the state's postal abbreviation ("NE" for Nebraska) when the
+    box is empty or still holds what was filled in for the state before
+    (``old_state``'s abbreviation); otherwise exactly what the person typed.
+    Custom rules fill in nothing."""
+    region = str(region or "")
+    new = str(new_state or "").upper()
+    if not new or new_state == "custom" or len(new) != 2 or not new.isalpha():
+        return region
+    if not region.strip() or region.strip().upper() == str(old_state or "").upper():
+        return new
+    return region
+
+
 def address_lines(d: dict) -> list[str]:
     """Street / (line 2) / "City, ST ZIP" — or [] unless street, city, state and ZIP are all set."""
     parts = [str(d.get(k) or "").strip() for k in ("street", "city", "region", "zip")]
