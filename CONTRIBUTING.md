@@ -144,7 +144,7 @@ so pair first:
 2. Start Food Labeler (or, to see the job without printing,
    `FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler`) and
    press **Printer options ▾ → Look for printers again**. The printer appears as
-   *… — Bluetooth (…3F:A2)* (Windows: *… — Bluetooth COM5 (…3F:A2)*), marked
+   *… — Bluetooth (…44:01)* (Windows: *… — Bluetooth COM5 (…44:01)*), marked
    *(alpha — not tested yet)*.
 3. Put a roll in, pick that printer and print **one** label (a test label
    from **My printers → Which one is it?** is enough). The first time, the

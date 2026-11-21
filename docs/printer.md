@@ -149,7 +149,7 @@ computer's own Bluetooth settings:
    pick the printer (LP610BT-type printers are called *LP610BT*). If it asks
    for a PIN, try **0000** or **1234**.
 3. In Food Labeler, press **Printer options ▾ → Look for printers again**. The printer shows up
-   as, for example, *… — Bluetooth COM5 (…3F:A2)*.
+   as, for example, *… — Bluetooth COM5 (…44:01)*.
 
 If you installed the printer maker's driver on the Bluetooth port, the
 printer is an ordinary Windows printer and works the same way as over USB.
@@ -161,10 +161,10 @@ printer is an ordinary Windows printer and works the same way as over USB.
    use `bluetoothctl`: `pair`, then `trust`). If it asks for a PIN, try
    **0000** or **1234**.
 3. In Food Labeler, press **Printer options ▾ → Look for printers again**. The printer shows up
-   as, for example, *… — Bluetooth (…3F:A2)*.
+   as, for example, *… — Bluetooth (…44:01)*.
 
 **Two printers with the same name?** Both of ours are called *LP610BT*.
-The end of the Bluetooth address (*…3F:A2*) tells them apart. Open **My
+The end of the Bluetooth address (*…44:01*) tells them apart. Open **My
 printers…**, press **Which one is it?** next to one of them (it prints a
 small label on that printer) and give it a name, such as *White label
 printer*.

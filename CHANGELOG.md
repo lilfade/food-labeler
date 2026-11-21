@@ -106,7 +106,7 @@ real printers.
   print without the USB cable, on Windows and Linux. Pair the printer once
   in the computer's own Bluetooth settings (the PIN is often 0000 or 1234),
   then press **Printer options ▾ → Look for printers again**. It shows up
-  as, for example, *… — Bluetooth (…3F:A2)*. Food Labeler never pairs by itself. See
+  as, for example, *… — Bluetooth (…44:01)*. Food Labeler never pairs by itself. See
   [Bluetooth printers](docs/printer.md#bluetooth-printers-alpha).
 - **Alpha — not tested yet.** Printing over Bluetooth hasn't been tested on
   paper. Bluetooth printers have *(alpha — not tested yet)* after their name,

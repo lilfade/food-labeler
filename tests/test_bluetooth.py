@@ -15,8 +15,8 @@ from food_labeler import btscan, known, printers
 
 K = known.KnownPrinters()
 
-A1, A2 = "89:8F:10:11:3F:A2", "D5:1F:77:22:9C:01"      # two printers, both "LP610BT"
-PHONE, BUDS = "4C:11:22:33:44:55", "AC:3E:00:00:F5:79"
+A1, A2 = "00:11:22:33:44:01", "00:11:22:33:44:02"      # two printers, both "LP610BT"
+PHONE, BUDS = "00:11:22:33:44:04", "00:11:22:33:44:03"
 SPP_LINE = "\tUUID: Serial Port               (00001101-0000-1000-8000-00805f9b34fb)\n"
 
 
@@ -31,9 +31,9 @@ PRINTER_UUIDS = (SPP_LINE + "\tUUID: PnP Information           "
 INFO = {
     A1: info(A1, "LP610BT", "0x00040680 (263808)", PRINTER_UUIDS),
     A2: info(A2, "LP610BT", "0x00040680 (263808)", PRINTER_UUIDS, connected="yes"),
-    PHONE: info(PHONE, "Bryson's Pixel 8", "0x005a020c (5898764)",
+    PHONE: info(PHONE, "Sam's Pixel 8", "0x005a020c (5898764)",
                 "\tUUID: Handsfree Audio Gateway   (0000111f-0000-1000-8000-00805f9b34fb)\n"),
-    BUDS: info(BUDS, "Angela's Pixel Buds Pro", "0x00240418 (2360344)",
+    BUDS: info(BUDS, "Alex's Pixel Buds Pro", "0x00240418 (2360344)",
                "\tUUID: Audio Sink                (0000110b-0000-1000-8000-00805f9b34fb)\n"),
 }
 
@@ -91,9 +91,9 @@ def test_two_identical_printers_a_phone_and_headphones():
     a, b = found
     assert a.method == b.method == "bluetooth" and a.target == A1 and b.target == A2
     assert a.family.id == b.family.id == "lp610bt-compatible" and a.kind == "tspl"
-    assert a.bluetooth and a.port == "Bluetooth (\u20263F:A2)"
-    assert b.port == "Bluetooth (\u20269C:01)"
-    assert a.display() != b.display() and a.display().endswith("Bluetooth (\u20263F:A2)")
+    assert a.bluetooth and a.port == "Bluetooth (\u202644:01)"
+    assert b.port == "Bluetooth (\u202644:02)"
+    assert a.display() != b.display() and a.display().endswith("Bluetooth (\u202644:01)")
     assert printers.ALPHA_TAG in a.display(tag=True)
     # only ever reads: "devices" and "info", never pair / connect / trust / scan
     assert all(c[0] == "bluetoothctl" and c[1] in ("devices", "info") for c in run.calls)
@@ -104,7 +104,7 @@ def test_device_details_are_read():
     d = {x.address: x for x in devs}
     assert d[A1].device_class == 0x040680 and d[A1].printer_class and d[A1].spp
     assert d[A1].paired is True and d[A1].connected is False and d[A2].connected is True
-    assert d[A1].short == "\u20263F:A2" and "1101" in d[A1].uuids
+    assert d[A1].short == "\u202644:01" and "1101" in d[A1].uuids
     assert not d[PHONE].is_printer and not d[BUDS].is_printer and not d[BUDS].spp
 
 
@@ -145,25 +145,25 @@ def test_scan_stops_when_it_takes_too_long():
 
 
 def test_parse_handles_colour_codes_and_junk():
-    out = ("\x1b[0;94m[bluetooth]\x1b[0m# Device 89:8F:10:11:3F:A2 LP610BT\r\nnoise\n"
-           "[CHG] Device D5:1F:77:22:9C:01 RSSI: -82\n")
-    assert btscan.parse_devices(out) == [("89:8F:10:11:3F:A2", "LP610BT")]
+    out = ("\x1b[0;94m[bluetooth]\x1b[0m# Device 00:11:22:33:44:01 LP610BT\r\nnoise\n"
+           "[CHG] Device 00:11:22:33:44:02 RSSI: -82\n")
+    assert btscan.parse_devices(out) == [("00:11:22:33:44:01", "LP610BT")]
     assert btscan.parse_info("Device 00:00:00:00:00:01 not available") is None
     assert btscan.parse_devices("") == [] and btscan.parse_info("") is None
 
 
 WIN_JSON = json.dumps([
-    {"PNPDeviceID": "BTHENUM\\DEV_898F10113FA2\\7&2A1F&0&BLUETOOTHDEVICE_898F10113FA2",
+    {"PNPDeviceID": "BTHENUM\\DEV_001122334401\\7&2A1F&0&BLUETOOTHDEVICE_001122334401",
      "Name": "LP610BT", "Status": "OK"},
-    {"PNPDeviceID": "BTHENUM\\DEV_D51F77229C01\\7&2A1F&0&BLUETOOTHDEVICE_D51F77229C01",
+    {"PNPDeviceID": "BTHENUM\\DEV_001122334402\\7&2A1F&0&BLUETOOTHDEVICE_001122334402",
      "Name": "LP610BT", "Status": "OK"},
-    {"PNPDeviceID": "BTHENUM\\DEV_AC3E0000F579\\7&2A1F&0&BLUETOOTHDEVICE_AC3E0000F579",
+    {"PNPDeviceID": "BTHENUM\\DEV_001122334403\\7&2A1F&0&BLUETOOTHDEVICE_001122334403",
      "Name": "Pixel Buds Pro", "Status": "OK"},
     {"PNPDeviceID": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0002\\7&1D80ECD3&"
-                    "0&898F10113FA2_C00000000",
+                    "0&001122334401_C00000000",
      "Name": "Standard Serial over Bluetooth link (COM5)", "Status": "OK"},
     {"PNPDeviceID": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0002\\7&1D80ECD3&"
-                    "0&D51F77229C01_C00000000",
+                    "0&001122334402_C00000000",
      "Name": "Standard Serial over Bluetooth link (COM7)", "Status": "OK"},
     {"PNPDeviceID": "BTHENUM\\{00001101-0000-1000-8000-00805F9B34FB}_LOCALMFG&0000\\7&1D80ECD3&"
                     "0&000000000000_00000000",
@@ -175,11 +175,11 @@ def test_windows_bluetooth_com_ports():
     devs = btscan.parse_windows(WIN_JSON, K)
     by = {d.address: d for d in devs}
     assert by[A1].com_port == "COM5" and by[A2].com_port == "COM7"
-    assert by["AC:3E:00:00:F5:79"].com_port == "" and not by["AC:3E:00:00:F5:79"].is_printer
+    assert by["00:11:22:33:44:03"].com_port == "" and not by["00:11:22:33:44:03"].is_printer
     found = btscan.to_printers(devs, K, windows=True)
     assert [(p.id, p.method, p.target) for p in found] == [
         (f"bt:{A1}", "serial", "COM5"), (f"bt:{A2}", "serial", "COM7")]
-    assert found[0].port == "Bluetooth COM5 (\u20263F:A2)" and found[0].alpha
+    assert found[0].port == "Bluetooth COM5 (\u202644:01)" and found[0].alpha
     assert btscan.parse_windows("not json") == [] and btscan.parse_windows("") == []
     one = btscan.parse_windows(json.dumps(json.loads(WIN_JSON)[0]))
     assert len(one) == 1 and one[0].name == "LP610BT"
@@ -344,9 +344,9 @@ def test_rfcomm_failure_while_sending_closes_the_socket():
     assert A1 not in printers.LEARNED_CHANNELS
 
 
-@pytest.mark.parametrize("target", ["", "LP610BT", "89:8F:10:11:3F", "89:8F:10:11:3F:A2/0",
-                                    "89:8F:10:11:3F:A2/99", "../../etc/passwd",
-                                    "89:8F:10:11:3F:A2;rm"])
+@pytest.mark.parametrize("target", ["", "LP610BT", "00:11:22:33:44", "00:11:22:33:44:01/0",
+                                    "00:11:22:33:44:01/99", "../../etc/passwd",
+                                    "00:11:22:33:44:01;rm"])
 def test_rfcomm_refuses_a_bad_address(target):
     w = World()
     with pytest.raises(printers.PrinterError) as e:
@@ -487,7 +487,7 @@ def test_serial_device_elsewhere_must_be_under_dev(tmp_path):
 def bt_printer(**kw):
     kw.setdefault("family", K.defs["lp610bt-compatible"])
     return printers.Printer(id=f"bt:{A1}", kind="tspl", model="LP610BT", method="bluetooth",
-                            target=A1, port="Bluetooth (\u20263F:A2)", bluetooth=True, **kw)
+                            target=A1, port="Bluetooth (\u202644:01)", bluetooth=True, **kw)
 
 
 def test_dispatch_and_config(monkeypatch):
@@ -596,3 +596,15 @@ def test_bluetooth_fields_survive_an_update_file(tmp_path):
         "printers"][0]
     plain = known.validate_entry({"id": "y", "name": "Y", "language": "tspl"})
     assert plain.bt_chunk == 0 and plain.bt_delay_ms is None
+
+
+def test_bluetooth_names_are_one_tidy_line():
+    odd = "LP610BT\x1b[31m‮   evil\t" + "z" * 300
+    devs = btscan.parse_devices(f"Device {A1} {odd}\n")
+    assert devs[0][1].startswith("LP610BT evil z") and len(devs[0][1]) <= 80
+    d = btscan.parse_info(info(A1, odd, "0x00040680", PRINTER_UUIDS), A1)
+    assert "\x1b" not in d.name and "‮" not in d.name and len(d.name) <= 80
+    win = json.dumps([{"PNPDeviceID": "BTHENUM\\DEV_001122334401\\7&2A1F&0&X",
+                       "Name": "LP610BT\r\nFake line", "Status": "OK"}])
+    (w,) = btscan.parse_windows(win, K)
+    assert w.name == "LP610BT Fake line"

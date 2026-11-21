@@ -58,12 +58,12 @@ connected.
 
 - Adapter: MediaTek, Bluetooth 5.4, powered, not soft-blocked, with both
   central and peripheral roles. It is usable for testing.
-- Label printers seen:
+- Label printers seen: two printers, both named `LP610BT`, with different
+  addresses:
 
-| Name | Address | Class | Advertised UUIDs |
-|---|---|---|---|
-| `LP610BT` | `89:8F:10:xx:xx:xx` | `0x040680` (Imaging / Printer, "Rendering" service) | 1101 (SPP), 0003 (RFCOMM), 0001 (SDP), 0100 (L2CAP), 1200 (PnP), 1800, 180D, 180F, FEE7 |
-| `LP610BT` | `D5:1F:77:xx:xx:xx` | same | same |
+| Name | Class | Advertised UUIDs |
+|---|---|---|
+| `LP610BT` (both) | `0x040680` (Imaging / Printer, "Rendering" service) | 1101 (SPP), 0003 (RFCOMM), 0001 (SDP), 0100 (L2CAP), 1200 (PnP), 1800, 180D, 180F, FEE7 |
 
 - RSSI was about -82 dBm, which is weak but in range. Both units use the same
   name, so the app must tell them apart by address. This is the same problem we

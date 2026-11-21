@@ -21,7 +21,7 @@ Bluetooth devices follow the same rule: paired printers are listed (name,
 device class, Serial Port Profile yes/no, paired/connected), everything
 else (phones, headphones…) is only counted, and with the tick box listed
 by class only, never by name. A Bluetooth address is never written out in
-full: only its last two bytes ("…3F:A2"), anywhere in the report.
+full: only its last two bytes ("…44:01"), anywhere in the report.
 """
 from __future__ import annotations
 
@@ -48,8 +48,8 @@ ISSUE_TITLE = "My printer isn't working"
 
 MAC_RE = re.compile(r"(?<![0-9A-Fa-f])(?<![0-9A-Fa-f][:-])(?:[0-9A-Fa-f]{2}[:-]){4}"
                     r"([0-9A-Fa-f]{2})[:-]([0-9A-Fa-f]{2})(?![:-]?[0-9A-Fa-f])")
-# Windows Bluetooth PnP ids carry the address as 12 hex digits ("DEV_898F10A1B2C3",
-# "…&898F10A1B2C3_C00000000"): keep the last 4.
+# Windows Bluetooth PnP ids carry the address as 12 hex digits ("DEV_001122334401",
+# "…&001122334401_C00000000"): keep the last 4.
 PNP_ADDR_RE = re.compile(r"(?i)(?<=DEV_)[0-9A-F]{8}(?=[0-9A-F]{4}(?![0-9A-F]))"
                          r"|(?<=&)[0-9A-F]{8}(?=[0-9A-F]{4}_)")
 

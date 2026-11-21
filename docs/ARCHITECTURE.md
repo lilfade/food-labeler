@@ -341,7 +341,7 @@ queue that points at a detected device is merged into that device's entry.
 A Bluetooth printer is `bt:<address>` on both systems (`bt:<COM port>` on
 Windows if the address can't be read): LP610BT units all have the same
 Bluetooth name, so the address is what tells them apart. Lists show only
-its last two bytes ("Bluetooth (…3F:A2)"), and the printer report never has
+its last two bytes ("Bluetooth (…44:01)"), and the printer report never has
 more than that.
 
 ### Bluetooth (alpha)

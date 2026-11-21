@@ -53,9 +53,9 @@ def report_for(everything):
 def test_report_never_has_a_full_address_or_other_device_names(everything):
     text = report_for(everything)
     assert not FULL_MAC.search(text), FULL_MAC.search(text)
-    assert "898F10113FA2" not in text and "D51F77229C01" not in text
-    assert "\u20263F:A2" in text and "\u20269C:01" in text
-    assert "Pixel" not in text and "Bryson" not in text and "Angela" not in text
+    assert "001122334401" not in text and "001122334402" not in text
+    assert "\u202644:01" in text and "\u202644:02" in text
+    assert "Pixel" not in text and "Sam" not in text and "Alex" not in text
     assert "class 0x040680 (printer)" in text and "SPP yes" in text
     assert "paired yes  connected no" in text and "connected yes" in text
     assert "White" in text and "via bluetooth" in text
