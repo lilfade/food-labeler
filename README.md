@@ -6,14 +6,39 @@
 
 *by High Thyme Kitchen*
 
+> ### In short
+>
+> **It's a free program that prints the sticker that goes on your food.**
+>
+> You bake cookies (or make soup, jam, bread…). You want a neat little
+> sticker on the bag that says what it is, when you made it, and what's in
+> it. If you sell what you bake from home, your state also wants certain
+> words on that sticker.
+>
+> 1. Plug a small sticker printer into your computer.
+> 2. Open Food Labeler and type the name of your food.
+> 3. Press the big green **PRINT** button. Out comes your sticker.
+>
+> That's it. No account, no internet needed, nothing to pay.
+> **[Download it here](../../releases/latest)** (Windows: `FoodLabeler.exe`).
+
+![Food Labeler's main window](docs/screenshot.png)
+
+<p align="center"><b>Type on the left &nbsp;→&nbsp; see your sticker on the right &nbsp;→&nbsp; press PRINT</b></p>
+
+<p align="center">And this is the sticker that comes out:<br>
+<img src="docs/samples/cottage_NE_large.png" alt="A printed food sticker" width="480"></p>
+
+---
+
+## More detail
+
 Food Labeler makes clear, big-print labels for home-made food and prints
 them on a small thermal label printer. Type what the food is, pick the dates,
 tap any allergens, and press the big green **PRINT** button. What you see on
 the screen is exactly what comes out of the printer. It works with
 LP610BT-type label printers (sold as Labelnize, Flexyva, Polono and others)
 and Zebra printers such as the ZP450, on Windows and Linux.
-
-![Food Labeler's main window](docs/screenshot.png)
 
 ---
 
