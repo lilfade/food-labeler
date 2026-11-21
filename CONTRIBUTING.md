@@ -59,6 +59,13 @@ python3 -m venv .venv
 .venv/bin/python -m food_labeler                  # run the app
 ```
 
+To get exactly what CI and the release builds use (Python 3.12):
+
+```sh
+.venv/bin/pip install --require-hashes -r requirements-lock.txt
+.venv/bin/pip install --require-hashes -r requirements-dev-lock.txt
+```
+
 Optional, only for rebuilding the icons from `assets/seal.svg`
 (needs the Cairo library):
 
@@ -206,6 +213,51 @@ variable file only when Google's repository has nothing else).
 5. Run the tests (`tests/test_fonts.py` checks every bundled font loads,
    draws and has a real bold) and `python tools/render_samples.py --fonts`,
    then look at `docs/samples/fonts-contact-sheet.png`.
+
+## Dependencies and lock files
+
+`requirements.txt` (what the program needs) and `requirements-dev.txt`
+(tests and building) say which packages are wanted. CI and the *Release*
+workflow never install from them directly: they install the lock files
+with `pip install --require-hashes`, so every package is an exact version
+and every downloaded file must match its SHA-256 hash.
+
+| file | made from | holds |
+|------|-----------|-------|
+| `requirements-lock.txt` | `requirements.txt` | Pillow, segno, pywin32 (Windows only) |
+| `requirements-dev-lock.txt` | `requirements-dev.txt` | the above plus pytest, PyInstaller, pyflakes, zxing-cpp and what they need |
+
+Both are made for Python 3.12 on Windows *and* Linux in one go (packages
+that only one system needs carry a `; sys_platform == …` marker), and list
+the hash of every file PyPI has for each version, so the same file works on
+`win_amd64` and `manylinux` x86-64. `pip-compile` from pip-tools can't do
+this: it only resolves for the computer it runs on and would leave out the
+Windows-only packages. The lock files are made with
+[uv](https://docs.astral.sh/uv/) instead (`pip install uv`):
+
+```sh
+uv pip compile --universal --python-version 3.12 --generate-hashes \
+    requirements.txt -o requirements-lock.txt
+uv pip compile --universal --python-version 3.12 --generate-hashes \
+    -c requirements-lock.txt requirements-dev.txt -o requirements-dev-lock.txt
+```
+
+Run both after changing a requirements file, and to take newer versions add
+`--upgrade` (or `--upgrade-package pillow`). The second command uses the
+first lock as a constraint, so both files pin the same versions
+(`tests/test_locks.py` checks this). Then run the tests, look at
+`tests/test_dpi.py` especially after a Pillow update (203 dpi output must
+stay byte-identical), and commit the requirements and lock files together.
+
+Dependabot (`.github/dependabot.yml`) opens weekly pull requests for newer
+packages and for the GitHub Actions. The actions are pinned to full commit
+SHAs with the version tag as a comment (`actions/checkout@<sha> # v4.4.0`);
+when pinning one by hand, look the tag up at
+`https://api.github.com/repos/actions/<name>/git/refs/tags/<tag>` (for an
+annotated tag, follow its `object.url` to the commit).
+
+`requirements-icons.txt` (cairosvg, only for `tools/make_icons.py`) is not
+locked and not installed by CI.
 
 ## Code style
 

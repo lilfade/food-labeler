@@ -7,3 +7,5 @@ zxing-cpp
 # Rebuilding the icons from assets/seal.svg needs cairosvg (and the Cairo
 # library), which is often hard to install on Windows. It lives in
 # requirements-icons.txt and is optional.
+# shows failing tests as annotations on GitHub Actions runs (does nothing elsewhere)
+pytest-github-actions-annotate-failures
