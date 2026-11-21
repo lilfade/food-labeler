@@ -31,6 +31,14 @@ Website: https://lilfade.github.io/food-labeler/
 <p align="center">And this is the sticker that comes out:<br>
 <img src="docs/samples/cottage_NE_large.png" alt="A printed food sticker" width="480"></p>
 
+## Why we made this
+
+We kept seeing people buy a cheap label printer to start a small business and
+then lose evenings learning tech skills just to make a little money. We had
+already solved this for ourselves, so it's free: it works with many printers,
+prints from your own computer, needs no account or subscription, and your
+label files are yours. [Read more](docs/why.md).
+
 
 ---
 
