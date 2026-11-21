@@ -158,14 +158,24 @@ class Settings:
         self.load()
 
     def load(self):
-        """Read the file over the defaults; a missing or broken file means defaults."""
+        """Read the file over the defaults; a missing or broken file means defaults.
+
+        A file that is far too big, isn't text or isn't JSON is set aside as
+        ``settings.json.broken`` (for a helper to look at) instead of being
+        written over."""
         try:
-            got = json.loads(self.path.read_text(encoding="utf-8"))
+            got = json.loads(model.read_text_limited(self.path, model.MAX_SETTINGS_BYTES))
             if isinstance(got, dict):
                 self.data = _merge(DEFAULTS, got)
         except FileNotFoundError:
             pass
-        except (OSError, ValueError):
+        except (model.FileTooBigError, ValueError, RecursionError):
+            log.exception("settings unreadable; setting it aside and using defaults")
+            try:
+                self.path.replace(self.path.with_name(self.path.name + ".broken"))
+            except OSError:
+                log.exception("could not set aside %s", self.path)
+        except OSError:
             log.exception("settings unreadable; using defaults")
 
     def save(self):
@@ -253,7 +263,8 @@ def write_autosave(doc: model.LabelDoc, path: str | None, dirty: bool) -> None:
 def read_autosave():
     """Return (doc, path, dirty) or None."""
     try:
-        payload = json.loads(autosave_path().read_text(encoding="utf-8"))
+        payload = json.loads(model.read_text_limited(autosave_path(),
+                                                     model.MAX_LABEL_BYTES + model.MB))
         doc = model.LabelDoc.from_dict(payload["doc"])
         return doc, payload.get("path") or None, bool(payload.get("dirty"))
     except FileNotFoundError:

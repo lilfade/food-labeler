@@ -70,6 +70,35 @@ class LabelFileError(Exception):
     """A label file could not be read. Message is friendly."""
 
 
+# Largest file of each kind that is read at all. Real files are far smaller;
+# the limits only stop a wrong or harmful file from filling the memory.
+MB = 1024 * 1024
+MAX_LABEL_BYTES = 64 * MB       # .label files (and the autosave, which holds one)
+MAX_UPDATE_BYTES = 2 * MB       # printer and state rules update files
+MAX_BACKUP_BYTES = 16 * MB      # My products / My ingredients backups, the baker's own files
+MAX_SETTINGS_BYTES = 16 * MB    # settings.json and other small files in the data folder
+
+
+class FileTooBigError(OSError):
+    """A file is bigger than any real file of its kind (see read_text_limited)."""
+
+
+def read_text_limited(path, limit: int) -> str:
+    """Read a UTF-8 text file of at most ``limit`` bytes.
+
+    The size is checked before anything is read, and no more than the limit
+    is ever read (a file that grows, or a device, can't get past it either).
+    Raises FileTooBigError (an OSError, so callers that treat any OSError as
+    "couldn't be read" stay safe), other OSErrors, or UnicodeDecodeError."""
+    with open(path, "rb") as f:
+        if os.fstat(f.fileno()).st_size > limit:
+            raise FileTooBigError(f"{path} is bigger than {limit} bytes")
+        data = f.read(limit + 1)
+    if len(data) > limit:
+        raise FileTooBigError(f"{path} is bigger than {limit} bytes")
+    return data.decode("utf-8")
+
+
 def default_lot(d: dt.date | None = None) -> str:
     """Default lot number: the date as YYMMDD."""
     d = d or dates.today()
@@ -285,7 +314,8 @@ class LabelDoc:
     def loads(cls, text: str) -> "LabelDoc":
         try:
             data = json.loads(text)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, RecursionError):
+            # RecursionError: absurdly deep nesting ("[[[[…"), never a real label
             raise LabelFileError("This label file is damaged and can't be opened.") from None
         return cls.from_dict(data)
 
@@ -345,10 +375,15 @@ def save(doc: LabelDoc, path) -> Path:
 def load(path) -> LabelDoc:
     """Open a .label file. Raises LabelFileError (friendly message) on any problem."""
     try:
-        text = Path(path).read_text(encoding="utf-8")
+        text = read_text_limited(path, MAX_LABEL_BYTES)
     except FileNotFoundError:
         raise LabelFileError("That label file isn't there any more. "
                              "It may have been moved or deleted.") from None
+    except FileTooBigError:
+        raise LabelFileError("This file is far too big to be a Food Labeler label, "
+                             "so it wasn't opened.") from None
+    except UnicodeDecodeError:
+        raise LabelFileError("This label file is damaged and can't be opened.") from None
     except OSError:
         raise LabelFileError("That label file couldn't be opened.") from None
     return LabelDoc.loads(text)

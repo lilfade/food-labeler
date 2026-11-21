@@ -226,7 +226,7 @@ def parse_file_text(text: str) -> list[Definition]:
     text = text.lstrip("﻿")
     try:
         data = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):   # RecursionError: absurdly deep "[[[[…"
         raise DefinitionError("This isn't a Food Labeler printer update file.") from None
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise DefinitionError("This isn't a Food Labeler printer update file.")
@@ -275,17 +275,17 @@ class KnownPrinters:
         """(Re)read both files."""
         self.defs: dict[str, Definition] = {}
         try:
-            for d in parse_file_text(self.builtin_path.read_text(encoding="utf-8")):
+            for d in parse_file_text(_read(self.builtin_path)):
                 self.defs[d.id] = d
         except (OSError, DefinitionError):
             log.exception("built-in printer list unreadable")
         self.user_ids: list[str] = []
         if self.user_path and self.user_path.is_file():
             try:
-                for d in parse_file_text(self.user_path.read_text(encoding="utf-8")):
+                for d in parse_file_text(_read(self.user_path)):
                     self.defs[d.id] = d          # user updates win over built-in
                     self.user_ids.append(d.id)
-            except (OSError, DefinitionError):
+            except (OSError, UnicodeDecodeError, DefinitionError):
                 log.exception("user printer list unreadable; ignoring it")
 
     def all(self) -> list[Definition]:
@@ -318,8 +318,12 @@ class KnownPrinters:
         replaces, new ids added) and written atomically; nothing is written
         if the new file is invalid.
         """
+        from .model import FileTooBigError
         try:
-            text = Path(path).read_text(encoding="utf-8")
+            text = _read(path)
+        except FileTooBigError:
+            raise DefinitionError("This file is far too big to be a Food Labeler printer "
+                                  "update file.") from None
         except (OSError, UnicodeDecodeError):
             raise DefinitionError("That file couldn't be read.") from None
         new = parse_file_text(text)
@@ -328,9 +332,8 @@ class KnownPrinters:
         existing = {}
         if self.user_path.is_file():
             try:
-                existing = {d.id: d for d in parse_file_text(
-                    self.user_path.read_text(encoding="utf-8"))}
-            except (OSError, DefinitionError):
+                existing = {d.id: d for d in parse_file_text(_read(self.user_path))}
+            except (OSError, UnicodeDecodeError, DefinitionError):
                 existing = {}
         for d in new:
             existing[d.id] = d
@@ -340,6 +343,12 @@ class KnownPrinters:
              "printers": [_to_json(d) for d in existing.values()]}, indent=2))
         self.reload()
         return [d.display_name for d in new]
+
+
+def _read(path) -> str:
+    """A printer definition file's text (refused if bigger than any real one)."""
+    from .model import MAX_UPDATE_BYTES, read_text_limited
+    return read_text_limited(path, MAX_UPDATE_BYTES)
 
 
 def app_config() -> dict:

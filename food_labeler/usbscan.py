@@ -124,7 +124,7 @@ def parse_windows_pnp(text: str, known=None) -> list[UsbDevice]:
     """Parse PS_SCRIPT's JSON (a list, or a bare object when there is only one)."""
     try:
         data = json.loads(text) if text.strip() else []
-    except ValueError:
+    except (ValueError, RecursionError):
         return []
     if isinstance(data, dict):
         data = [data]

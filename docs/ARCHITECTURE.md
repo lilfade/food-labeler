@@ -316,6 +316,13 @@ fsync + rename).
 | `my_products.json` | data folder | `{"format": "food-labeler-products", "version": 1, "products": [{"id", "name", "net", "ingredients", "contains", "no_allergens", "storage", "best_by_days", ...}]}`; also the backup file format |
 | `food-labeler.log` | data folder | text log, rotated at 512 kB (3 files) |
 
+Files are size-checked before they are read (`model.read_text_limited`):
+`.label` files and the autosave up to 64 MB, printer and state rules update
+files 2 MB, *My products* / *My ingredients* backups and the baker's own
+files 16 MB. A file that is too big, or nested absurdly deep, gets the same
+plain "This isn't a … file" / "damaged" message as any other bad file; one in
+the data folder is set aside as `*.broken`.
+
 `settings.json` keeps per printer (`printers[<id>]`) the nickname, Type,
 last label size, resolution choice (`"dpi"`), print settings (`"print"`) and
 the last roll set up (`"roll"`, see *Setting up a new roll*).

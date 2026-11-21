@@ -368,7 +368,7 @@ def fetch_family(name: str, get=None) -> Candidate:
             listing = _get(get, api_url(licdir, folder), MAX_TEXT_BYTES)
             try:
                 entries = json.loads(listing.decode("utf-8")) if listing else []
-            except ValueError:
+            except (ValueError, RecursionError):
                 entries = []
             regular, bold, variable, can_bold = pick_from_listing(
                 entries if isinstance(entries, list) else [])

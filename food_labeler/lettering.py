@@ -147,7 +147,8 @@ def _scan_user(folder: Path) -> list[Face]:
         if not man.is_file():
             continue
         try:
-            m = json.loads(man.read_text(encoding="utf-8"))
+            from .model import MB, read_text_limited
+            m = json.loads(read_text_limited(man, MB))
             if m.get("format") != MANIFEST_FORMAT:
                 continue
             name = str(m["name"]).strip()
@@ -161,7 +162,7 @@ def _scan_user(folder: Path) -> list[Face]:
                             min_scale=max(1.0, min(2.0, scale)), bundled=False,
                             license=str(m.get("license") or ""),
                             category=str(m.get("category") or ""), folder=str(sub)))
-        except (OSError, ValueError, KeyError, TypeError):
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, RecursionError):
             log.warning("skipping unreadable font folder %s", sub)
     return out
 

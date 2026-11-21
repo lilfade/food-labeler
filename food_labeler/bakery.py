@@ -64,15 +64,19 @@ class LibraryError(Exception):
 def _read_json(path: Path, fmt: str):
     """Read a user file. Returns (data or None, problem). Missing file -> (None, "")."""
     try:
-        text = path.read_text(encoding="utf-8").lstrip("﻿")
+        text = model.read_text_limited(path, model.MAX_BACKUP_BYTES).lstrip("﻿")
     except FileNotFoundError:
         return None, ""
+    except model.FileTooBigError:
+        return None, "too big"          # set aside like any other unreadable file
     except OSError as e:
+        return None, str(e)
+    except UnicodeDecodeError as e:
         return None, str(e)
     try:
         data = json.loads(text)
-    except ValueError as e:
-        return None, str(e)
+    except (ValueError, RecursionError) as e:
+        return None, str(e) or "too deeply nested"
     if not isinstance(data, dict) or data.get("format") != fmt:
         return None, "wrong format"
     return data, ""
@@ -354,10 +358,16 @@ class Library:
         """Merge a backup file in. Same name (or id) replaces, others are added.
         Returns (added names, updated names). Nothing is written if invalid."""
         try:
-            text = Path(path).read_text(encoding="utf-8").lstrip("﻿")
-            data = json.loads(text)
-        except (OSError, UnicodeDecodeError, ValueError):
+            text = model.read_text_limited(path, model.MAX_BACKUP_BYTES).lstrip("﻿")
+        except model.FileTooBigError:
+            raise LibraryError(f"This file is far too big to be a Food Labeler {self.what} "
+                               "file.") from None
+        except (OSError, UnicodeDecodeError):
             raise LibraryError("That file couldn't be read.") from None
+        try:
+            data = json.loads(text)
+        except (ValueError, RecursionError):   # RecursionError: absurdly deep "[[[[…"
+            raise LibraryError(f"This isn't a Food Labeler {self.what} file.") from None
         if not isinstance(data, dict) or data.get("format") != self.fmt:
             raise LibraryError(f"This isn't a Food Labeler {self.what} file.")
         ver = data.get("version")
@@ -410,7 +420,7 @@ def load_starter(path: Path = STARTER) -> list:
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         return data.get("ingredients", []) if isinstance(data, dict) else []
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError):
         log.exception("starter ingredients unreadable")
         return []
 

@@ -376,12 +376,13 @@ class Library:
 
     def _read(self) -> list[dict]:
         try:
-            got = json.loads(self.index_path.read_text(encoding="utf-8"))
+            from .model import MAX_SETTINGS_BYTES, read_text_limited
+            got = json.loads(read_text_limited(self.index_path, MAX_SETTINGS_BYTES))
             items = got.get("pictures") if isinstance(got, dict) else None
             return [x for x in items or [] if isinstance(x, dict) and x.get("file")]
         except FileNotFoundError:
             return []
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
             log.exception("My pictures list unreadable")
             return []
 

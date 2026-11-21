@@ -196,12 +196,18 @@ def validate_state(e) -> StateRule:
         source_url=url, extra_sources=list(extra_src), checked_on=checked)
 
 
+def _read_update(path) -> str:
+    """A state rules file's text (refused if bigger than any real one)."""
+    from .model import MAX_UPDATE_BYTES, read_text_limited
+    return read_text_limited(path, MAX_UPDATE_BYTES)
+
+
 def parse_rules_text(text: str) -> tuple[dict, list[StateRule]]:
     """Parse and validate a whole rules file. Returns (header, states)."""
     text = text.lstrip("﻿")
     try:
         data = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):   # RecursionError: absurdly deep "[[[[…"
         raise RulesError("This isn't a Food Labeler state rules file.") from None
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise RulesError("This isn't a Food Labeler state rules file.")
@@ -340,7 +346,8 @@ class Overrides:
         if not self.path or not self.path.is_file():
             return
         try:
-            got = json.loads(self.path.read_text(encoding="utf-8").lstrip("﻿"))
+            from .model import MAX_BACKUP_BYTES, read_text_limited
+            got = json.loads(read_text_limited(self.path, MAX_BACKUP_BYTES).lstrip("﻿"))
             if not isinstance(got, dict) or got.get("format") != OVERRIDES_FORMAT:
                 raise ValueError("not an overrides file")
             if int(got.get("version", 0)) > OVERRIDES_VERSION:
@@ -350,7 +357,7 @@ class Overrides:
             if isinstance(states, dict):
                 self.data = {k: v for k, v in states.items() if isinstance(v, dict)}
             self.extra = {k: v for k, v in got.items() if k not in ("format", "version", "states")}
-        except (OSError, ValueError, TypeError):
+        except (OSError, ValueError, TypeError, RecursionError):
             log.exception("cottage overrides unreadable; keeping a copy and carrying on")
             try:
                 self.path.replace(self.path.with_suffix(".json.broken"))
@@ -397,16 +404,16 @@ class CottageRules:
         self.updates: dict[str, StateRule] = {}
         self.bundled_date = ""
         try:
-            head, rules = parse_rules_text(self.builtin_path.read_text(encoding="utf-8"))
+            head, rules = parse_rules_text(_read_update(self.builtin_path))
             self.bundled_date = head["updated"]
             self.bundled = {r.id: r for r in rules}
         except (OSError, RulesError):
             log.exception("built-in cottage rules unreadable")
         if self.update_path and self.update_path.is_file():
             try:
-                _, rules = parse_rules_text(self.update_path.read_text(encoding="utf-8"))
+                _, rules = parse_rules_text(_read_update(self.update_path))
                 self.updates = {r.id: r for r in rules}
-            except (OSError, RulesError):
+            except (OSError, UnicodeDecodeError, RulesError):
                 log.exception("cottage rules update unreadable; ignoring it")
         self.overrides.load()
 
@@ -587,8 +594,12 @@ class CottageRules:
         state in the existing update file; the user's own edits are untouched
         (if a default moved under one of them, the app asks about it).
         """
+        from .model import FileTooBigError
         try:
-            text = Path(path).read_text(encoding="utf-8")
+            text = _read_update(path)
+        except FileTooBigError:
+            raise RulesError("This file is far too big to be a Food Labeler state rules "
+                             "file.") from None
         except (OSError, UnicodeDecodeError):
             raise RulesError("That file couldn't be read.") from None
         head, new = parse_rules_text(text)
