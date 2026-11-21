@@ -36,6 +36,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 
+from . import values
 from .printers import LABEL_RE, Printer, classify, short_address
 
 log = logging.getLogger("food_labeler.btscan")
@@ -87,7 +88,7 @@ class BtDevice:
 
     @property
     def short(self) -> str:
-        """"…3F:A2": the only part of the address ever shown or reported."""
+        """"…44:01": the only part of the address ever shown or reported."""
         return short_address(self.address) if self.address else ""
 
     def class_text(self) -> str:
@@ -113,7 +114,7 @@ def parse_devices(text: str) -> list[tuple[str, str]]:
         m = re.search(r"(?:^|[\s#])Device\s+(" + MAC_RE.pattern + r")\s*(.*)$", line)
         if m and m.group(1).upper() not in seen:
             seen.add(m.group(1).upper())
-            out.append((m.group(1).upper(), m.group(2).strip()))
+            out.append((m.group(1).upper(), values.device_name(m.group(2))))
     return out
 
 
@@ -137,7 +138,7 @@ def parse_info(text: str, address: str = "") -> BtDevice | None:
             continue
         k, v = k.strip(), v.strip()
         if k == "Name" or (k == "Alias" and not d.name):
-            d.name = v[:80]
+            d.name = values.device_name(v)
         elif k == "Class":
             cm = re.match(r"0x([0-9A-Fa-f]{1,8})", v)
             if cm:
@@ -232,7 +233,7 @@ def parse_windows(text: str, known=None) -> list[BtDevice]:
         name = str(e.get("Name") or "")
         m = re.match(r"BTHENUM\\DEV_([0-9A-F]{12})\b", did)
         if m:
-            names.setdefault(_mac(m.group(1)), name[:80])
+            names.setdefault(_mac(m.group(1)), values.device_name(name))
             continue
         cm = COM_NAME_RE.search(name)
         if not cm or SPP_GUID not in did:

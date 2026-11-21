@@ -77,7 +77,7 @@ connects) and only connects when it prints.
 
 The id is ``bt:<address>`` (``bt:COM5`` on Windows when the address can't be
 read), so two printers that are both called "LP610BT" stay apart; the list
-shows the last two bytes of the address ("Bluetooth (…3F:A2)").
+shows the last two bytes of the address ("Bluetooth (…44:01)").
 Bluetooth is alpha even for a model tested over USB, until the model's entry
 says ``"verified_bluetooth": true``.
 
@@ -104,7 +104,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import tspl, zpl
+from . import tspl, values, zpl
 from .stocks import Stock
 
 log = logging.getLogger("food_labeler.printers")
@@ -197,6 +197,14 @@ class Printer:
     dpi: int = 203           # print head resolution as detected (see printer_dpi)
     bluetooth: bool = False  # reached over Bluetooth (its own "alpha" until tested)
 
+    def __post_init__(self):
+        # Names come from the printer itself or the system (USB strings, Windows
+        # and CUPS names, Bluetooth names): one tidy line each, never a whole page.
+        # ``target`` and ``queue`` stay exact: they are what the job is sent to.
+        self.model = values.device_name(self.model)
+        self.port = values.device_name(self.port)
+        self.detail = values.device_name(self.detail, 400)
+
     def default_name(self) -> str:
         """A friendly name when the user hasn't given one."""
         if self.family is not None:
@@ -216,7 +224,7 @@ class Printer:
         """Name plus where it is ("… — USB port 1-1.4"), so identical units differ.
 
         ``tag``: add "(alpha — not tested yet)" for a printer we haven't tested."""
-        name = nickname or self.default_name()
+        name = values.device_name(nickname or self.default_name()) or "Printer"
         if tag and self.alpha:
             name = f"{name} {ALPHA_TAG}"
         return f"{name} \u2014 {self.port}" if self.port else name
@@ -260,7 +268,7 @@ def parse_1284(text: str) -> dict:
     for part in str(text or "").strip().strip("\x00").split(";"):
         if ":" in part:
             k, v = part.split(":", 1)
-            out[k.strip().upper()] = v.strip()
+            out[values.device_name(k, 40).upper()] = values.device_name(v, 200)
     return out
 
 
@@ -1047,7 +1055,7 @@ def parse_bt_target(target: str) -> tuple[str, int | None]:
 
 
 def short_address(addr: str) -> str:
-    """The last two bytes of a Bluetooth address, "…3F:A2" (all the list shows)."""
+    """The last two bytes of a Bluetooth address, "…44:01" (all the list shows)."""
     parts = str(addr or "").upper().replace("-", ":").split(":")
     if len(parts) == 6:
         return "…" + ":".join(parts[-2:])

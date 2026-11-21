@@ -343,3 +343,40 @@ def test_parse_1284():
     z = printers.parse_1284("MANUFACTURER:Zebra Technologies;COMMAND SET:ZPL;MODEL:ZTC ZP 450-200dpi;")
     assert printers.kind_from_1284(z) == "zpl"
     assert printers.kind_from_1284(printers.parse_1284("MFG:X;CMD:ESC/POS;")) == ""
+
+
+ODD_NAME = "Office\n\tprinter\x1b[2J‮  " + "x" * 500
+
+
+def test_device_names_are_one_tidy_line():
+    from food_labeler import values
+    assert values.device_name(" Label\r\n printer\x00 ​") == "Label printer"
+    assert values.device_name(["x"]) == "" and values.device_name(None) == ""
+    long = values.device_name("y" * 1000)
+    assert len(long) == values.MAX_DEVICE_NAME and long.endswith("…")
+
+
+def _tidy(s, limit=200):
+    return "\n" not in s and "\t" not in s and "\x1b" not in s and "‮" not in s \
+        and len(s) <= limit and "  " not in s
+
+
+def test_windows_printer_names_are_tidied_but_sent_to_exactly():
+    w = FakeWin([{"pPrinterName": ODD_NAME, "pDriverName": "Generic\r\ndriver",
+                  "pPortName": "USB009"}])
+    (p,) = printers.discover_windows(w, known=K)
+    assert _tidy(p.model) and _tidy(p.display()) and _tidy(p.detail, 400)
+    assert p.target == ODD_NAME            # the spooler still gets the real name
+
+
+def test_cups_queue_and_usb_names_are_tidied():
+    info = printers.parse_1284("MFG:Bad\nCo;MDL:Model\x07 9;CMD:TSPL;")
+    assert info["MFG"] == "Bad Co" and info["MDL"] == "Model 9"
+    p = printers.Printer(id="cups:x", model=ODD_NAME, method="cups", target="x",
+                         detail="usb://x?\n" + "z" * 900)
+    assert _tidy(p.model) and _tidy(p.detail, 400) and _tidy(p.display())
+    from food_labeler import usbscan
+    d = usbscan.UsbDevice(key="usb:1-1", manufacturer="Acme\n\x1b[31m", product=ODD_NAME,
+                          serial="S\n1")
+    assert d.manufacturer == "Acme [31m" and _tidy(d.product) and d.serial == "S 1"
+    assert _tidy(d.title())

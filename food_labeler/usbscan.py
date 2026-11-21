@@ -19,6 +19,7 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 
+from . import values
 from .printers import parse_1284
 
 log = logging.getLogger("food_labeler.usbscan")
@@ -42,6 +43,12 @@ class UsbDevice:
     lp: str = ""              # Linux usbmisc node name (lp0) if bound to the printer driver
     pnp_class: str = ""       # Windows device class (Printer, USB, ...)
     family: object = None     # known.Definition, if it matches
+
+    def __post_init__(self):
+        # what the device says about itself: one tidy line, not too long
+        self.manufacturer = values.device_name(self.manufacturer)
+        self.product = values.device_name(self.product)
+        self.serial = values.device_name(self.serial, 64)
 
     @property
     def vidpid(self) -> str:
