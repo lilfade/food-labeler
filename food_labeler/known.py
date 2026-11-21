@@ -147,6 +147,12 @@ class Definition:
         """True if any ``windows`` pattern is found in a printer/driver/queue name."""
         return any(pattern_found(p, text) for p in self.windows)
 
+    def text_match_length(self, text: str) -> int:
+        """Length of the longest ``windows`` alternative found in ``text`` (0 = none)."""
+        subject = (text or "")[:MAX_SUBJECT].casefold()
+        return max((len(a) for p in self.windows for a in alternatives(p) if a in subject),
+                   default=0)
+
 
 def _int_map(v, name):
     """density/speed: a bare number becomes {"default": n}; maps are checked."""
@@ -335,11 +341,15 @@ class KnownPrinters:
                 if d.match_usb(vidpid):
                     return d
         if text:
-            # more specific patterns (longer) first
-            for d in sorted(self.defs.values(), key=lambda d: -max(
-                    [len(a) for p in d.windows for a in alternatives(p)] or [0])):
-                if d.match_text(text):
-                    return d
+            # The most specific name wins: the entry whose longest *matching*
+            # alternative is longest ("POLONO PL60" beats a plain "Polono"); on a
+            # tie, the entry listed first.
+            best, best_len = None, 0
+            for d in self.defs.values():
+                n = d.text_match_length(text)
+                if n > best_len:
+                    best, best_len = d, n
+            return best
         return None
 
     def import_file(self, path) -> list[str]:

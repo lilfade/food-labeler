@@ -625,8 +625,13 @@ class MyPrintersDialog(Modal):
                                                                           sticky="w")
             if p.driver_only and not info.get("kind"):
                 what = "Prints through the maker's driver"
+            elif kind == "zpl":
+                what = "Zebra"
+            elif getattr(p.family, "id", "lp610bt-compatible") == "lp610bt-compatible" \
+                    or info.get("kind"):
+                what = "Label printer (LP610BT type)"
             else:
-                what = "Zebra" if kind == "zpl" else "Label printer (LP610BT type)"
+                what = "Label printer"
             sub = f"{p.port}  •  {what}"
             if here:
                 sharp = printers.printer_dpi(p, info)

@@ -120,8 +120,10 @@ language as usual. EPL-only printers are treated as `driver` for now.
 1. **IEEE 1284 id** (Linux reads `/sys/class/usbmisc/lpN/device/ieee1284_id`):
    entries with more `ieee1284` keys are tried first.
 2. **USB id** (`usb`).
-3. **Names** (`windows` patterns; longer patterns are tried first, so a
-   specific entry such as `ZDesigner ZP 450` beats a generic `Zebra`).
+3. **Names** (`windows` patterns): the entry with the longest alternative
+   found in the name wins, so a specific entry such as `ZDesigner ZP 450`
+   beats a generic `Zebra`, and `POLONO PL60` beats the LP610BT entry's
+   `Polono`. On a tie the entry listed first wins.
 
 The printer *resolution* is, in order: the user's own choice for that printer
 (*My printers… → Sharpness*, or *Advanced*), else `300` if the 1284

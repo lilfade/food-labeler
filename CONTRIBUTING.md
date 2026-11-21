@@ -203,8 +203,12 @@ format and matching rules are in
    up a new roll with the printer's own button, in plain words, checked
    against the printer's own guide (it is shown in *Set up a new roll*).
 4. Validate: `.venv/bin/python -c "from food_labeler import known; print(known.parse_file_text(open('food_labeler/known_printers.json', encoding='utf-8').read()))"`
-5. Add a test in `tests/test_known.py` or `tests/test_printers.py` that the
-   model is matched (see the existing LP610BT and ZP450 tests).
+5. Add a test in `tests/test_known_more.py` (or `tests/test_known.py`) that
+   the model is matched (see the existing tests).
+6. Leave `"verified_on_paper"` out (it is `false`, shown as *alpha — not
+   tested yet*) until someone has printed real labels on the model. Add a
+   row and its sources to [docs/printer-list.md](docs/printer-list.md).
+   Printers that don't take TSPL or ZPL get `"language": "driver"`.
 
 For a user who can't wait for a release, put just the new entries in their
 own file (same format) and send it to them; they add it with *Settings → Add

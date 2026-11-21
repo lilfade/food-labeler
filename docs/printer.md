@@ -3,8 +3,12 @@
 [← Back to the start](../README.md)
 
 Food Labeler works with LP610BT-type label printers (sold as Labelnize,
-Flexyva, Polono and others) and Zebra printers such as the ZP450, on Windows
-and Linux.
+Flexyva, Polono and others) and the Zebra ZP450, on Windows and Linux. These
+two are **tested** on paper. Many other cheap label printers (MUNBYN, Rollo,
+iDPRT, Phomemo, Jadens, Xprinter and more) should work too, but are
+**alpha — not tested yet**: their name has *(alpha — not tested yet)* after
+it, and the first time you print to one, Food Labeler says so once. See
+[Printers we know about](printer-list.md), and please tell us how it goes.
 
 - [Picking your printer](#picking-your-printer)
 - [Print settings](#print-settings)

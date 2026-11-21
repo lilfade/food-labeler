@@ -1,7 +1,7 @@
 {
   "format": "food-labeler-printers",
   "version": 1,
-  "updated": "2026-11-20",
+  "updated": "2026-11-21",
   "printers": [
     {
       "id": "lp610bt-compatible",
@@ -82,6 +82,337 @@
       "notes": "203 dpi (its 1284 id says ZP 450-200dpi), 4.09 in (104 mm) = 832 dots max print width. Supports 4x6.",
       "calibrate_by_hand": "Load the roll and close the lid, with the printer switched on. Hold the feed button down until the green light flashes, and let go after it flashes twice quickly (one flash, then two quick flashes). The printer feeds a few labels by itself. It is done when one label comes out each time you press the feed button.",
       "verified_on_paper": true
+    },
+    {
+      "id": "munbyn-itpp941",
+      "name": "MUNBYN ITPP941 / RW941 label printer",
+      "brands": [
+        "MUNBYN"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 108,
+      "media": "gap",
+      "usb": [
+        "09c6:0248",
+        "5958:0249",
+        "5958:0d14",
+        "5958:0318"
+      ],
+      "ieee1284": {
+        "MFG": "MunByn"
+      },
+      "windows": [
+        "ITPP941|TPP941|RW941|ITPP942|MUNBYN"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL: MUNBYN's own CUPS filter writes SIZE/GAP/BITMAP/PRINT. 203 dpi, 108 mm print width (munbyn spec page). The four USB ids are the ones MUNBYN's macOS installer looks for; which id is which MUNBYN model is not stated. Same OEM hardware as Beeprt/Rollo per forum reports.",
+      "calibrate_by_hand": "Put at least 4 labels in the printer. When the paper stops moving, press and hold the feed button. When you hear a beep, let go. The printer learns the size of the labels by itself."
+    },
+    {
+      "id": "munbyn-itpp941p",
+      "name": "MUNBYN ITPP941P / RW941BP (300 dpi)",
+      "brands": [
+        "MUNBYN"
+      ],
+      "language": "tspl",
+      "dpi": 300,
+      "media": "gap",
+      "ieee1284": {
+        "MFG": "MunByn",
+        "MDL": "ITPP941P"
+      },
+      "windows": [
+        "ITPP941P|RW941BP"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "300 dpi version of the ITPP941; same TSPL driver as the 941 (MUNBYN driver table). USB id not found: on Linux it may be matched as the 203 dpi 941; then pick Sharp (300 dpi) in My printers.",
+      "calibrate_by_hand": "Put at least 4 labels in the printer. When the paper stops moving, press and hold the feed button. When you hear a beep, let go. The printer learns the size of the labels by itself."
+    },
+    {
+      "id": "munbyn-itpp130",
+      "name": "MUNBYN ITPP130 / RW130 label printer",
+      "brands": [
+        "MUNBYN"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [
+        "5958:0130"
+      ],
+      "ieee1284": {
+        "MFG": "ITPP130"
+      },
+      "windows": [
+        "ITPP130|RW130"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (MUNBYN's macOS filter), 203 dpi. USB id 5958:0130 and 1284 MFG ITPP130 from MUNBYN's macOS installer. Print width not confirmed.",
+      "calibrate_by_hand": "We don't have this printer's own steps yet. Look in the printer's guide for how to make it learn a new roll (often called \"label calibration\" or \"label identification\")."
+    },
+    {
+      "id": "munbyn-941ap",
+      "name": "MUNBYN ITPP941AP (Wi-Fi)",
+      "brands": [
+        "MUNBYN"
+      ],
+      "language": "driver",
+      "media": "gap",
+      "windows": [
+        "ITPP941AP|941AP"
+      ],
+      "verified_on_paper": false,
+      "notes": "MUNBYN lists its command set as OPL, not TSPL, and offers a Windows driver only. Food Labeler prints through that driver on Windows.",
+      "calibrate_by_hand": "We don't have this printer's own steps yet. Look in the printer's guide for how to make it learn a new roll (often called \"label calibration\" or \"label identification\")."
+    },
+    {
+      "id": "rollo-x1038",
+      "name": "Rollo label printer (X1038)",
+      "brands": [
+        "Rollo"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "media": "gap",
+      "ieee1284": {
+        "MFG": "Printer",
+        "MDL": "ThermalPrinter"
+      },
+      "windows": [
+        "Rollo"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL: Rollo's own open-source CUPS driver (rastertorollo.c) writes SIZE/GAP/BITMAP/PRINT. Its PPD gives 1284 MFG:Printer;CMD:XPP,XL;MDL:ThermalPrinter. 203 dpi, paper 48-108 mm. USB id not found. Same OEM as Beeprt per Rollo's early Linux driver.",
+      "calibrate_by_hand": "Switch the printer off, put the labels in and close the cover. Switch it on and wait 5 seconds. Then press and hold the feed button until you hear one beep, and let go. The printer measures the labels by itself."
+    },
+    {
+      "id": "idprt-hprt",
+      "name": "iDPRT SP410 / SP420 or HPRT label printer",
+      "brands": [
+        "iDPRT",
+        "HPRT"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 108,
+      "media": "gap",
+      "usb": [
+        "20d1:7008"
+      ],
+      "ieee1284": {
+        "MFG": "iDPRT|HPRT"
+      },
+      "windows": [
+        "iDPRT|SP410|SP420|HPRT|SL42|SL41|N41"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (datasheets; official raster-tspl Linux driver). 203 dpi, 108 mm max print width. 20d1:7008 reported as iDPRT SP420 (linux-hardware.org) and seen on an HPRT SK41; iDPRT and HPRT are the same company (Xiamen Hanin).",
+      "calibrate_by_hand": "With labels in the printer, press and hold the feed button (the top button) until the blue light goes out twice, then let go. The printer learns the labels by itself."
+    },
+    {
+      "id": "polono-pl60",
+      "name": "Polono PL60",
+      "brands": [
+        "Polono"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 108,
+      "media": "gap",
+      "ieee1284": {
+        "MFG": "POLONO",
+        "MDL": "PL60"
+      },
+      "windows": [
+        "POLONO PL60|PL60"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (manual; Linux PPD raster-tspl, PPD nickname HPRT N41). 203 dpi, 50-108 mm print width. 1284 MFG/MDL inferred from the Windows hardware id USBPRINT\\POLONOPL609054. USB id not found.",
+      "calibrate_by_hand": "When the printer is ready, press and hold the feed button until the blue light flashes 2 times. Let go, and the printer sets itself up for the labels. This does not work with a continuous roll."
+    },
+    {
+      "id": "pl70e-bt",
+      "name": "PL70e-BT label printer",
+      "brands": [
+        "Polono",
+        "Nelko"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 104,
+      "media": "gap",
+      "ieee1284": {
+        "MDL": "PL70e"
+      },
+      "windows": [
+        "PL70e"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (Polono and Nelko ship the same driver, Personality tspl). 203 dpi, 40-104 mm print width. USB id not found.",
+      "calibrate_by_hand": "We don't have this printer's own steps yet. Look in the printer's guide for how to make it learn a new roll (often called \"label calibration\" or \"label identification\")."
+    },
+    {
+      "id": "phomemo-pm241",
+      "name": "PM-241-type label printer",
+      "brands": [
+        "Phomemo",
+        "OMEZIZY"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [
+        "2e3c:5750"
+      ],
+      "ieee1284": {
+        "MDL": "PM-241|PM241|PM-246"
+      },
+      "windows": [
+        "PM-241|PM241|PM-246"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (Labelife/Phomemo Linux driver rastertolabeltspl; phomymo prints TSPL over USB). 203 dpi. 2e3c:5750 seen on a PM-241-BT (2e3c is a chip maker's id). OMEZIZY points to the same driver; ASprink and Itari probably too (not confirmed).",
+      "calibrate_by_hand": "Press and hold the feed button on top until the blue light blinks 2 times, then let go. The printer finds the labels by itself."
+    },
+    {
+      "id": "jadens-beeprt",
+      "name": "Jadens / Beeprt label printer",
+      "brands": [
+        "Jadens",
+        "Beeprt"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "media": "gap",
+      "usb": [
+        "09c6:0426"
+      ],
+      "ieee1284": {
+        "MFG": "JADENS|Beeprt"
+      },
+      "windows": [
+        "JD-168|JD-268|JD-468|BY-426|BY-482|BY-248|Jadens|Beeprt"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL (Jadens and Beeprt drivers). 203 dpi, labels 40-108 mm. 09c6:0426 seen on a JD-268BT and reported as Beeprt LabelPrinter.",
+      "calibrate_by_hand": "Each time you change the label size, press and hold the feed button until you hear one short beep, then let go. The printer finds the labels by itself."
+    },
+    {
+      "id": "xprinter-4in",
+      "name": "Xprinter 4-inch label printer (XP-420B / XP-460B)",
+      "brands": [
+        "Xprinter"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 108,
+      "media": "gap",
+      "usb": [
+        "2d37:83d7",
+        "2d37:4296"
+      ],
+      "ieee1284": {
+        "MFG": "Xprinter"
+      },
+      "windows": [
+        "Xprinter|XP-420B|XP-460B|XP-470B"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL/EPL/ZPL/DPL (Xprinter spec); raw TSPL reported working on an XP-420B whose 1284 id is MFG:Xprinter;CMD:CEZD;MDL:XP-420B. 203 dpi, 108 mm. 2d37 = Zhuhai Poskey; some units use vendor 2d84.",
+      "calibrate_by_hand": "Press and hold the feed button until the light changes from blue to red, then let go. The printer measures the labels by itself."
+    },
+    {
+      "id": "arkscan-2054a",
+      "name": "Arkscan 2054A",
+      "brands": [
+        "Arkscan",
+        "4BARCODE"
+      ],
+      "language": "tspl",
+      "dpi": 203,
+      "max_width_mm": 108,
+      "media": "gap",
+      "ieee1284": {
+        "MFG": "4BARCODE",
+        "MDL": "2054A"
+      },
+      "windows": [
+        "Arkscan 2054A|4B-2054A|2054A"
+      ],
+      "stocks": [
+        "small",
+        "medium",
+        "large",
+        "round",
+        "xl"
+      ],
+      "verified_on_paper": false,
+      "notes": "TSPL, EPL, ZPL and DPL (Arkscan). 1284 id MFG:4BARCODE;CMD:TSPL2;MDL:4B-2054A (Arkscan Linux driver PPD). 203 dpi, 108 mm. USB id not found.",
+      "calibrate_by_hand": "With the printer on (blue light), press and hold the button on top for about two seconds. Let go as soon as it beeps or the light flashes red. It feeds two blank labels."
     },
     {
       "id": "zebra-zpl",
