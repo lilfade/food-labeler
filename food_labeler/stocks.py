@@ -154,3 +154,41 @@ def get(stock_id: str, dpi: int = BASE_DPI) -> Stock:
         _SCALED[key] = replace(base, w=w, h=h, circle_dia=dia, dpi=dpi,
                                zpl_lt=dots(base.zpl_lt, dpi))
     return _SCALED[key]
+
+
+# ---------------------------------------------------------------------------
+# which way round: wide (landscape) or tall (portrait)
+# ---------------------------------------------------------------------------
+
+ORIENTATIONS = {"wide": "Wide", "tall": "Tall"}
+
+
+def natural(stock: Stock) -> str:
+    """How a label size is laid out unless the person turns it: "wide" when it is
+    wider than tall on the roll (date stickers, 3 x 2, 4 x 2), "tall" otherwise
+    (4 x 6). Round labels have no way round ("")."""
+    if stock.round:
+        return ""
+    return "wide" if stock.w >= stock.h else "tall"
+
+
+def turned(stock: Stock, orientation: str | None) -> bool:
+    """True when ``orientation`` asks for the other way round than the roll's."""
+    return bool(orientation) and orientation in ORIENTATIONS and not stock.round and \
+        orientation != natural(stock)
+
+
+_TURNED: dict[tuple[str, int], Stock] = {}
+
+
+def rotated(stock: Stock) -> Stock:
+    """The same label turned a quarter turn: what a "tall" design on a wide roll (or a
+    "wide" one on a tall roll) is laid out on. Width and height swap; everything
+    else (margins, resolution, printer defaults) is the label's own. Only used
+    for laying out: the printer always gets the roll's own size (the drawing is
+    turned back before printing, see render.render)."""
+    key = (stock.id, stock.dpi)
+    if key not in _TURNED:
+        _TURNED[key] = replace(stock, w=stock.h, h=stock.w, w_mm=stock.drawn_h_mm,
+                               h_mm=stock.w_mm, face_h_mm=0.0)
+    return _TURNED[key]

@@ -37,6 +37,19 @@ RENDER_DELAY_MS = 150
 AUTOSAVE_MS = 4000
 
 
+def way_icon(way: str, selected: bool = False) -> Image.Image:
+    """A tiny label outline for the Which way? buttons: wide or tall."""
+    from PIL import ImageDraw
+    img = Image.new("RGBA", (30, 30), (0, 0, 0, 0))
+    w, h = (26, 16) if way == "wide" else (16, 26)
+    x0, y0 = (30 - w) // 2, (30 - h) // 2
+    ink = (255, 255, 255, 255) if selected else (30, 30, 30, 255)
+    ImageDraw.Draw(img).rounded_rectangle((x0, y0, x0 + w, y0 + h), radius=3, outline=ink,
+                                          width=2)
+    ImageDraw.Draw(img).line((x0 + 5, y0 + 6, x0 + w - 5, y0 + 6), fill=ink, width=2)
+    return img
+
+
 class App:
     """The main window and the state behind it (document, file, undo, printers)."""
 
@@ -482,32 +495,49 @@ class App:
             row=1, column=1, sticky="w", padx=8, pady=(8, 0))
         button(kb, "Change…", self.pick_stock, "chip").grid(row=1, column=2, sticky="e",
                                                                  pady=(8, 0))
+        # which way round (not on round labels): wide or tall, two small pictures
+        off = 0
+        if not st.round:
+            off = 1
+            tk.Label(kb, text="Which way?", font="ui", bg=PANEL, fg=MUTED).grid(
+                row=2, column=0, sticky="w", pady=(8, 0))
+            ways = tk.Frame(kb, bg=PANEL)
+            ways.grid(row=2, column=1, columnspan=2, sticky="w", padx=8, pady=(8, 0))
+            now = self.doc.effective_orientation()
+            self._way_icons = []
+            for way, words in (("wide", "Wide"), ("tall", "Tall")):
+                icon = ImageTk.PhotoImage(way_icon(way, way == now))
+                self._way_icons.append(icon)
+                wb = button(ways, words, lambda w=way: self.set_orientation(w),
+                           "primary" if way == now else "chip")
+                wb.configure(image=icon, compound="left", padx=10)
+                wb.pack(side="left", padx=(0, 6))
         tk.Label(kb, text="Lettering:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=2, column=0, sticky="w", pady=(8, 0))
+            row=2 + off, column=0, sticky="w", pady=(8, 0))
         from .font_dialogs import summary
         tk.Label(kb, text=summary(self.doc), font="ui_bold", bg=PANEL, fg=INK, wraplength=240,
-                 justify="left").grid(row=2, column=1, sticky="w", padx=8, pady=(8, 0))
-        button(kb, "Change…", self.pick_lettering, "chip").grid(row=2, column=2, sticky="e",
+                 justify="left").grid(row=2 + off, column=1, sticky="w", padx=8, pady=(8, 0))
+        button(kb, "Change…", self.pick_lettering, "chip").grid(row=2 + off, column=2, sticky="e",
                                                                      pady=(8, 0))
         # picture and QR code: on every kind of label
         pic = self.doc.picture
         tk.Label(kb, text="Picture:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=3, column=0, sticky="w", pady=(8, 0))
+            row=3 + off, column=0, sticky="w", pady=(8, 0))
         tk.Label(kb, text=(pic.get("name") or "Yes") if pic else "None", font="ui_bold",
                  bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
-            row=3, column=1, sticky="w", padx=8, pady=(8, 0))
+            row=3 + off, column=1, sticky="w", padx=8, pady=(8, 0))
         button(kb, "Change…" if pic else "Add a picture…", self.pick_picture, "chip").grid(
-            row=3, column=2, sticky="e", pady=(8, 0))
+            row=3 + off, column=2, sticky="e", pady=(8, 0))
         from . import qrcodes
         qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
         tk.Label(kb, text="QR code:", font="ui", bg=PANEL, fg=MUTED).grid(
-            row=4, column=0, sticky="w", pady=(8, 0))
+            row=4 + off, column=0, sticky="w", pady=(8, 0))
         tk.Label(kb, text=qrcodes.WHAT[qrcodes.clean(self.doc.qr)["what"]] if qtext else "None",
                  font="ui_bold", bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
-            row=4, column=1, sticky="w", padx=8, pady=(8, 0))
+            row=4 + off, column=1, sticky="w", padx=8, pady=(8, 0))
         button(kb, "Change…" if qtext else "Add a QR code…", self.pick_qr, "chip").grid(
-            row=4, column=2, sticky="e", pady=(8, 0))
-        ttk.Separator(kb).grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+            row=4 + off, column=2, sticky="e", pady=(8, 0))
+        ttk.Separator(kb).grid(row=5 + off, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
         t = self.doc.template
         f = self.form
@@ -774,6 +804,15 @@ class App:
         self._sync_ui_from_doc()
         self._snapshot()
 
+    def set_orientation(self, way: str):
+        """Kind bar → Which way?: lay the label out wide or tall (printed turned
+        when it is the other way round from the roll)."""
+        if way == self.doc.effective_orientation():
+            return
+        self.doc.set_orientation(way)
+        self._sync_ui_from_doc()
+        self._snapshot()
+
     # ------------------------------------------------------------------ preview
     def schedule_render(self):
         """Re-render soon; bursts of typing cause one render, not one per key."""
@@ -789,7 +828,9 @@ class App:
         self._rendered_dpi = dpi
         self.last_result = res
         cw, ch = max(50, self.canvas.winfo_width()), max(50, self.canvas.winfo_height())
-        img = render.preview(res, cw, ch)
+        p = self.current_printer()
+        upside = bool(p is not None and self.print_settings_for(p).get("upside_down"))
+        img = render.preview(res, cw, ch, upside_down=upside)
         self._photo = ImageTk.PhotoImage(img)
         self.canvas.delete("all")
         self.canvas.create_image(0, 0, image=self._photo, anchor="nw")
@@ -800,7 +841,10 @@ class App:
         self.warn_lbl.configure(text=("⚠ " + res.message) if res.overflow else "")
         from . import qrcodes
         qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
-        self.qr_lbl.configure(text=f"The QR code holds: {qtext}" if qtext else "")
+        notes = [render.out_edge_words(res, upside)]
+        if qtext:
+            notes.append(f"The QR code holds: {qtext}")
+        self.qr_lbl.configure(text="\n".join(n for n in notes if n))
         if self.doc.template == "cottage":
             self.refresh_check(res)
         return res

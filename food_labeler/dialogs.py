@@ -89,6 +89,7 @@ class TemplatePicker(Modal):
             stock = doc.stock if doc.stock in templates.ALLOWED_STOCKS[t] else "large"
             d = model.LabelDoc(t, stock, model.default_fields(t))
             d.fields.update(SAMPLE_FIELDS[t])
+            d.orientation = doc.orientation          # shown the way this label is turned
             if t == "picture":
                 d.picture = sample_picture(doc)
             res = render.render(d, ctx)

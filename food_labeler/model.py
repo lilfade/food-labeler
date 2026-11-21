@@ -5,7 +5,10 @@ A ``.label`` file is UTF-8 JSON::
     {"app": "easy-labels", "version": 1, "template": "simple",
      "stock": "large", "fields": {...}, "copies": 1}
 
-plus, only when it isn't the standard look, the optional
+plus, only when the label is laid out the other way round from its roll,
+``"orientation": "wide" | "tall"`` (1.5.0; a "tall" 4 x 2 label is drawn
+2 x 4 inches and turned to print, see stocks.turned), and, only when it
+isn't the standard look, the optional
 ``"lettering": {"name": "Pacifico", "other": "Lato"}`` (font family names, see
 lettering.py). Older versions ignore it, and files without it open in the
 standard lettering, so the format version is still 1.
@@ -146,13 +149,31 @@ class LabelDoc:
     lettering: dict = field(default_factory=dict)   # {} = standard look (DejaVu Sans)
     picture: dict | None = None    # see pictures.py; None = no picture
     qr: dict | None = None         # see qrcodes.py; None = no QR code
+    # "" = the way the roll's labels are (wide for 4 x 2, tall for 4 x 6), else
+    # "wide" or "tall" (see stocks.turned); round labels ignore it
+    orientation: str = ""
 
     # ---- convenience -------------------------------------------------
     def copy(self) -> "LabelDoc":
         """Deep copy (fields are nested dicts; the picture data string is shared)."""
         return LabelDoc(self.template, self.stock, copy.deepcopy(self.fields), self.copies,
                         dict(self.lettering), dict(self.picture) if self.picture else None,
-                        dict(self.qr) if self.qr else None)
+                        dict(self.qr) if self.qr else None, self.orientation)
+
+    def set_orientation(self, way: str) -> None:
+        """Lay the label out "wide" or "tall". The roll's own way is stored as ""
+        (nothing in the file), so only a label that is really turned says so."""
+        st = stocks.get(self.stock)
+        self.orientation = "" if way not in stocks.ORIENTATIONS or \
+            way == stocks.natural(st) else way
+
+    def effective_orientation(self) -> str:
+        """"wide" or "tall" as it is laid out now ("" on round labels)."""
+        st = stocks.get(self.stock)
+        if st.round:
+            return ""
+        return self.orientation if self.orientation in stocks.ORIENTATIONS \
+            else stocks.natural(st)
 
     def title(self) -> str:
         """Short name for window titles and file names: first line of the main field."""
@@ -245,6 +266,8 @@ class LabelDoc:
         pic = pictures.clean(self.picture)
         if pic:
             out["picture"] = pic
+        if self.orientation in stocks.ORIENTATIONS:
+            out["orientation"] = self.orientation     # only when chosen (1.5.0)
         qr = qrcodes.clean(self.qr)
         if qr:
             out["qr"] = qr
@@ -283,7 +306,9 @@ class LabelDoc:
             fields["qr"] = ""
         doc = cls(template, stock, fields, data.get("copies", 1),
                   clean_lettering(data.get("lettering")),
-                  pictures.compact(pictures.clean(data.get("picture"))), qr)
+                  pictures.compact(pictures.clean(data.get("picture"))), qr,
+                  data.get("orientation") if data.get("orientation") in stocks.ORIENTATIONS
+                  else "")
         doc.clamp_copies()
         return doc
 

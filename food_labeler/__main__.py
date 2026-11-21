@@ -69,6 +69,12 @@ def selftest() -> int:
     assert res.layout.qr[2] >= qrcodes.min_module(300)
     assert res.image.convert("L").histogram()[0] > 0
     count += 1
+    # a tall label on a 4 x 2 roll: laid out 2 x 4 and turned to print at the roll's size
+    doc.set_orientation("tall")
+    res = render.render(model.LabelDoc.loads(doc.dumps()), {}, dpi=300)
+    assert res.turned and res.image.size == (1200, 591) and res.upright.size == (591, 1200)
+    assert b"BITMAP 0,0,150,591," in tspl.build_job(res.image, res.stock, 1)
+    count += 1
     # every bundled font is there, draws, and has a real bold where it should
     from . import lettering
     for face in lettering.BUNDLED:
