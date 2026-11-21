@@ -282,8 +282,8 @@ class LabelDoc:
                 qr = legacy_qr(fields["qr"])
             fields["qr"] = ""
         doc = cls(template, stock, fields, data.get("copies", 1),
-                  clean_lettering(data.get("lettering")), pictures.clean(data.get("picture")),
-                  qr)
+                  clean_lettering(data.get("lettering")),
+                  pictures.compact(pictures.clean(data.get("picture"))), qr)
         doc.clamp_copies()
         return doc
 

@@ -118,6 +118,7 @@ class PictureDialog(Modal):
         self.mode_box.pack(anchor="w", fill="x")
         self.threshold = tk.IntVar(value=pic["threshold"] or 128)
         self.auto = pic["threshold"] is None
+        self._auto_value = None
         self.brightness = tk.IntVar(value=pic["brightness"])
         self.contrast = tk.IntVar(value=pic["contrast"])
 
@@ -142,6 +143,9 @@ class PictureDialog(Modal):
         self.remove_bg.pack(anchor="w")
         tk.Label(toggles, text="(light parts become paper)", font="small", bg=BG,
                  fg=MUTED).pack(anchor="w")
+        self.swapped = tk.Label(toggles, text="", font="small", bg=BG, fg=WARN,
+                                wraplength=220, justify="left")
+        self.swapped.pack(anchor="w", pady=(4, 0))
 
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(16, 0))
@@ -225,12 +229,17 @@ class PictureDialog(Modal):
                    command=self._changed).pack(anchor="w")
         else:
             if self.auto and self.pic.get("png"):
-                self.threshold.set(pictures.auto_threshold(self._current()))
+                self._auto_value = pictures.auto_threshold(self._current())
+                self.threshold.set(self._auto_value)
             _scale(self.mode_box, self.threshold, 1, 254, "Lighter", "Darker",
                    command=self._threshold_moved).pack(anchor="w")
             button(self.mode_box, "Automatic", self._automatic, "chip").pack(anchor="w")
 
     def _threshold_moved(self):
+        # Tk also calls this when the slider is first shown; only a real move
+        # (to another value than the automatic one) switches Automatic off.
+        if self.auto and int(self.threshold.get()) == self._auto_value:
+            return
         self.auto = False
         self._changed()
 
@@ -274,6 +283,8 @@ class PictureDialog(Modal):
         else:
             self.zoom.configure(image="")
         self.msg.configure(text=res.message if res.overflow else "")
+        self.swapped.configure(text="Black and white are swapped: the light parts of "
+                               "your picture will print black." if self.invert.value else "")
 
     def _done(self):
         cur = pictures.clean(self._current())

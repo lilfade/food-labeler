@@ -4,7 +4,7 @@ black and white dots for a thermal printer, and the "My pictures" library.
 A label's picture is a plain dict (``LabelDoc.picture``)::
 
     {"png": "<base64 PNG>", "name": "logo.png",
-     "place": "above" | "left" | "right" | "corner" | "fill" | "fit",
+     "place": "above" | "left" | "right" | "corner" | "corner_right" | "fill" | "fit",
      "size": 35,                        # % of the label's height (10..100)
      "mode": "logo" | "photo",          # solid black (threshold) or tiny dots (dither)
      "threshold": None | 1..254,        # logo: None = automatic (Otsu)
@@ -12,9 +12,10 @@ A label's picture is a plain dict (``LabelDoc.picture``)::
      "invert": False,                   # swap black and white
      "remove_bg": False}                # near-white (and transparent) = paper
 
-The PNG is the ORIGINAL picture (colour, with transparency), only made
-smaller if it is bigger than MAX_STORED_SIDE, so a .label file carries its
-picture with it and the conversion can be redone at any size and printer
+The PNG is the original picture in greyscale (with its transparency, or as
+exact black and white dots if that is all it has), only made smaller if it is
+bigger than MAX_STORED_SIDE (see ``for_storing``), so a .label file carries
+its picture with it and the conversion can be redone at any size and printer
 resolution. ``to_print`` does the conversion at the final print size: the
 picture is resized in greyscale with LANCZOS first and only then thresholded
 or dithered, so thin lines survive.
@@ -39,9 +40,34 @@ log = logging.getLogger("food_labeler.pictures")
 
 MAX_FILE_BYTES = 25 * 1024 * 1024        # refuse picture files bigger than 25 MB
 MAX_PIXELS = 40_000_000                  # ... or with more than 40 megapixels
-MAX_STORED_SIDE = 2000                   # longest side kept in the .label file
-OPEN_TYPES = [("Pictures", "*.png *.jpg *.jpeg *.gif *.bmp *.webp"), ("All files", "*")]
-FORMATS = {"PNG", "JPEG", "GIF", "BMP", "WEBP", "MPO"}
+# Longest side kept in the .label file. Labels print in black and white, so the
+# picture is kept in greyscale (with its see-through parts, if it has any) and no
+# bigger than a 4 x 6 inch label at 300 dpi really needs: a 12 megapixel phone
+# photo goes in at about 1 MB instead of 6 MB. A plain black-and-white picture
+# (such as a label saved with "Save as picture") is kept as exact black and
+# white dots, which is tiny, so it can stay sharper.
+MAX_STORED_SIDE = 1600
+MAX_STORED_SIDE_BW = 3600
+# What the file picker offers: every kind of picture Food Labeler reads.
+OPEN_TYPES = [
+    ("All pictures", "*.png *.jpg *.jpeg *.gif *.bmp *.webp *.tif *.tiff *.ico"),
+    ("PNG pictures", "*.png"),
+    ("JPG photos", "*.jpg *.jpeg"),
+    ("GIF pictures", "*.gif"),
+    ("BMP pictures", "*.bmp"),
+    ("WebP pictures", "*.webp"),
+    ("TIFF pictures", "*.tif *.tiff"),
+    ("Icons", "*.ico"),
+    ("All files", "*"),
+]
+FORMATS = {"PNG", "JPEG", "GIF", "BMP", "WEBP", "MPO", "TIFF", "ICO"}
+# Kinds of picture Pillow can't read without extra parts we don't ship.
+NOT_SUPPORTED_EXT = {".heic": "iPhone photos (HEIC)", ".heif": "iPhone photos (HEIC)",
+                     ".avif": "AVIF pictures", ".svg": "SVG drawings",
+                     ".svgz": "SVG drawings"}
+NOT_SUPPORTED = ("Food Labeler can't open {what} yet. Please save it as PNG or JPG first "
+                 "(most photo and drawing programs can do this with “Save as” or "
+                 "“Export”), then open that.")
 
 PLACES = {
     "above": "Above the name",
@@ -84,7 +110,10 @@ def normalise(im: Image.Image) -> Image.Image:
     """Any picture -> "RGBA" (if it has transparency), "RGB" or "L", 8 bits per channel.
 
     Handles EXIF rotation (phone photos), the first frame of animations,
-    palette and CMYK pictures and 16-bit or floating point greyscale.
+    palette and CMYK pictures, 16-bit or floating point greyscale, and the
+    see-through colour some PNG, GIF and BMP files name instead of having an
+    alpha channel (greyscale and colour pictures too, not only palette ones).
+    Black stays black: nothing here ever swaps light and dark.
     """
     try:
         im.seek(0)                                   # animated GIF/WebP: first frame
@@ -101,23 +130,38 @@ def normalise(im: Image.Image) -> Image.Image:
             span = float(hi - lo) or 1.0
             scale, off = 255.0 / span, -lo * 255.0 / span
         return im.point(lambda v: v * scale + off).convert("L")
-    if mode == "1":
+    see_through = "transparency" in im.info
+    if mode in ("1", "L") and not see_through:
         return im.convert("L")
-    if mode == "L":
-        return im
-    if mode in ("LA", "PA", "RGBA", "La", "RGBa") or (mode == "P" and "transparency" in im.info):
+    if mode in ("LA", "PA", "RGBA", "La", "RGBa") or see_through:
+        # "1"/"L"/"RGB"/"P" with a see-through colour: Pillow turns that colour
+        # into alpha when converting to RGBA
         return im.convert("RGBA")
-    if mode == "P" or mode == "RGB":
-        return im.convert("RGB")
-    if mode == "CMYK":
-        return im.convert("RGB")
     return im.convert("RGB")
+
+
+def _not_supported(data: bytes) -> str:
+    """What kind of unsupported picture this is ("" if it isn't one we know)."""
+    head = data[:64]
+    if head[4:8] == b"ftyp":
+        brand = head[8:12]
+        if brand in (b"heic", b"heix", b"hevc", b"hevx", b"mif1", b"msf1", b"heim", b"heis"):
+            return "iPhone photos (HEIC)"
+        if brand in (b"avif", b"avis"):
+            return "AVIF pictures"
+    text = data[:1024].lstrip(b"\xef\xbb\xbf \t\r\n").lower()
+    if text.startswith(b"<svg") or (text.startswith(b"<?xml") and b"<svg" in text):
+        return "SVG drawings"
+    return ""
 
 
 def open_bytes(data: bytes) -> Image.Image:
     """Open and normalise picture bytes, enforcing the size limits."""
     if len(data) > MAX_FILE_BYTES:
         raise _too_big()
+    what = _not_supported(data)
+    if what:
+        raise PictureError(NOT_SUPPORTED.format(what=what))
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -133,12 +177,15 @@ def open_bytes(data: bytes) -> Image.Image:
     except Exception:  # noqa: BLE001 - any decoder problem means "not a picture we can use"
         log.exception("picture unreadable")
         raise PictureError("Food Labeler can't read this picture. Please use a PNG, JPG, "
-                           "GIF, BMP or WebP picture.") from None
+                           "GIF, BMP, WebP or TIFF picture.") from None
 
 
 def read_file(path) -> tuple[Image.Image, str]:
     """Open a picture file for a label. Returns (normalised picture, file name)."""
     path = Path(path)
+    what = NOT_SUPPORTED_EXT.get(path.suffix.lower())
+    if what:
+        raise PictureError(NOT_SUPPORTED.format(what=what))
     try:
         size = os.path.getsize(path)
     except OSError:
@@ -152,19 +199,60 @@ def read_file(path) -> tuple[Image.Image, str]:
     return open_bytes(data), path.name
 
 
-def shrink_for_storing(im: Image.Image) -> Image.Image:
-    """Make a picture no bigger than MAX_STORED_SIDE on its longest side."""
-    side = max(im.size)
-    if side <= MAX_STORED_SIDE:
-        return im
-    k = MAX_STORED_SIDE / side
-    return im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+def _two_tone(im: Image.Image) -> bool:
+    """Only pure black and pure white pixels (a label saved as a picture, a scan)."""
+    if im.mode != "L":
+        return False
+    hist = im.histogram()
+    return sum(hist[1:255]) == 0
+
+
+def for_storing(im: Image.Image) -> Image.Image:
+    """The picture as it is kept in the .label file: as small as it can be without
+    changing what prints.
+
+    * greyscale ("L"), because labels print in black and white; the print
+      conversion turns colour into the same greys (``Image.convert("L")``);
+    * with its alpha channel ("LA") only if some of it is see-through;
+    * exact black and white dots ("1") if it has nothing else, which keeps a
+      label saved with "Save as picture" tiny and exact;
+    * no longer than MAX_STORED_SIDE (MAX_STORED_SIDE_BW for black and white),
+      never made bigger.
+    """
+    if im.mode not in ("L", "RGB", "RGBA"):
+        im = normalise(im)
+    alpha = None
+    if im.mode == "RGBA":
+        a = im.getchannel("A")
+        if a.getextrema()[0] < 255:
+            alpha = a
+        grey = im.convert("RGB").convert("L")
+    else:
+        grey = im.convert("L")
+    bw = alpha is None and _two_tone(grey)
+    side = max(grey.size)
+    cap = MAX_STORED_SIDE_BW if bw else MAX_STORED_SIDE
+    if side > cap:
+        k = cap / side
+        size = (max(1, round(grey.width * k)), max(1, round(grey.height * k)))
+        grey = grey.resize(size, Image.LANCZOS)
+        if alpha is not None:
+            alpha = alpha.resize(size, Image.LANCZOS)
+        if bw:
+            # shrinking makes greys at the edges; keep it black and white the way
+            # the print conversion would (half way)
+            grey = grey.point(lambda v: 255 if v >= 128 else 0)
+    if alpha is not None:
+        return Image.merge("LA", (grey, alpha))
+    if bw:
+        return grey.convert("1", dither=Image.Dither.NONE)
+    return grey
 
 
 def encode(im: Image.Image) -> str:
-    """Picture -> base64 PNG text for the .label file."""
+    """Picture -> base64 PNG text for the .label file (see for_storing)."""
     buf = io.BytesIO()
-    shrink_for_storing(im).save(buf, "PNG", optimize=True)
+    for_storing(im).save(buf, "PNG", optimize=True)
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
@@ -173,6 +261,43 @@ def new_picture(im: Image.Image, name: str = "", **settings) -> dict:
     pic = dict(DEFAULTS, png=encode(im), name=str(name)[:120])
     pic.update(settings)
     return clean(pic) or {}
+
+
+_COMPACT: dict[str, str] = {}
+
+
+def compact(pic: dict | None) -> dict | None:
+    """A picture from an older file, stored the small way (see for_storing).
+
+    Files made before 1.5.0 kept pictures in colour and up to 2000 pixels, which
+    could make a .label file several megabytes. They still open as they are;
+    this gives the same picture in greyscale (and smaller, if it was bigger
+    than MAX_STORED_SIDE), so the next save is small. Pictures already stored
+    the small way are returned unchanged. Remembered per picture, because
+    labels are reloaded on every undo."""
+    if not pic or not pic.get("png"):
+        return pic
+    key = digest(pic)
+    hit = _COMPACT.get(key)
+    if hit is None:
+        hit = pic["png"]
+        try:
+            raw = base64.b64decode(pic["png"], validate=False)
+            with Image.open(io.BytesIO(raw)) as im:
+                mode, side = im.mode, max(im.size)
+            if mode in ("RGB", "RGBA", "P", "PA", "CMYK") or side > MAX_STORED_SIDE_BW or (
+                    mode not in ("1",) and side > MAX_STORED_SIDE):
+                im2 = decode(pic)
+                if im2 is not None:
+                    smaller = encode(im2)
+                    if len(smaller) < len(pic["png"]):
+                        hit = smaller
+        except Exception:  # noqa: BLE001 - leave anything odd exactly as it was
+            log.warning("could not make an older picture smaller")
+        if len(_COMPACT) > 32:
+            _COMPACT.clear()
+        _COMPACT[key] = hit
+    return pic if hit is pic["png"] else dict(pic, png=hit)
 
 
 # ---------------------------------------------------------------------------
@@ -297,7 +422,34 @@ def auto_threshold(pic: dict, w: int = 400, h: int | None = None) -> int:
     grey, alpha = _grey_and_alpha(im, w, h)
     if pic.get("invert"):
         grey = ImageOps.invert(grey)
+    elif _light_shape(grey, alpha):
+        return 254                         # the slider's darkest end (see _light_shape)
     return otsu(grey)
+
+
+def _light_shape(grey: Image.Image, alpha: Image.Image) -> bool:
+    """A white or very light logo on a see-through background.
+
+    Over white paper it would disappear, so its shape prints in black instead
+    (the see-through part stays paper). Only when the solid part is all about
+    the same light shade: a logo with dark parts, or light lettering inside a
+    dark shape, is turned into black and white as usual."""
+    solid = alpha.point(lambda a: 255 if a >= 128 else 0)
+    n_solid = solid.histogram()[255]
+    if n_solid == 0 or n_solid == alpha.width * alpha.height:
+        return False                       # nothing see-through (or nothing solid)
+    hist = grey.histogram(solid)[:256]
+    total = sum(hist)
+    lo = hi = None
+    seen = 0
+    for v, c in enumerate(hist):           # the middle 90 % of the solid part
+        seen += c
+        if lo is None and seen >= total * 0.05:
+            lo = v
+        if seen >= total * 0.95:
+            hi = v
+            break
+    return lo is not None and hi is not None and lo >= 200 and hi - lo <= 40
 
 
 def _key(pic: dict) -> tuple:
@@ -344,10 +496,13 @@ def _convert(pic: dict, w: int, h: int) -> Image.Image:
         out = grey.convert("1", dither=Image.Dither.FLOYDSTEINBERG)
     else:
         t = pic.get("threshold")
-        if t is None:
+        if t is None and not pic.get("invert") and _light_shape(grey, alpha):
+            t = 256                            # a white logo: its shape prints black
+        elif t is None:
             # over the whole picture, transparent parts counting as white paper,
             # so a coloured logo on a see-through background turns solid black
             t = otsu(grey)
+        # dark (below t) = black, light = paper; never the other way round
         out = grey.point(lambda v: 255 if v >= t else 0).convert("1", dither=Image.Dither.NONE)
     white = Image.new("1", (w, h), 1)
     return Image.composite(white, out, paper.convert("1", dither=Image.Dither.NONE))

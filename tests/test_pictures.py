@@ -107,9 +107,14 @@ def test_size_limits(tmp_path, monkeypatch):
 
 
 def test_big_pictures_are_stored_smaller():
+    pic = pic_of(gradient(4000, 1000).convert("RGB"))
+    im = Image.open(io.BytesIO(base64.b64decode(pic["png"])))
+    assert max(im.size) == pictures.MAX_STORED_SIDE and im.size == (1600, 400)
+    assert im.mode == "L"                                  # greyscale: labels are black and white
+    # plain black and white (a label saved as a picture) is kept sharper, as exact dots
     pic = pic_of(Image.new("RGB", (4000, 1000), "white"))
     im = Image.open(io.BytesIO(base64.b64decode(pic["png"])))
-    assert max(im.size) == pictures.MAX_STORED_SIDE and im.size == (2000, 500)
+    assert im.mode == "1" and im.size == (3600, 900)
 
 
 # ---- black and white ---------------------------------------------------------
