@@ -1046,15 +1046,11 @@ class App:
 
     def set_found(self, found):
         """Take a fresh discovery result; auto-select the only label printer if none is chosen."""
-        # add printers typed in by hand (network)
-        for pid, info in self.cfg["printers"].items():
-            if info.get("manual") and info.get("target") and not any(p.id == pid for p in found):
-                try:
-                    p = printers.network_printer(info["target"], info.get("kind") or "tspl")
-                    p.id = pid
-                    found.append(p)
-                except printers.PrinterError:
-                    pass
+        # add the network printers the person added (they count as connected: a
+        # network printer is never looked for, and is only reached when printing)
+        for p in printers.network_printers(self.cfg["printers"], self.known):
+            if not any(x.id == p.id for x in found):
+                found.append(p)
         self.found = found
         sel = self.cfg["selected"]
         if not sel or (sel not in self.cfg["printers"] and not self.current_printer()):
@@ -1419,6 +1415,11 @@ class App:
         else:
             state, text = printers.status(p, self.printer_name(p) if p else "")
         self.status_lbl.configure(text=text, fg=GREEN_DARK if state == "ready" else WARN)
+
+    def add_network_printer(self, parent=None):
+        """"Add a network printer…": address, kind, test the connection, add."""
+        from .dialogs import NetworkPrinterDialog
+        NetworkPrinterDialog(parent or self.root, self).run()
 
     def usb_devices(self):
         """The "My printer isn't in the list" window (all USB devices)."""

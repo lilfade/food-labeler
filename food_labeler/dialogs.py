@@ -16,7 +16,7 @@ import threading
 import tkinter as tk
 import webbrowser
 from pathlib import Path
-from tkinter import filedialog, ttk
+from tkinter import filedialog
 
 from PIL import Image, ImageDraw, ImageTk
 
@@ -463,16 +463,13 @@ class AdvancedDialog(Modal):
                        variable=self.invert, font="ui", bg=BG, activebackground=BG).pack(
             anchor="w", pady=(8, 0))
 
-        tk.Label(b, text="Network printer (address:port, e.g. 192.168.1.50:9100)",
-                 font="ui_bold", bg=BG, fg=INK).pack(anchor="w", pady=(14, 0))
-        row = tk.Frame(b, bg=BG)
-        row.pack(anchor="w")
-        self.net = tk.StringVar()
-        tk.Entry(row, textvariable=self.net, font="ui", width=26).pack(side="left")
-        self.net_kind = tk.StringVar(value="tspl")
-        ttk.Combobox(row, textvariable=self.net_kind, values=["tspl", "zpl"], width=6,
-                     state="readonly", font="ui").pack(side="left", padx=6)
-        button(row, "Add", self._add_net, "chip").pack(side="left")
+        tk.Label(b, text="Network printers (raw TCP, address:port)", font="ui_bold", bg=BG,
+                 fg=INK).pack(anchor="w", pady=(14, 0))
+        self.net_list = tk.Label(b, text="", font="ui", bg=BG, fg=MUTED, wraplength=700,
+                                 justify="left")
+        self.net_list.pack(anchor="w")
+        button(b, "Network printers…", self._net, "chip").pack(anchor="w", pady=(4, 0))
+        self._show_net()
 
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(16, 0))
@@ -482,18 +479,16 @@ class AdvancedDialog(Modal):
         button(row, "Cancel", self.cancel, "quiet").pack(side="right", padx=8)
         self.stock = st
 
-    def _add_net(self):
-        try:
-            p = printers.network_printer(self.net.get(), self.net_kind.get())
-        except printers.PrinterError as e:
-            tell(self, "Address", str(e))
-            return
-        info = self.app.cfg.printer_info(p.id)
-        info.update({"manual": True, "target": p.target, "kind": self.net_kind.get(),
-                     "method": "network"})
-        self.app.cfg.save()
-        self.app.set_found([x for x in self.app.found if not x.manual])
-        tell(self, "Added", f"Added {p.target}. Pick it in the printer list.")
+    def _show_net(self):
+        nets = printers.network_printers(self.app.cfg["printers"], self.app.known)
+        self.net_list.configure(text="\n".join(
+            f"{self.app.printer_name(p)}: {p.target} ({p.kind.upper()})" for p in nets)
+            or "None added. Add one with the button below (also in My printers).")
+
+    def _net(self):
+        """The same window as My printers → Add a network printer…"""
+        NetworkPrinterDialog(self, self.app).run()
+        self._show_net()
 
     def _save(self):
         adv = self.app.cfg["advanced"]
@@ -603,6 +598,170 @@ def bluetooth_help(parent):
     tell(parent, "Connect a Bluetooth printer", printers.BT_HELP)
 
 
+class NetworkPrinterDialog(Modal):
+    """"Add a network printer…": a label printer reached over the network (its own
+    network socket, a print server or a small bridge), by address:port.
+
+    "Test the connection" only opens a connection and closes it again (on a
+    worker thread, a few seconds at most); nothing is sent. The printers added
+    so far are listed with a Remove button. Result: True if one was added."""
+
+    POLL_MS = 100
+
+    def __init__(self, parent, app):
+        super().__init__(parent, "Add a network printer")
+        self.app = app
+        self._q: queue.Queue = queue.Queue()
+        self._testing = False
+        self.added = False
+        b = self.body
+        tk.Label(b, text="Add a network printer", font="big", bg=BG, fg=INK).pack(anchor="w")
+        tk.Label(b, text=printers.NETWORK_HELP, font="ui", bg=BG, fg=MUTED, wraplength=720,
+                 justify="left").pack(anchor="w", pady=(4, 10))
+        tk.Label(b, text="Address (for example 192.168.1.50:9100)", font="ui_bold", bg=BG,
+                 fg=INK).pack(anchor="w")
+        row = tk.Frame(b, bg=BG)
+        row.pack(anchor="w", fill="x")
+        self.addr = tk.StringVar()
+        e = tk.Entry(row, textvariable=self.addr, font="field", width=26, relief="flat",
+                     highlightthickness=2, highlightbackground=BORDER, highlightcolor=GREEN)
+        e.pack(side="left", ipady=4)
+        e.focus_set()
+        e.bind("<Return>", lambda ev: self._add())
+        self.test_btn = button(row, "Test the connection", self._test, "chip")
+        self.test_btn.pack(side="left", padx=8)
+        self.answer = tk.Label(b, text="", font="ui", bg=BG, fg=INK, wraplength=720,
+                               justify="left")
+        self.answer.pack(anchor="w", pady=(4, 0))
+        tk.Label(b, text="What kind of printer is it?", font="ui_bold", bg=BG,
+                 fg=INK).pack(anchor="w", pady=(10, 0))
+        self.kind = tk.IntVar(value=0)
+        for n, (words, _lang, _model) in enumerate(printers.NETWORK_TYPES):
+            tk.Radiobutton(b, text=words, variable=self.kind, value=n, font="ui", bg=BG,
+                           activebackground=BG).pack(anchor="w")
+        tk.Label(b, text="Name (if you like, for example “Kitchen printer”)", font="ui_bold",
+                 bg=BG, fg=INK).pack(anchor="w", pady=(10, 0))
+        self.nick = tk.StringVar()
+        tk.Entry(b, textvariable=self.nick, font="field", width=30, relief="flat",
+                 highlightthickness=2, highlightbackground=BORDER,
+                 highlightcolor=GREEN).pack(anchor="w", ipady=4)
+        row = tk.Frame(b, bg=BG)
+        row.pack(fill="x", pady=(12, 0))
+        button(row, "Add this printer", self._add, "primary").pack(side="left")
+        self.done_lbl = tk.Label(row, text="", font="ui_bold", bg=BG, fg=GREEN_DARK)
+        self.done_lbl.pack(side="left", padx=10)
+        tk.Label(b, text="My network printers", font="ui_bold", bg=BG, fg=INK).pack(
+            anchor="w", pady=(16, 2))
+        self.list = tk.Frame(b, bg=BG)
+        self.list.pack(fill="x")
+        row = tk.Frame(b, bg=BG)
+        row.pack(fill="x", pady=(14, 0))
+        button(row, "Done", lambda: self.finish(self.added), "primary").pack(side="right")
+        self._draw()
+
+    def cancel(self):
+        """Closing the window counts as Done (what was added stays added)."""
+        self.finish(self.added)
+
+    def _draw(self):
+        for w in self.list.winfo_children():
+            w.destroy()
+        nets = printers.network_printers(self.app.cfg["printers"], self.app.known)
+        if not nets:
+            tk.Label(self.list, text="None yet.", font="ui", bg=BG, fg=MUTED).pack(anchor="w")
+        for p in nets:
+            info = self.app.cfg["printers"].get(p.id, {})
+            fr = tk.Frame(self.list, bg=PANEL, highlightthickness=2,
+                          highlightbackground=GREEN if p.id == self.app.cfg["selected"]
+                          else BORDER, padx=10, pady=6)
+            fr.pack(fill="x", pady=3)
+            name = info.get("nickname") or p.default_name()
+            kind = next((w for w, lang, m in printers.NETWORK_TYPES
+                         if m and m == info.get("model")), None) or (
+                "Zebra (ZPL)" if p.kind == "zpl" else "Label printer (TSPL)")
+            shown = f"{name} {printers.ALPHA_TAG}" if p.alpha else name
+            tk.Label(fr, text=shown, font="ui_bold", bg=PANEL, fg=INK, wraplength=420,
+                     justify="left").grid(row=0, column=0, sticky="w")
+            tk.Label(fr, text=f"{p.target}  •  {kind}", font="ui", bg=PANEL, fg=MUTED,
+                     wraplength=420, justify="left").grid(row=1, column=0, sticky="w")
+            fr.grid_columnconfigure(0, weight=1)
+            btns = tk.Frame(fr, bg=PANEL)
+            btns.grid(row=0, column=1, rowspan=2, sticky="e")
+            if p.id != self.app.cfg["selected"]:
+                button(btns, "Use this one", lambda p=p: self._use(p), "chip").pack(
+                    side="left", padx=2)
+            button(btns, "Remove", lambda p=p: self._remove(p), "warn").pack(side="left",
+                                                                            padx=2)
+
+    def _test(self):
+        if self._testing:
+            return
+        target = self.addr.get().strip()
+        try:
+            printers.parse_hostport(target)
+        except printers.PrinterError as e:
+            self.answer.configure(text=str(e), fg=WARN)
+            return
+        self._testing = True
+        self.test_btn.configure(state="disabled")
+        self.answer.configure(text="Checking…", fg=MUTED)
+
+        def work():
+            try:
+                msg = printers.check_network(target)
+            except printers.PrinterError as e:
+                msg = str(e)
+            self._q.put(msg)
+        threading.Thread(target=work, daemon=True).start()
+        self.after(self.POLL_MS, self._poll)
+
+    def _poll(self):
+        try:
+            msg = self._q.get_nowait()
+        except queue.Empty:
+            if self.winfo_exists():
+                self.after(self.POLL_MS, self._poll)
+            return
+        self._testing = False
+        if not self.winfo_exists():
+            return
+        self.test_btn.configure(state="normal")
+        self.answer.configure(text=msg, fg=GREEN_DARK if msg.startswith("\u2714") else WARN)
+
+    def _add(self):
+        _words, lang, model_id = printers.NETWORK_TYPES[self.kind.get()]
+        try:
+            p = printers.add_network_printer(self.app.cfg["printers"], self.addr.get(), lang,
+                                             model_id, self.nick.get())
+        except printers.PrinterError as e:
+            self.answer.configure(text=str(e), fg=WARN)
+            return
+        self.app.cfg["selected"] = p.id               # use it straight away
+        self.app.cfg.save()
+        self.app.set_found([x for x in self.app.found if not x.manual])
+        self.added = True
+        self.addr.set("")
+        self.nick.set("")
+        self.answer.configure(text="")
+        self.done_lbl.configure(text=f"Added \u2714  {p.target} is your printer now.")
+        self._draw()
+
+    def _use(self, p):
+        self.app.select_printer(p.id)
+        self._draw()
+
+    def _remove(self, p):
+        name = self.app.printer_name(p)
+        if not ask(self, "Remove printer", f"Remove “{name}” ({p.target}) from your "
+                   "printers?", [("Remove it", True, "warn"), ("Keep it", False, "normal")]):
+            return
+        printers.remove_network_printer(self.app.cfg, p.id)
+        self.app.cfg.save()
+        self.app.set_found([x for x in self.app.found if x.id != p.id])
+        self.done_lbl.configure(text="")
+        self._draw()
+
+
 class MyPrintersDialog(Modal):
     """Name, identify ("Which one is it?"), retype, choose or forget printers."""
 
@@ -619,7 +778,13 @@ class MyPrintersDialog(Modal):
         row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(12, 0))
         button(row, "Look for printers again", self._rescan, "chip").pack(side="left")
+        button(row, "Add a network printer…", self._add_net, "chip").pack(side="left",
+                                                                           padx=6)
         button(row, "Done", self.cancel, "primary").pack(side="right")
+        self._draw()
+
+    def _add_net(self):
+        self.app.add_network_printer(self)
         self._draw()
 
     def _rescan(self):
@@ -768,6 +933,10 @@ class SetupWizard(Modal):
         button(row, "Cancel", self.cancel, "quiet").pack(side="left")
         button(row, "How to connect a Bluetooth printer", lambda: bluetooth_help(self),
                "quiet").pack(side="left", padx=8)
+        tk.Label(self.frame, text="Printer on your network (a print server or a network "
+                 "bridge)? Press Next and then “Add a network printer…”.", font="ui", bg=BG,
+                 fg=MUTED, wraplength=740, justify="left").pack(anchor="w", pady=(8, 0),
+                                                               before=row)
 
     def step2(self):
         self._clear(2, "Pick your printer")
@@ -797,6 +966,9 @@ class SetupWizard(Modal):
         button(row, "My printer isn't in the list",
                lambda: (UsbDevicesDialog(self, self.app).run(), self.step2()),
                "quiet").pack(side="left", padx=8)
+        button(row, "Add a network printer…",
+               lambda: (self.app.add_network_printer(self), self.step2()),
+               "quiet").pack(side="left")
         nav = tk.Frame(self.frame, bg=BG)
         nav.pack(fill="x", pady=(20, 0))
         button(nav, "◀ Back", self.step1, "quiet").pack(side="left")
@@ -881,6 +1053,12 @@ class UsbDevicesDialog(Modal):
         tk.Label(brow, text="Bluetooth printer? It isn't listed here.", font="ui", bg=BG,
                  fg=MUTED).pack(side="left")
         button(brow, "How to connect a Bluetooth printer", lambda: bluetooth_help(self),
+               "link").pack(side="left", padx=4)
+        nrow = tk.Frame(b, bg=BG)
+        nrow.pack(fill="x", pady=(0, 8))
+        tk.Label(nrow, text="Printer on your network (print server or bridge)? It isn't "
+                 "listed here either.", font="ui", bg=BG, fg=MUTED).pack(side="left")
+        button(nrow, "Add a network printer…", lambda: app.add_network_printer(self),
                "link").pack(side="left", padx=4)
         self.sf = ScrollFrame(b, bg=BG)
         self.sf.configure(width=800, height=min(460, parent.winfo_screenheight() - 300))

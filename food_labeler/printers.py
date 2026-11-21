@@ -5,7 +5,9 @@ Connections ("methods"):
   windows_driver  Windows printer, picture printed through the maker's driver (fallback)
   cups            Linux/Mac CUPS queue, sent with `lp -o raw`
   device          Linux device file such as /dev/usb/lp0
-  network         host:port raw TCP (Advanced only)
+  network         host:port raw TCP: a printer on the network, a print server or a
+                  small network bridge in front of a USB printer ("Add a network
+                  printer…"); tested on paper with an LP610BT behind a raw TCP bridge
   bluetooth       Bluetooth address, Classic SPP over an RFCOMM socket (Linux)
   serial          a serial port: the COM port Windows makes for a paired
                   Bluetooth printer ("COM5"), or a /dev/rfcommN-style device
@@ -90,6 +92,7 @@ My printers / Advanced win. Unknown printers are 203 dpi.
 from __future__ import annotations
 
 import glob
+import itertools
 import logging
 import os
 import re
@@ -221,8 +224,11 @@ class Printer:
     @property
     def alpha(self) -> bool:
         """Not a model we have tested on paper (unknown printers included), or a
-        tested model reached over Bluetooth, which isn't tested on paper yet."""
+        tested model reached a way it hasn't been tested on paper yet (Bluetooth,
+        or the network for models without ``verified_network``)."""
         if not getattr(self.family, "verified_on_paper", False):
+            return True
+        if self.method == "network" and not getattr(self.family, "verified_network", False):
             return True
         return self.bluetooth and not getattr(self.family, "verified_bluetooth", False)
 
@@ -565,11 +571,108 @@ def discover(known=None, bt_max_age: float = 0) -> list[Printer]:
     return found
 
 
-def network_printer(target: str, kind: str = "tspl") -> Printer:
-    """A printer reached by raw TCP at "host:port" (added by hand under Advanced)."""
+def network_printer(target: str, kind: str = "tspl", family=None) -> Printer:
+    """A printer reached by raw TCP at "host:port" (added with "Add a network printer…").
+
+    ``family`` is the kind of printer the person said it is (a known.Definition),
+    which decides whether it counts as tested (see Printer.alpha)."""
     host, port = parse_hostport(target)
-    return Printer(id=f"net:{host}:{port}", kind=kind, model="", method="network",
-                   target=f"{host}:{port}", port=f"network {host}:{port}", manual=True)
+    p = Printer(id=f"net:{host}:{port}", kind=kind if kind in KINDS else "tspl", model="",
+                method="network", target=f"{host}:{port}", port=f"network {host}:{port}",
+                manual=True, family=family)
+    if family is not None:
+        p.dpi = family.dpi
+    return p
+
+
+# The choices in "Add a network printer…": (words, language, known model id).
+NETWORK_TYPES = [
+    ("Label printer like the LP610BT", "tspl", "lp610bt-compatible"),
+    ("Zebra label printer", "zpl", "zebra-zpl"),
+    ("Another label printer (TSPL)", "tspl", ""),
+]
+NETWORK_HELP = (
+    "Use this for a label printer on your network: one with its own network "
+    "socket, one plugged into a print server, or one behind a small network "
+    "bridge. Type its address the way your helper or the print server's own page "
+    "shows it, like 192.168.1.50:9100. The part before the colon is where the "
+    "printer is on your network; the number after it is the port (often 9100). "
+    "\u201cTest the connection\u201d only checks that something answers there; it "
+    "never prints anything.")
+NETWORK_TEST_TIMEOUT = 3.0          # seconds "Test the connection" waits
+
+
+def network_printers(cfg_printers: dict, known=None) -> list[Printer]:
+    """The network printers the person added (settings ``printers[id]`` with
+    ``"manual": true``), in the order they were added. Damaged entries are skipped."""
+    out = []
+    for pid, info in (cfg_printers or {}).items():
+        if not (isinstance(info, dict) and info.get("manual") and info.get("target")):
+            continue
+        fam = known.get(info.get("model")) if known is not None and info.get("model") else None
+        try:
+            p = network_printer(str(info["target"]), info.get("kind") or "tspl", fam)
+        except PrinterError:
+            continue
+        p.id = pid
+        out.append(p)
+    return out
+
+
+def add_network_printer(cfg_printers: dict, target: str, kind: str = "tspl", model: str = "",
+                        nickname: str = "") -> Printer:
+    """Remember a network printer in settings (``printers`` dict). Returns it.
+
+    The address is checked (PrinterError with a plain message if it doesn't
+    look right). Adding the same address again updates it."""
+    p = network_printer(target, kind)
+    info = cfg_printers.setdefault(p.id, {})
+    info.update({"manual": True, "method": "network", "target": p.target,
+                 "kind": p.kind})
+    if model:
+        info["model"] = str(model)[:64]
+    else:
+        info.pop("model", None)
+    if nickname.strip():
+        info["nickname"] = nickname.strip()[:60]
+    return p
+
+
+def remove_network_printer(cfg: dict, pid: str) -> None:
+    """Forget a network printer (and stop using it if it was chosen)."""
+    info = cfg["printers"].get(pid)
+    if isinstance(info, dict) and info.get("manual"):
+        cfg["printers"].pop(pid, None)
+        if cfg["selected"] == pid:
+            cfg["selected"] = ""
+
+
+def check_network(target: str, connect=None, timeout: float = NETWORK_TEST_TIMEOUT) -> str:
+    """"Test the connection": open a connection to host:port and close it again.
+
+    Nothing is sent, so nothing can print. Returns a plain sentence saying
+    what happened; raises PrinterError only for an address that doesn't look
+    right."""
+    host, port = parse_hostport(target)
+    if connect is None:
+        connect = socket.create_connection
+    try:
+        s = connect((host, port), timeout=timeout)
+    except socket.timeout:
+        return (f"Nothing answered at {host}:{port}. Check the printer (and its print "
+                "server or bridge) is switched on and on the same network as this "
+                "computer, and that the address is right.")
+    except ConnectionRefusedError:
+        return (f"{host} answered, but not on port {port}. Check the number after the "
+                "colon (it is often 9100).")
+    except OSError:
+        return (f"I couldn't reach {host}. Check the address, and that this computer "
+                "is on the same network as the printer.")
+    try:
+        s.close()
+    except OSError:
+        pass
+    return f"\u2714 Something answered at {host}:{port}. Nothing was printed."
 
 
 def auto_pick(found: list[Printer]) -> Printer | None:
@@ -655,6 +758,9 @@ def feed_job(stock: Stock, printer_cfg: dict, advanced: dict,
     return tspl.feed_job(stock, v["gap_mm"], v["media"])
 
 
+_DRY_RUN_COUNT = itertools.count(1)
+
+
 def send(cfg: dict, data: bytes, image=None, copies: int = 1) -> str:
     """Send a job. Returns an optional reply line (network). Raises PrinterError."""
     method, target = cfg.get("method", ""), cfg.get("target", "")
@@ -666,7 +772,8 @@ def send(cfg: dict, data: bytes, image=None, copies: int = 1) -> str:
     if dry:
         p = Path(dry)
         p.mkdir(parents=True, exist_ok=True)
-        f = p / f"job-{int(time.time() * 1000)}-{method}.bin"
+        # a number after the time, so jobs sent in the same millisecond each get a file
+        f = p / f"job-{int(time.time() * 1000)}-{next(_DRY_RUN_COUNT):04d}-{method}.bin"
         f.write_bytes(data)
         log.info("dry run: wrote %s (%d bytes) instead of printing to %s", f, len(data), target)
         return ""
@@ -842,6 +949,12 @@ def parse_hostport(target: str, default_port: int = 9100) -> tuple[str, int]:
     return host, p
 
 
+MSG_NET_NOT_ANSWERING = ("The printer isn't answering at {addr}. Check it (and its print "
+                         "server or bridge) is switched on and on the same network as this "
+                         "computer. My printers \u2192 Add a network printer\u2026 can test "
+                         "the connection.")
+
+
 def send_network(target: str, data: bytes, connect=socket.create_connection,
                  reply_timeout: float = 1.5) -> str:
     """Send over raw TCP; return the first reply line if the printer sends one quickly."""
@@ -849,7 +962,7 @@ def send_network(target: str, data: bytes, connect=socket.create_connection,
     try:
         s = connect((host, port), timeout=5)
     except OSError as e:
-        raise PrinterError(MSG_NOT_ANSWERING) from e
+        raise PrinterError(MSG_NET_NOT_ANSWERING.format(addr=f"{host}:{port}")) from e
     reply = b""
     try:
         s.sendall(data)
@@ -867,7 +980,7 @@ def send_network(target: str, data: bytes, connect=socket.create_connection,
         except (socket.timeout, OSError):
             pass                       # a reply is optional; never wait for one
     except OSError as e:
-        raise PrinterError(MSG_NOT_ANSWERING) from e
+        raise PrinterError(MSG_NET_NOT_ANSWERING.format(addr=f"{host}:{port}")) from e
     finally:
         try:
             s.close()

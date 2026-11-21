@@ -49,6 +49,7 @@
       "notes": "203 dpi, 812 dots (4 in) max print width. Clones share USB id 0483:2025 (STMicroelectronics BAR PRINTER) and serial; tell units apart by USB port.",
       "calibrate_by_hand": "Put at least 4 labels in the printer and close the lid. Hold the feed button down for about 3 seconds, until the printer starts feeding, then let go. It feeds a few labels and stops by itself.",
       "verified_on_paper": true,
+      "verified_network": true,
       "bt_chunk": 2048,
       "bt_delay_ms": 30
     },

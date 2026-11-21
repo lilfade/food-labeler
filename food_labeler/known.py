@@ -10,7 +10,8 @@ preferred darkness/speed per label size, its print head's resolution (203 or
 tested it on paper ("verified_on_paper"; untested models are shown as
 "alpha — not tested yet"). Bluetooth has its own flag ("verified_bluetooth"):
 a model tested over USB is still alpha when it is reached over Bluetooth,
-until someone prints on it that way. "bt_chunk" and "bt_delay_ms" say how
+until someone prints on it that way; likewise "verified_network" for printing
+over the network (raw TCP to a print server or bridge). "bt_chunk" and "bt_delay_ms" say how
 to pace a Bluetooth job for printers with small buffers. Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
 the program half-configured.
@@ -37,7 +38,7 @@ USER_FILE_NAME = "known_printers.json"
 ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "max_width_dots", "media", "usb",
                 "ieee1284", "windows", "density", "speed", "stocks", "notes",
                 "calibrate_by_hand", "max_width_mm", "verified_on_paper",
-                "verified_bluetooth", "bt_chunk", "bt_delay_ms"}
+                "verified_bluetooth", "verified_network", "bt_chunk", "bt_delay_ms"}
 LANGUAGES = ("tspl", "zpl", "driver")   # "driver": only through the maker's (Windows) driver
 SUPPORT_TESTED = "Tested"
 SUPPORT_ALPHA = "Alpha — not tested yet"
@@ -95,6 +96,7 @@ class Definition:
     calibrate_by_hand: str = ""  # how to set up a new roll with the printer's own button
     verified_on_paper: bool = False  # we printed real labels on one; else "alpha"
     verified_bluetooth: bool = False  # ...and also over Bluetooth; else alpha on Bluetooth
+    verified_network: bool = False    # ...and also over the network; else alpha that way
     bt_chunk: int = 0                # bytes per Bluetooth write; 0 = the program's default
     bt_delay_ms: int | None = None   # pause between Bluetooth writes; None = default
 
@@ -247,6 +249,10 @@ def validate_entry(e) -> Definition:
     if not isinstance(verified_bt, bool):
         raise DefinitionError(f"Printer “{name}” has a bad “verified_bluetooth” "
                               "(true or false).")
+    verified_net = e.get("verified_network", False)
+    if not isinstance(verified_net, bool):
+        raise DefinitionError(f"Printer “{name}” has a bad “verified_network” "
+                              "(true or false).")
     bt_chunk = e.get("bt_chunk", 0)
     if (isinstance(bt_chunk, bool) or not isinstance(bt_chunk, int)
             or not (bt_chunk == 0 or BT_CHUNK_RANGE[0] <= bt_chunk <= BT_CHUNK_RANGE[1])):
@@ -277,7 +283,8 @@ def validate_entry(e) -> Definition:
         density=_int_map(e.get("density"), "density"), speed=_int_map(e.get("speed"), "speed"),
         stocks=stocks_ or sorted(STOCK_IDS), notes=notes,
         calibrate_by_hand=by_hand.strip(), verified_on_paper=verified,
-        verified_bluetooth=verified_bt, bt_chunk=bt_chunk, bt_delay_ms=bt_delay,
+        verified_bluetooth=verified_bt, verified_network=verified_net, bt_chunk=bt_chunk,
+        bt_delay_ms=bt_delay,
     )
 
 
@@ -318,6 +325,8 @@ def _to_json(d: Definition) -> dict:
         out["verified_on_paper"] = True
     if d.verified_bluetooth:
         out["verified_bluetooth"] = True
+    if d.verified_network:
+        out["verified_network"] = True
     if d.bt_chunk:
         out["bt_chunk"] = d.bt_chunk
     if d.bt_delay_ms is not None:
@@ -360,6 +369,10 @@ class KnownPrinters:
     def all(self) -> list[Definition]:
         """Every known model, built-in order first, then user additions."""
         return list(self.defs.values())
+
+    def get(self, pid: str) -> Definition | None:
+        """The model with this id (e.g. "lp610bt-compatible"), or None."""
+        return self.defs.get(str(pid or ""))
 
     def match(self, info: dict | None = None, vidpid: str = "", text: str = "") -> Definition | None:
         """Best match: IEEE 1284 id first, then USB id, then names (Windows/CUPS)."""
