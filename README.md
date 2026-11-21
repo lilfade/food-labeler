@@ -62,6 +62,7 @@ If Windows says *"Windows protected your PC"*, that is normal: see
 
 ## More help
 
+- **[Everything it does](docs/features.md)**: the full feature list on one page.
 - **[Using Food Labeler](docs/guide.md)**: first time on Windows, My products, saved labels, wide or tall labels, lettering, pictures, QR codes and cottage food labels.
 - **[Your printer](docs/printer.md)**: choosing and naming printers, USB, network (print server or bridge) or Bluetooth (alpha), print settings and setting up a new roll.
 - **[Printers we know about](docs/printer-list.md)**: tested on paper: LP610BT-type printers (USB and network) and the Zebra ZP450. Alpha (should work, not tested yet): MUNBYN, Rollo, iDPRT/HPRT, Polono PL60, Phomemo, Jadens, Xprinter, Arkscan and more.
