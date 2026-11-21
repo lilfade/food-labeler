@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.5.2 — unreleased
+## 1.5.2 — 2026-11-21
 
 Missouri and West Virginia cottage food rules checked against official
 sources. Every state now is.
