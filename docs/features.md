@@ -20,9 +20,8 @@ A plain list of what's in the app. Free, no account, works without internet.
 - **How many labels:** big − and + buttons, then one green **PRINT** button.
 
 ## For home bakers (cottage food)
-- **Your state's wording** for all 50 states and Washington, D.C., each with
-  its official source and the date it was checked; states we couldn't confirm
-  say so.
+- **Your state's wording** for all 50 states and Washington, D.C., each
+  checked against its official source, with the date it was checked.
 - **Label check:** a green line when everything your state asks for is on the
   label, or a list of what's missing. Required wording is never shrunk below
   your state's minimum size.

@@ -264,8 +264,10 @@ changes, Food Labeler asks once whether to keep yours or use the new one.
 
 > These are suggestions from public state guidance. You are responsible for
 > following your state's rules. Each state's source and the date it was
-> checked are shown in **My bakery**. States marked *Unverified — check with
-> your state* could not be confirmed from an official source.
+> checked are shown in **My bakery**. Every state that comes with Food
+> Labeler was checked against an official source; a state marked
+> *Unverified — check with your state* (for example, from an update file)
+> could not be confirmed.
 
 Details for helpers, including every state's wording and source:
 [cottage-rules.md](cottage-rules.md).

@@ -1,7 +1,7 @@
 {
   "format": "food-labeler-cottage-rules",
   "version": 1,
-  "updated": "2026-11-20",
+  "updated": "2026-11-21",
   "states": [
     {
       "id": "AL",
@@ -879,24 +879,26 @@
       "id": "MO",
       "name": "Missouri",
       "sales_allowed": true,
-      "verified": false,
+      "verified": true,
       "statements": [],
       "required": [
-        "business_name",
-        "address"
-      ],
-      "optional": [
         "product_name",
         "net_quantity",
         "ingredients",
-        "allergens"
+        "allergens",
+        "business_name",
+        "address"
       ],
+      "optional": [],
       "min_statement_pt": null,
       "metric_required": false,
-      "notes": "RSMo §196.298.4 (eff. Aug. 28, 2022) requires: \"The label shall include the name and address of the cottage food production operation and a statement that the food is not inspected by the department or local health department.\" The statute does NOT prescribe exact wording and I could not retrieve DHSS's implementing guidance (home-based kitchen guidance and cottage-food Q&A PDFs now 404), so the exact statement text is unverified — check with your state (DHSS). Write a statement that the food is not inspected by the Missouri Department of Health and Senior Services or the local health department. Covers baked goods, canned jams/jellies, dried herbs sold directly to consumers; internet sales only when seller and buyer are both in Missouri. Product name/ingredients/allergens are good practice but not named in the statute. Requirements basis verified from statute; statement wording unverified — check with your state.",
+      "notes": "The law says what the statement must cover but gives no exact wording, so no verbatim text is recorded. RSMo §196.298.4 (in force since Aug. 28, 2022) says the label must include the cottage food operation's name and address and \"a statement that the food is not inspected by the department or local health department\". The Department of Health and Senior Services (DHSS) guidance (Missouri Home-Based Kitchen Food Production Guidance, August 2023, still the version on the DHSS website) lists everything the label must show, legible to the buyer: the full name and address of the cottage food operation; the common name of the food; all ingredients in descending order by weight; the net weight; any allergens; and a statement that the product is prepared in a kitchen that is not subject to inspection by DHSS. Write your own sentence that says this clearly. A suggestion (not official wording): \"This food was made in a home kitchen that is not inspected by the Missouri Department of Health and Senior Services or the local health department.\" No type size, metric weight, date or permit number is required, and no permit or registration exists for cottage food. There is no DHSS rule with more detail: the food protection rules (19 CSR 20-1) have no cottage food section. Cottage food covers baked goods, canned jams and jellies, and dried herbs or herb mixes, sold by you directly to the consumer (not through a store or a booth you don't staff). Online sales are allowed only when you and the buyer are both in Missouri; no sales across state lines. There is no yearly sales limit since 2022. Foods sold under the separate Food Code exemption (not cottage food) also need a placard where they are sold. A 2026 bill (HB 3108) to widen the law did not leave committee; the statute is unchanged. The older DHSS addresses (health.mo.gov/safety/foodsafety/...) no longer work; the guidance moved to the address listed here.",
       "source_url": "https://revisor.mo.gov/main/OneSection.aspx?section=196.298",
-      "extra_sources": [],
-      "checked_on": "2026-11-20"
+      "extra_sources": [
+        "https://health.mo.gov/sites/health/files/media/pdf/2026/03/home-based-kitchen-food-prod-guidance.pdf",
+        "https://health.mo.gov/business-professionals/food-safety"
+      ],
+      "checked_on": "2026-11-21"
     },
     {
       "id": "MT",
@@ -1675,13 +1677,19 @@
       "id": "WV",
       "name": "West Virginia",
       "sales_allowed": true,
-      "verified": false,
+      "verified": true,
       "statements": [
         {
           "id": "main",
-          "text": "This product was made in a non-commercial kitchen establishment that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.",
+          "text": "This product was made in a non-commercial kitchen that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.",
           "min_pt": null,
           "kind": "label"
+        },
+        {
+          "id": "phf",
+          "text": "This product was made in a non-commercial or home kitchen that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.",
+          "min_pt": null,
+          "kind": "alternative"
         }
       ],
       "required": [
@@ -1697,12 +1705,16 @@
       ],
       "min_statement_pt": null,
       "metric_required": true,
-      "notes": "Unverified — check with your state. The wording here is from the West Virginia Department of Agriculture's Farmers Market Vendor Guide (December 2025), but the current law could not be read and older law used different wording. Source is the WVDA Farmers Market Vendor Guide (revised December 2025). Required elements: statement of identity on the principal display panel; company name; city, state and zip; ingredients beginning 'Ingredients:' in descending order by weight; net contents in the bottom third of the principal panel in U.S. units followed by metric in parentheses (hand-written net contents OK for non-PHF); 'Contains' allergen statement directly below ingredients (9 major allergens, species for tree nuts/fish/shellfish). Labels 'generally conform to FDA rules.' The same guide elsewhere prints a shorter variant: “This product was made in a non-commercial kitchen that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.” DOUBT: the 2019 statute (§19-35-6, SB 285) used “This product was produced at a private residence that is exempt from State licensing and inspection. This product may contain allergens.” — the official code site (code.wvlegislature.gov) was unreachable so the current statutory text could not be confirmed; 2026 bills HB 4076/SB 44 were pending. Non-PHF cottage foods need no permit; potentially hazardous cottage foods need a WVDA permit and inspection. Non-PHF info may be on a placard, receipt, or website instead of an affixed label.",
-      "source_url": "https://agriculture.wv.gov/wp-content/uploads/Farmers-Market-Vendor-Guide.pdf",
+      "notes": "W. Va. Code §19-35-6(c), as rewritten in 2021 (HB 2633), says non-potentially hazardous foods \"shall be labeled in compliance with the department's labeling standards\". Those standards are in the Department of Agriculture's rule 61CSR38 §7 (in force since May 1, 2023), and the department's Labeling Requirements sheet (March 2026) repeats them word for word. Rule 7.5.a gives the exact statement for products made in a home, farm or community kitchen, printed here. The label must also show, in a size easy for the average person to read: the common name on the front panel; the company name; city, state and ZIP; ingredients starting with \"Ingredients:\" in descending order by weight; net contents in the bottom third of the front panel in U.S. units with the metric amount in parentheses (hand-written net contents are fine for non-potentially hazardous foods); and an allergen statement starting with \"Contains\" directly below the ingredients (9 major allergens, naming the kind of tree nut, fish or shellfish). Add keep-cold or cooking instructions when needed. Labels generally follow FDA rules. Non-potentially hazardous foods (most baked goods) need no permit, and the label information may instead be on a placard where you sell unpackaged items, on a receipt, or on your website for online sales. Potentially hazardous cottage foods (pickles, salsas, sauces, foods kept cold and similar) need a WVDA potentially hazardous cottage food vendor permit under the 2026 law (SB 44, §19-40, in force June 12, 2026) and the 2026 emergency rule 61CSR42, whose §6.3.9 uses the alternative wording \"non-commercial or home kitchen\"; those labels must be sent to WVDA for review. Older wording is out of date: the 2019 law (SB 285) required \"This product was produced at a private residence that is exempt from State licensing and inspection. This product may contain allergens.\", which HB 2633 removed in 2021. The December 2025 Farmers Market Vendor Guide prints the statement once with an extra word (\"kitchen establishment\"); the rule itself does not have it. A 2026 bill (HB 4076) to change §19-35-6 did not become law. A change to 61CSR38 was before the Legislature in late 2026 with the same statement; check the WVDA if it is adopted. Sales must be direct to the consumer in West Virginia.",
+      "source_url": "https://apps.sos.wv.gov/adlaw/csr/readfile.aspx?DocId=56083&Format=PDF",
       "extra_sources": [
-        "https://agriculture.wv.gov/divisions/regulatory-and-environmental-affairs/potentially-hazardous-cottage-foods/"
+        "https://agriculture.wv.gov/wp-content/uploads/Labeling-Requirements-2026.pdf",
+        "https://code.wvlegislature.gov/19-35-6/",
+        "https://agriculture.wv.gov/wp-content/uploads/Filed-Cottage-Food-Rule-Emergency-Rule-2026.pdf",
+        "https://www.wvlegislature.gov/Bill_Text_HTML/2026_SESSIONS/RS/bills/sb44%20sub1%20enr.pdf",
+        "https://agriculture.wv.gov/wp-content/uploads/Farmers-Market-Vendor-Guide.pdf"
       ],
-      "checked_on": "2026-11-20"
+      "checked_on": "2026-11-21"
     },
     {
       "id": "WI",

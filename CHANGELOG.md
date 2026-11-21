@@ -4,6 +4,20 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.5.2 — unreleased
+
+Missouri and West Virginia cottage food rules checked against official
+sources. Every state now is.
+
+- **Missouri.** The law describes the statement but gives no exact words,
+  so you write your own; the notes now give a suggestion. The label list
+  now follows the state health department's guidance: name and address,
+  the name of the food, ingredients, net weight and allergens.
+- **West Virginia.** The wording now comes from the state agriculture
+  rule (one word, "establishment", is gone), with the wording for foods
+  that need a permit offered as an alternative. The notes explain which
+  older wording is out of date.
+
 ## 1.5.1 — 2026-11-21
 
 Safety and small fixes.

@@ -141,6 +141,56 @@ def test_nebraska_label_lines_follow_htk_layout():
 
 
 # ---------------------------------------------------------------------------
+# states checked one by one
+# ---------------------------------------------------------------------------
+
+def test_missouri_rules_from_statute_and_dhss_guidance():
+    r = cottage.CottageRules()
+    mo = r.effective("MO").rule
+    assert mo.verified and mo.checked_on == "2026-11-21"
+    # RSMo 196.298 describes the statement but gives no exact words
+    assert mo.statements == []
+    assert "no exact wording" in mo.notes and "Suggestion" in mo.notes.title()
+    assert "not inspected by the department or local health department" in mo.notes
+    # DHSS guidance: name and address, common name, ingredients, net weight, allergens
+    assert set(mo.required) == {"product_name", "net_quantity", "ingredients", "allergens",
+                                "business_name", "address"}
+    assert not mo.metric_required and mo.min_statement_pt is None
+    assert mo.source_url == "https://revisor.mo.gov/main/OneSection.aspx?section=196.298"
+    assert any(u.startswith("https://health.mo.gov/") for u in mo.extra_sources)
+    assert "check with your state" not in mo.notes.lower()
+
+
+def test_west_virginia_rules_from_61csr38():
+    r = cottage.CottageRules()
+    wv = r.effective("WV").rule
+    assert wv.verified and wv.checked_on == "2026-11-21"
+    by_id = {s["id"]: s for s in wv.statements}
+    # 61CSR38 section 7.5.a, word for word
+    assert by_id["main"]["kind"] == "label"
+    assert by_id["main"]["text"] == (
+        "This product was made in a non-commercial kitchen that may not be subject to "
+        "inspection and may contain cross-contact allergens not included in the allergen "
+        "statement.")
+    # 61CSR42 section 6.3.9 (potentially hazardous cottage foods) is offered as an alternative
+    assert by_id["phf"]["kind"] == "alternative"
+    assert "non-commercial or home kitchen" in by_id["phf"]["text"]
+    assert set(wv.required) == {"product_name", "net_quantity", "ingredients", "allergens",
+                                "business_name", "city_state_zip"}
+    assert wv.metric_required
+    assert wv.source_url.startswith("https://apps.sos.wv.gov/")
+    assert any("agriculture.wv.gov" in u for u in wv.extra_sources)
+    assert "private residence" in wv.notes  # the 2019 wording is named as out of date
+    assert "check with your state" not in wv.notes.lower()
+
+
+def test_every_bundled_state_is_verified():
+    rules = cottage.CottageRules()
+    unverified = [s.id for s in rules.states() if s.id != "custom" and not s.verified]
+    assert unverified == []
+
+
+# ---------------------------------------------------------------------------
 # layering and user edits
 # ---------------------------------------------------------------------------
 

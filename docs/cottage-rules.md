@@ -126,7 +126,8 @@ overwritten.
 
 ## States in the bundled file
 
-Checked 2026-11-20. "Statement" shows the printed wording (other kinds are in
+Checked 2026-11-20 (Missouri and West Virginia 2026-11-21). Every state is
+verified. "Statement" shows the printed wording (other kinds are in
 the file). This table is a summary; the file is what the app uses.
 
 | state | verified | statement on the label | min size | source |
@@ -156,7 +157,7 @@ the file). This table is a summary; the file is what the app uses.
 | Michigan | yes | “Made in a home kitchen that has not been inspected by the Michigan department of agriculture and rural development.” | 11 pt | [source](https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-289-4102) |
 | Minnesota | yes | “These products are homemade and not subject to state inspection.” | — | [source](https://www.revisor.mn.gov/statutes/cite/28A.152) |
 | Mississippi | yes | “Made in a cottage food operation that is not subject to Mississippi's food safety regulations.” | 10 pt | [source](https://billstatus.ls.state.ms.us/documents/2026/html/HB/0900-0999/HB0910IN.htm) |
-| Missouri | **unverified** | none prescribed (see notes) | — | [source](https://revisor.mo.gov/main/OneSection.aspx?section=196.298) |
+| Missouri | yes | none prescribed (see notes) | — | [source](https://revisor.mo.gov/main/OneSection.aspx?section=196.298) |
 | Montana | yes | “Made in a home kitchen that is not subject to retail food establishment regulations or inspections.” | 11 pt | [source](https://archive.legmt.gov/bills/mca/title_0500/chapter_0500/part_0010/section_0160/0500-0500-0010-0160.html) |
 | Nebraska | yes | “This food was prepared in a kitchen that is not subject to regulation and inspection by the regulatory authority and may contain allergens.” | — | [source](https://nebraskalegislature.gov/laws/statutes.php?statute=81-2,280) |
 | Nevada | yes | “MADE IN A COTTAGE FOOD OPERATION THAT IS NOT SUBJECT TO GOVERNMENT FOOD SAFETY INSPECTION” | — | [source](https://www.leg.state.nv.us/NRS/NRS-580.html) |
@@ -179,6 +180,6 @@ the file). This table is a summary; the file is what the app uses.
 | Vermont | yes | “Made in a home kitchen not inspected by the Vermont Department of Health” | 10 pt | [source](https://www.healthvermont.gov/node/386) |
 | Virginia | yes | “NOT FOR RESALE PROCESSED AND PREPARED WITHOUT STATE INSPECTION.” | — | [source](https://law.lis.virginia.gov/vacode/title3.2/chapter51/section3.2-5130/) |
 | Washington | yes | “Made in a home kitchen that has not been subject to standard inspection criteria.” | 11 pt | [source](https://app.leg.wa.gov/RCW/default.aspx?cite=69.22.020) |
-| West Virginia | **unverified** | “This product was made in a non-commercial kitchen establishment that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.” | — | [source](https://agriculture.wv.gov/wp-content/uploads/Farmers-Market-Vendor-Guide.pdf) |
+| West Virginia | yes | “This product was made in a non-commercial kitchen that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.” | — | [source](https://apps.sos.wv.gov/adlaw/csr/readfile.aspx?DocId=56083&Format=PDF) |
 | Wisconsin | yes | none prescribed (see notes) | — | [source](https://datcp.wi.gov/Documents2/HomemadeBakedGoods.pdf) |
 | Wyoming | yes | none prescribed (see notes) | — | [source](https://wyoleg.gov/statutes/compress/title11.pdf) |
