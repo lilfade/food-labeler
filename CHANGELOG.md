@@ -4,7 +4,7 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
-## 1.5.0 — unreleased
+## 1.5.0 — 2026-11-21
 
 Bluetooth printing (alpha), network printers, wide or tall labels, a
 tidier main window with your products first, and fixes from testing with
