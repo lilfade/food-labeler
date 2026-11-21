@@ -386,6 +386,17 @@ class Library:
             log.exception("My pictures list unreadable")
             return []
 
+    def _file(self, x: dict) -> Path | None:
+        """The picture file of a pictures.json entry, always inside My pictures.
+
+        pictures.json is only a list we wrote ourselves, but it is a file
+        anyone could edit: only the bare file name is used, so an entry can
+        never point at (and remove or read) a file somewhere else."""
+        name = Path(str(x.get("file") or "")).name
+        if name in ("", ".", "..") or "\x00" in name or "\\" in name:
+            return None
+        return self.dir / name
+
     def _write(self, items: list[dict]) -> None:
         from .model import atomic_write_text
         atomic_write_text(self.index_path, json.dumps(
@@ -394,7 +405,7 @@ class Library:
 
     def items(self) -> list[dict]:
         """[{"id", "name", "file"}] for pictures whose file is still there."""
-        return [x for x in self._read() if (self.dir / x["file"]).is_file()]
+        return [x for x in self._read() if (f := self._file(x)) is not None and f.is_file()]
 
     def add(self, pic: dict, name: str = "") -> str:
         """Keep a label picture in My pictures (no duplicates). Returns its id."""
@@ -415,8 +426,14 @@ class Library:
     def load(self, pid: str) -> tuple[Image.Image, str]:
         """(picture, name) of a library picture."""
         for x in self._read():
-            if x.get("id") == pid:
-                return open_bytes((self.dir / x["file"]).read_bytes()), x.get("name", "")
+            if x.get("id") == pid and (f := self._file(x)) is not None:
+                try:
+                    if f.stat().st_size > MAX_FILE_BYTES:
+                        raise _too_big()
+                    data = f.read_bytes()
+                except OSError:
+                    break
+                return open_bytes(data), x.get("name", "")
         raise PictureError("That picture isn't in My pictures any more.")
 
     def remove(self, pid: str) -> None:
@@ -424,9 +441,10 @@ class Library:
         items = self._read()
         keep = [x for x in items if x.get("id") != pid]
         for x in items:
-            if x.get("id") == pid:
+            f = self._file(x) if x.get("id") == pid else None
+            if f is not None:
                 try:
-                    (self.dir / x["file"]).unlink()
+                    f.unlink()
                 except OSError:
                     pass
         self._write(keep)

@@ -614,8 +614,31 @@ def send_cups(queue: str, data: bytes, run=subprocess.run) -> None:
             pass
 
 
-def send_device(path: str, data: bytes, opener=open) -> None:
-    """Write straight to a device file such as /dev/usb/lp0 (needs the "lp" group)."""
+MSG_NOT_A_DEVICE = ("This printer's settings point somewhere that isn't a printer, so "
+                    "nothing was sent. Click “Set up my printer” to choose it again.")
+
+
+def device_path_ok(path: str, dev_root: str = "/dev") -> bool:
+    """True if ``path`` is a device file under /dev (also after following links).
+
+    The target comes from settings.json, so it is checked before anything is
+    written: a direct USB printer is always /dev/usb/lpN or a udev link in /dev."""
+    if not path or "\x00" in path or not os.path.isabs(path):
+        return False
+    root = os.path.normpath(dev_root) + os.sep
+    if ".." in Path(path).parts:
+        return False
+    return (os.path.normpath(path).startswith(root)
+            and os.path.realpath(path).startswith(os.path.realpath(dev_root) + os.sep))
+
+
+def send_device(path: str, data: bytes, opener=open, dev_root: str = "/dev") -> None:
+    """Write straight to a device file such as /dev/usb/lp0 (needs the "lp" group).
+
+    Anything that isn't under /dev is refused without being opened."""
+    if not device_path_ok(path, dev_root):
+        log.error("refusing to print to %r: not a device under %s", path, dev_root)
+        raise PrinterError(MSG_NOT_A_DEVICE)
     try:
         with opener(path, "wb", buffering=0) as f:
             f.write(data)

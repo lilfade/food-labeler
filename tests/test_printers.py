@@ -149,8 +149,10 @@ def test_send_cups(tmp_path):
 
 
 def test_send_device(tmp_path):
-    dev = tmp_path / "lp0"
-    printers.send_device(str(dev), b"ABC")
+    root = tmp_path / "dev"
+    (root / "usb").mkdir(parents=True)
+    dev = root / "usb" / "lp0"
+    printers.send_device(str(dev), b"ABC", dev_root=str(root))
     assert dev.read_bytes() == b"ABC"
 
     def denied(*a, **k):
@@ -158,7 +160,40 @@ def test_send_device(tmp_path):
     with pytest.raises(printers.PrinterError, match="lp"):
         printers.send_device("/dev/usb/lp0", b"x", opener=denied)
     with pytest.raises(printers.PrinterError, match="isn't answering"):
-        printers.send_device(str(tmp_path / "nodir" / "lp9"), b"x")
+        printers.send_device(str(root / "nodir" / "lp9"), b"x", dev_root=str(root))
+
+
+@pytest.mark.parametrize("target", [
+    "/home/someone/.bashrc", "/etc/passwd", "relative/lp0", "lp0", "",
+    "/dev/../etc/passwd", "/dev/usb/../../tmp/x", "/devices/lp0", "C:\\Windows\\x",
+    "/dev/usb/lp0\x00",
+])
+def test_send_device_refuses_anything_outside_dev(target):
+    opened = []
+
+    def opener(*a, **k):
+        opened.append(a)
+        raise AssertionError("must not be opened")
+    with pytest.raises(printers.PrinterError, match="isn't a printer"):
+        printers.send_device(target, b"x", opener=opener)
+    assert not opened
+
+
+def test_send_device_refuses_a_link_out_of_dev(tmp_path):
+    root = tmp_path / "dev"
+    root.mkdir()
+    outside = tmp_path / "victim.txt"
+    outside.write_text("keep me")
+    (root / "lp-link").symlink_to(outside)
+    (root / "usb").mkdir()
+    (root / "usb" / "lp0").write_bytes(b"")
+    (root / "lp610bt-white").symlink_to(root / "usb" / "lp0")
+    with pytest.raises(printers.PrinterError, match="isn't a printer"):
+        printers.send_device(str(root / "lp-link"), b"x", dev_root=str(root))
+    assert outside.read_text() == "keep me"
+    printers.send_device(str(root / "lp610bt-white"), b"OK", dev_root=str(root))
+    assert (root / "usb" / "lp0").read_bytes() == b"OK"
+    assert printers.device_path_ok("/dev/usb/lp0") and printers.device_path_ok("/dev/lp610")
 
 
 class FakeSock:

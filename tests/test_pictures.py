@@ -332,3 +332,34 @@ def test_switching_kind_keeps_the_picture():
     assert d.fields["text"] == "Chicken Noodle Soup"
     d.set_template("simple")
     assert d.picture["place"] == "above" and d.picture["size"] == 35
+
+
+@pytest.mark.parametrize("bad", ["../victim.png", "/tmp/victim.png", "sub/../../victim.png",
+                                 "", ".", "..", None, "..\\victim.png"])
+def test_my_pictures_never_touch_files_outside_the_folder(tmp_path, bad):
+    data = tmp_path / "data"
+    lib = pictures.Library(data)
+    pid = lib.add(pic_of(colour_logo()), "Logo")
+    victim = data / "victim.png"
+    victim.write_bytes((lib.dir / f"{pid}.png").read_bytes())
+    # someone edits pictures.json to point an entry elsewhere
+    index = json.loads(lib.index_path.read_text())
+    index["pictures"].append({"id": "evil", "name": "Evil", "file": bad})
+    lib.index_path.write_text(json.dumps(index))
+    assert [x["id"] for x in lib.items()] == [pid]
+    with pytest.raises(pictures.PictureError):
+        lib.load("evil")
+    lib.remove("evil")
+    assert victim.exists()
+    assert (lib.dir / f"{pid}.png").exists()          # the real picture is untouched
+
+
+def test_my_pictures_uses_only_the_bare_file_name(tmp_path):
+    lib = pictures.Library(tmp_path)
+    pid = lib.add(pic_of(colour_logo()), "Logo")
+    index = json.loads(lib.index_path.read_text())
+    index["pictures"][0]["file"] = f"some/other/folder/{pid}.png"
+    lib.index_path.write_text(json.dumps(index))
+    assert lib.load(pid)[1] == "Logo"                 # found inside My pictures
+    lib.remove(pid)
+    assert not (lib.dir / f"{pid}.png").exists()
