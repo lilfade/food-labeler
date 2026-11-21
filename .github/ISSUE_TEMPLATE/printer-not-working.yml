@@ -1,0 +1,59 @@
+name: My printer isn't working / isn't found
+description: Food Labeler can't find your printer, or the labels don't come out right.
+title: "My printer isn't working"
+labels: ["printer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sorry your printer is giving you trouble. Fill in what you can, and we'll try to help.
+        You don't need to know any technical words: just tell us what you see.
+
+        Quick things to try first: is the printer switched on and plugged in? Have you pressed
+        **Look for printers again**? There are more quick fixes in
+        [Something not right?](https://github.com/lilfade/food-labeler/blob/main/docs/troubleshooting.md).
+  - type: input
+    id: printer
+    attributes:
+      label: Your printer's brand and model
+      description: Exactly as it is written on the printer or its box (often on a sticker underneath).
+      placeholder: "e.g. MUNBYN ITPP941, Polono PL60, Zebra ZP450"
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Windows
+        - Linux
+        - Something else / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you press, and what did you see? A message on the screen, a blank label, nothing at all…
+      placeholder: "e.g. I pressed PRINT and nothing came out. The printer's light is green."
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The printer report from Food Labeler
+      description: |
+        In Food Labeler: **Settings → Get help with my printer…** (or **My printer isn't in the
+        list → Ask for help on GitHub**). The report is copied for you: click in this box,
+        then right-click and choose **Paste**. It only has facts about your computer and
+        printers, never what is on your labels.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else? (optional)
+      description: A photo of the label that came out, or of the sticker under the printer, helps a lot. You can drag pictures into this box.
+    validations:
+      required: false

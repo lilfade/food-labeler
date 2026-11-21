@@ -31,7 +31,7 @@ log = logging.getLogger("food_labeler.app")
 ASSETS = Path(__file__).resolve().parent / "assets"
 FONT_SIZES = {"ui": (16, "normal"), "ui_bold": (16, "bold"), "field": (20, "normal"),
               "big": (22, "bold"), "huge": (30, "bold"), "title": (22, "bold"),
-              "small": (13, "normal")}
+              "small": (13, "normal"), "link": (14, "normal")}   # "link" is underlined
 SCALES = [0.8, 0.9, 1.0, 1.1, 1.2, 1.35, 1.5, 1.7]
 RENDER_DELAY_MS = 150
 AUTOSAVE_MS = 4000
@@ -100,7 +100,7 @@ class App:
         for name, (size, weight) in FONT_SIZES.items():
             try:
                 self.fonts[name] = tkfont.Font(self.root, name=name, family=fam, size=size,
-                                               weight=weight)
+                                               weight=weight, underline=(name == "link"))
             except tk.TclError:
                 self.fonts[name] = tkfont.nametofont(name)
         self.apply_scale(self.cfg["ui_scale"], save=False)

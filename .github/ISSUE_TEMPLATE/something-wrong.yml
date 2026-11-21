@@ -1,0 +1,48 @@
+name: Something's wrong or confusing
+description: Something in Food Labeler doesn't work, looks wrong, or is hard to understand.
+title: "Something's wrong: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for telling us. If something is confusing, that counts too: it means we
+        should explain it better. Please don't include anything private.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What were you trying to do, what did you press, and what did you see?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Food Labeler version (optional)
+      description: It is shown at the bottom of **Settings**, under **About**.
+      placeholder: "e.g. 1.4.0"
+    validations:
+      required: false
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Windows
+        - Linux
+        - Something else / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else? (optional)
+      description: A screenshot or photo helps a lot. You can drag pictures into this box.
+    validations:
+      required: false

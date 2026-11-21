@@ -11,6 +11,7 @@ and Linux.
 - [Sharpness: 203 or 300 dpi](#sharpness-203-or-300-dpi)
 - [New roll? Set it up](#new-roll-set-it-up)
 - [My printer isn't in the list](#my-printer-isnt-in-the-list)
+- [Getting help](#getting-help)
 
 If something prints wrong, see [Something not right?](troubleshooting.md).
 
@@ -85,9 +86,19 @@ ever sent to the printer until you press **Set it up** and say OK.
 3. Still nothing? Press **My printer isn't in the list**. Unplug the printer,
    wait a moment and plug it back in: it shows up marked
    *"This just appeared"*. Press **Use this as my printer**.
-4. If that doesn't work, press **Send this to High Thyme Kitchen**. It makes a
-   short report about the computer and printer (never what is on your labels)
-   that you can e-mail to us at hello@highthymekitchen.com, and we will help.
-   It only lists the printers plugged in. If we ask you to, tick
-   **Also list everything else plugged in** to add the other USB things
-   (their names only, never their serial numbers).
+4. If that doesn't work, press **Ask for help on GitHub**. It makes a short
+   report about the computer and printer (never what is on your labels),
+   copies it, and opens the *My printer isn't working* form on GitHub. Paste
+   the report into the box on the page (right-click → **Paste**), say what
+   happened, and we'll try to help. It only lists the printers plugged in. If
+   we ask you to, tick **Also list everything else plugged in** to add the
+   other USB things (their names only, never their serial numbers).
+
+## Getting help
+
+[Open an issue on GitHub](https://github.com/lilfade/food-labeler/issues/new/choose) and pick the kind of problem
+(*My printer isn't working*, *Add my printer*, …). In Food Labeler,
+**Settings → Get help with my printer…** makes the printer report and opens
+the right form for you. It's free to make a GitHub account; or, if you're
+stuck, use **Or email it instead** in the same window, or email
+hello@highthymekitchen.com.

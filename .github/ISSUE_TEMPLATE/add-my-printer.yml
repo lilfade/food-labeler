@@ -1,0 +1,55 @@
+name: Add my printer
+description: Ask us to add a printer that Food Labeler doesn't know yet.
+title: "Add my printer: "
+labels: ["printer"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! Telling us about your printer helps everyone who has the same one.
+        Many cheap label printers are the same printer sold under different names, so the
+        printer report is the most useful part.
+  - type: input
+    id: printer
+    attributes:
+      label: Your printer's brand and model
+      description: Exactly as it is written on the printer or its box.
+      placeholder: "e.g. MUNBYN ITPP941"
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where did you buy it? (optional)
+      description: The shop, or a link to the product page. It helps us find its guide.
+    validations:
+      required: false
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Windows
+        - Linux
+        - Something else / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: The printer report from Food Labeler
+      description: |
+        Plug the printer in and switch it on. In Food Labeler press **My printer isn't in the
+        list → Ask for help on GitHub** (or **Settings → Get help with my printer…**). The report
+        is copied for you: click in this box, then right-click and choose **Paste**.
+        It only has facts about your computer and printers, never what is on your labels.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else? (optional)
+      description: Does it work with the maker's own program? Does the box or guide say "TSPL", "ZPL" or "EPL"? A photo of the sticker under the printer helps too.
+    validations:
+      required: false

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Not comfortable with GitHub? Email hello@highthymekitchen.com
+    url: https://lilfade.github.io/food-labeler/#help
+    about: "You can email us and we'll try to help. Opening an issue here is quicker, and it helps others with the same question."

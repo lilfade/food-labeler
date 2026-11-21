@@ -56,6 +56,10 @@ If Windows says *"Windows protected your PC"*, that is normal: see
 - **[Something not right?](docs/troubleshooting.md)**: quick fixes for blank, pale or crooked labels and printers that aren't found.
 - **[For helpers and developers](CONTRIBUTING.md)**: building, testing, releases and how it works.
 
+**Still stuck? [Open an issue on GitHub](https://github.com/lilfade/food-labeler/issues/new/choose)**: pick what's wrong and fill
+in the boxes, and we'll try to help. It's free to make a GitHub account; or, if
+you're stuck, email hello@highthymekitchen.com.
+
 ## License
 
 Free and open source under the [MIT License](LICENSE).

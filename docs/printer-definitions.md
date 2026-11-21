@@ -115,8 +115,9 @@ are never used as identity because they change between boots.
 
 ## Making an update
 
-1. Ask the user for the report (*Send this to High Thyme Kitchen*): it lists
-   USB ids, the 1284 id and the Windows driver name.
+1. Get the printer report (the person pastes it into the *Add my printer*
+   issue form; in the app: *Ask for help on GitHub*): it lists USB ids, the
+   1284 id and the Windows driver name.
 2. Write a file with just the new/changed entries, run
    `python -c "from food_labeler import known; print(known.parse_file_text(open('my-update.json', encoding='utf-8').read()))"`
    to validate it, and send it.

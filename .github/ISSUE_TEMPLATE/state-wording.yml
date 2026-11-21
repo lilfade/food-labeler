@@ -1,0 +1,45 @@
+name: My state's cottage food wording is wrong
+description: The wording Food Labeler suggests for your state's cottage food labels is wrong or out of date.
+title: "Cottage food wording: "
+labels: ["state-rules"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! We copy each state's wording from its official source, and rules do change.
+        A link to the official page (your state's department of agriculture or health, or the
+        law itself) lets us check and fix it for everyone.
+  - type: input
+    id: state
+    attributes:
+      label: Your state
+      placeholder: "e.g. Nebraska"
+    validations:
+      required: true
+  - type: textarea
+    id: now
+    attributes:
+      label: What Food Labeler says now (optional)
+    validations:
+      required: false
+  - type: textarea
+    id: should
+    attributes:
+      label: What it should say
+      description: The exact wording, if you have it.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Link to the official source
+      description: A page from your state (department of agriculture or health, statute or administrative code).
+      placeholder: "https://"
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else? (optional)
+    validations:
+      required: false

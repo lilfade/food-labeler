@@ -16,7 +16,9 @@ what comes out of the printer.
 - [Licenses and branding](#licenses-and-branding)
 
 Printer help is in [Your printer](printer.md), and quick fixes are in
-[Something not right?](troubleshooting.md).
+[Something not right?](troubleshooting.md). Still stuck?
+[Open an issue on GitHub](https://github.com/lilfade/food-labeler/issues/new/choose) and we'll try to help (it's free
+to make an account; or email hello@highthymekitchen.com if you're stuck).
 
 ## First time on Windows
 

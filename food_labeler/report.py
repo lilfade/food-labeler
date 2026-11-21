@@ -1,4 +1,11 @@
-"""A plain-text "printer help" report the user can send to High Thyme Kitchen.
+"""A plain-text "printer help" report the user can share when asking for help.
+
+Help goes through the project's GitHub issues: ``issue_link`` builds the
+"new issue" address (always https://github.com/…, from app_config.json's
+``issues_url`` or the built-in one) with only a fixed template name and a
+short title in it. The report itself is never put in the address; it is
+copied to the clipboard for the person to paste. E-mail (``mailto``) stays
+as a quiet fallback.
 
 It contains only technical facts (program version, system, USB devices,
 printers, recent error lines) — never what is written on labels. Paths are
@@ -17,12 +24,20 @@ import platform
 import re
 import sys
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from . import APP_NAME, __version__
 
 SUBJECT = "Food Labeler — new printer"
 MAILTO_MAX = 1800
+
+# Where help is asked for. app_config.json's "issues_url" may change the
+# repository, but only to another https://github.com/<owner>/<repo>/issues.
+ISSUES_URL = "https://github.com/lilfade/food-labeler/issues"
+ISSUES_RE = re.compile(r"https://github\.com/[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}"
+                       r"/issues")
+PRINTER_TEMPLATE = "printer-not-working.yml"   # .github/ISSUE_TEMPLATE/<this>
+ISSUE_TITLE = "My printer isn't working"
 
 
 def _scrub(text: str) -> str:
@@ -137,6 +152,47 @@ def mailto(report: str, to: str = "") -> str:
     return f"mailto:{quote(to)}?subject={quote(SUBJECT)}&body={quote(body)}"
 
 
+def issues_url(config: dict | None = None) -> str:
+    """The issues page: app_config's "issues_url" if it is a GitHub issues page, else ours."""
+    if config is None:
+        from . import known
+        config = known.app_config()
+    url = str((config or {}).get("issues_url") or "").strip().rstrip("/")
+    return url if ISSUES_RE.fullmatch(url) else ISSUES_URL
+
+
+def issue_link(title: str = ISSUE_TITLE, template: str = PRINTER_TEMPLATE,
+               config: dict | None = None) -> str:
+    """The "new issue" address for the printer help form, with a filled-in title.
+
+    Only the template name and a short title go into the address (url-encoded),
+    never the report: it can be long and it is the person's to paste or not."""
+    if not re.fullmatch(r"[a-z0-9-]{1,60}\.ya?ml", template or ""):
+        template = PRINTER_TEMPLATE
+    title = " ".join(str(title or "").split())[:120] or ISSUE_TITLE
+    return issues_url(config) + "/new?" + urlencode({"template": template, "title": title},
+                                                    quote_via=quote)
+
+
+def ask_on_github(report: str, copy, opener=None, title: str = ISSUE_TITLE,
+                  config: dict | None = None) -> bool:
+    """Copy the report (``copy(text)``) and open the new-issue page in the browser.
+
+    Returns True if the browser was asked to open the page. Only ever opens
+    an https://github.com/ address built by issue_link."""
+    copy(report)
+    url = issue_link(title, config=config)
+    if not url.startswith("https://github.com/"):     # belt and braces: never anything else
+        return False
+    if opener is None:
+        import webbrowser
+        opener = webbrowser.open
+    try:
+        return bool(opener(url))
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def desktop_dir() -> Path:
     """The user's Desktop (CSIDL_DESKTOPDIRECTORY on Windows), else home."""
     if sys.platform.startswith("win"):
@@ -159,4 +215,5 @@ def save_to_desktop(report: str) -> Path:
     return p
 
 
-__all__ = ["build", "mailto", "save_to_desktop", "SUBJECT"]
+__all__ = ["build", "mailto", "issue_link", "issues_url", "ask_on_github",
+           "save_to_desktop", "SUBJECT"]

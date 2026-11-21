@@ -20,6 +20,17 @@ User help lives in [README.md](README.md) and three guides:
 [Something not right?](docs/troubleshooting.md). Changes are listed in
 [CHANGELOG.md](CHANGELOG.md).
 
+## Getting help
+
+Questions and problems go to the
+[issues page](https://github.com/lilfade/food-labeler/issues/new/choose): there are forms for *My printer isn't
+working*, *Add my printer*, *Something's wrong or confusing* and *My state's
+cottage food wording is wrong* (in `.github/ISSUE_TEMPLATE/`). It's free to
+make a GitHub account; people who can't can email
+hello@highthymekitchen.com instead. The forms set the labels `printer`,
+`bug` and `state-rules`, which must exist in the repository (*Issues →
+Labels*) or GitHub leaves them off.
+
 ## For helpers
 
 - **Linux:** download `food-labeler`, make it executable
@@ -179,9 +190,10 @@ Printer models are data, not code: `food_labeler/known_printers.json`. The
 format and matching rules are in
 [docs/printer-definitions.md](docs/printer-definitions.md).
 
-1. Get the facts: ask the user for the report (*My printer isn't in the list →
-   Send this to High Thyme Kitchen*). It lists the USB vendor:product id, the
-   IEEE 1284 device id (Linux) and the Windows printer/driver names.
+1. Get the facts: the *Add my printer* or *My printer isn't working* issue
+   has the printer report pasted in it (*My printer isn't in the list → Ask
+   for help on GitHub*). It lists the USB vendor:product id, the IEEE 1284
+   device id (Linux) and the Windows printer/driver names.
 2. Add an entry with a new lowercase `id`. Prefer `ieee1284` and `usb`
    matches; use `windows` name patterns for Windows. If several brands sell
    the same hardware, list them all in `brands` — never claim one brand for a

@@ -352,7 +352,7 @@ def _read(path) -> str:
 
 
 def app_config() -> dict:
-    """Bundled app_config.json (support e-mail address and name); {} if unreadable."""
+    """Bundled app_config.json (help page, support e-mail address and name); {} if unreadable."""
     try:
         data = json.loads(APP_CONFIG.read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}

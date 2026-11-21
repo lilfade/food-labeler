@@ -95,7 +95,10 @@ class Modal(tk.Toplevel):
 
 
 def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
-    """A big flat button with words. kind: normal | primary | print | chip | quiet."""
+    """A big flat button with words. kind: normal | primary | print | chip | quiet | link.
+
+    "link" is a small, quiet button that looks like underlined words (for a
+    second choice that shouldn't compete with the main button)."""
     colors = {
         "normal": ("#FFFFFF", INK, "#EFE9DD"),
         "primary": (GREEN, "#FFFFFF", GREEN_DARK),
@@ -103,6 +106,7 @@ def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
         "chip": ("#EFE9DD", INK, "#E3DCCD"),
         "quiet": (BG, GREEN_DARK, "#EFE9DD"),
         "warn": ("#FFFFFF", WARN, WARN_BG),
+        "link": (BG, GREEN_DARK, BG),
     }[kind]
     b = tk.Button(parent, text=text, command=command, font=font, bg=colors[0], fg=colors[1],
                   activebackground=colors[2], activeforeground=colors[1], relief="flat",
@@ -112,6 +116,13 @@ def button(parent, text, command, kind="normal", font="ui", width=None, **kw):
         b.configure(width=width)
     if kind in ("primary", "print"):
         b.configure(highlightbackground=GREEN_DARK)
+    if kind == "link":
+        b.configure(highlightbackground=BG, padx=4, pady=2)
+        if font == "ui":
+            try:
+                b.configure(font="link")      # the main window's underlined font
+            except tk.TclError:
+                pass
     return b
 
 

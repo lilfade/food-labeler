@@ -25,8 +25,8 @@ and the kind of roll match what is in the printer.
 Check it is switched on and plugged in, then press **Look for printers
 again**. Still nothing? Follow
 [My printer isn't in the list](printer.md#my-printer-isnt-in-the-list):
-it finds the printer when you plug it back in, or makes a short report you
-can e-mail to us at hello@highthymekitchen.com, and we will help.
+it finds the printer when you plug it back in, or makes a short report and
+opens a help form on GitHub where you paste it, and we'll try to help.
 
 **On Windows, nothing prints but there is no error.**
 **Settings → Advanced…** → tick **Print through Windows driver** → **Save**.
@@ -42,3 +42,7 @@ See [First time on Windows](guide.md#first-time-on-windows).
 **Something else went wrong.**
 Food Labeler keeps a log for your helper: *Settings → Advanced… → Open log
 folder*, file `food-labeler.log`.
+
+**Still stuck?** [Open an issue on GitHub](https://github.com/lilfade/food-labeler/issues/new/choose): pick what's
+wrong and fill in the boxes, and we'll try to help. It's free to make a
+GitHub account; or, if you're stuck, email hello@highthymekitchen.com.

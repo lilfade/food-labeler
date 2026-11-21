@@ -346,7 +346,7 @@ class SettingsDialog(Modal):
         row.pack(anchor="w", pady=(8, 0))
         button(row, "Add printer update file…", lambda: import_update(self, app)).pack(
             side="left")
-        button(row, "Send printer info to High Thyme Kitchen",
+        button(row, "Get help with my printer…",
                lambda: ReportDialog(self, app).run()).pack(side="left", padx=8)
 
         heading("Where my labels are kept")
@@ -356,8 +356,9 @@ class SettingsDialog(Modal):
         heading("About")
         support = str(known.app_config().get("support_email") or "")
         tk.Label(b, text=f"{APP_NAME} version {__version__}, by {BRAND}"
-                 + (f"\nHelp: {support}" if support else ""), font="ui", bg=BG, fg=INK,
-                 wraplength=700, justify="left").pack(anchor="w")
+                 f"\nHelp: open an issue at {report.issues_url()}"
+                 + (f"\n(or email {support} if you're stuck)" if support else ""),
+                 font="ui", bg=BG, fg=INK, wraplength=700, justify="left").pack(anchor="w")
         button(self.body, "Done", self._done, "primary").pack(anchor="e", pady=(12, 0))
 
     def _style(self):
@@ -841,7 +842,7 @@ class UsbDevicesDialog(Modal):
         row = tk.Frame(b, bg=BG)
         row.pack(fill="x", pady=(10, 0))
         button(row, "Look again", self._scan, "chip").pack(side="left")
-        button(row, "Send this to High Thyme Kitchen", lambda: ReportDialog(self, app).run()
+        button(row, "Ask for help on GitHub", lambda: ReportDialog(self, app).run()
                ).pack(side="left", padx=8)
         button(row, "Add printer update file…", lambda: import_update(self, app),
                "quiet").pack(side="left")
@@ -922,7 +923,7 @@ class UsbDevicesDialog(Modal):
                 tell(self, "Printer not installed",
                      "Windows hasn't installed this printer yet. Please install the printer's "
                      "program (driver) from the company that made it, then try again. If you "
-                     "can't, press “Send this to High Thyme Kitchen”.")
+                     "can't, press “Ask for help on GitHub”.")
                 return
             pid = choose(self, "Which one is it?",
                          "Which of these installed printers is it?",
@@ -933,7 +934,7 @@ class UsbDevicesDialog(Modal):
             if p is None:
                 tell(self, "Not ready yet",
                      "This device isn't working as a printer on this computer yet. Press "
-                     "“Send this to High Thyme Kitchen” so they can help.")
+                     "“Ask for help on GitHub” and we'll try to help.")
                 return
         if p is None:
             return
@@ -952,14 +953,22 @@ class UsbDevicesDialog(Modal):
 # ---------------------------------------------------------------------------
 
 class ReportDialog(Modal):
-    """Show the printer report (report.build) and copy / save / e-mail it."""
+    """Show the printer report (report.build): ask for help on GitHub, copy, save or e-mail it.
+
+    "Ask for help on GitHub" copies the report and opens the new-issue page
+    (report.issue_link: only https://github.com/…, never the report itself in
+    the address). E-mail is a quiet second choice."""
+
+    PASTE_NOTE = ("The report is copied — paste it into the box on the page "
+                  "(right-click → Paste).")
 
     def __init__(self, parent, app):
-        super().__init__(parent, "Send printer info")
+        super().__init__(parent, "Get help with my printer")
         self.app = app
         self.devs = usbscan.scan(app.known)
-        tk.Label(self.body, text="This is what will be sent. It only has facts about the "
-                 "computer and printers — nothing you wrote on your labels.", font="ui",
+        tk.Label(self.body, text="This is your printer report. It only has facts about the "
+                 "computer and printers — nothing you wrote on your labels. Share it when "
+                 "you ask for help, so we can see what's going on.", font="ui",
                  bg=BG, fg=INK, wraplength=760, justify="left").pack(anchor="w", pady=(0, 8))
         self.everything = tk.BooleanVar(value=False)
         tk.Checkbutton(self.body, text="Also list everything else plugged in (helps with "
@@ -971,10 +980,18 @@ class ReportDialog(Modal):
         self._show_report()
         row = tk.Frame(self.body, bg=BG)
         row.pack(fill="x", pady=(10, 0))
-        button(row, "Copy", self._copy, "chip").pack(side="left")
+        button(row, "Ask for help on GitHub", self._github, "primary").pack(side="left")
+        button(row, "Copy", self._copy, "chip").pack(side="left", padx=(8, 0))
         button(row, "Save to Desktop", self._save, "chip").pack(side="left", padx=6)
-        button(row, "Email it", self._email, "primary").pack(side="left")
         button(row, "Close", self.cancel, "quiet").pack(side="right")
+        self.note = tk.Label(self.body, text="", font="ui_bold", bg=BG, fg=GREEN_DARK,
+                             wraplength=760, justify="left")
+        self.note.pack(anchor="w", pady=(8, 0))
+        row = tk.Frame(self.body, bg=BG)
+        row.pack(fill="x", pady=(4, 0))
+        tk.Label(row, text="It's free to make a GitHub account. Not comfortable with that?",
+                 font="small", bg=BG, fg=MUTED).pack(side="left")
+        button(row, "Or email it instead", self._email, "link").pack(side="left", padx=4)
 
     def _show_report(self):
         """Build the report (with or without the other USB devices) and show it."""
@@ -991,7 +1008,19 @@ class ReportDialog(Modal):
         self.clipboard_clear()
         self.clipboard_append(self.text)
         if not quiet:
-            tell(self, "Copied", "Copied. You can paste it into an email or message.")
+            tell(self, "Copied", "Copied. You can paste it into the box on the GitHub page, "
+                 "an email or a message.")
+
+    def _github(self):
+        def copy(text):
+            self.clipboard_clear()
+            self.clipboard_append(text)
+        if report.ask_on_github(self.text, copy):
+            self.note.configure(text=self.PASTE_NOTE)
+        else:
+            tell(self, "Ask for help on GitHub", "I couldn't open your web browser. The report "
+                 "is copied. Open this page yourself and paste it into the box:\n\n"
+                 + report.issue_link())
 
     def _save(self):
         try:
@@ -1007,7 +1036,7 @@ class ReportDialog(Modal):
             webbrowser.open(report.mailto(self.text, to))
             tell(self, "Email", "Your email program should open with the report in it. "
                  "(It's also copied, in case you need to paste it.)" +
-                 ("" if to else "\n\nPlease type High Thyme Kitchen's email address in "
+                 ("" if to else f"\n\nPlease type {BRAND}'s email address in "
                   "the “To” box."))
         except Exception:  # noqa: BLE001
             tell(self, "Email", "I couldn't open your email program. The report is copied "

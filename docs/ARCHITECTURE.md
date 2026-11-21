@@ -32,7 +32,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* |
 | `bakery_dialogs.py` | Set up my bakery, My bakery, My ingredients, My products windows |
 | `usbscan.py` | lists every USB device for "My printer isn't in the list" |
-| `report.py` | the plain-text printer report a user can send for help (no label content) |
+| `report.py` | the plain-text printer report a user pastes into a GitHub issue when asking for help (no label content); the new-issue link (https://github.com only, report never in the address) and the e-mail fallback |
 | `settings.py` | settings file, data/labels folders, log file, autosave |
 | `app.py` | main window: form, preview, printer menu, PRINT |
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
@@ -308,7 +308,7 @@ fsync + rename).
 | `settings.json` | data folder | JSON, merged over built-in defaults key by key (unknown keys and wrong types are ignored) |
 | `autosave.json` | data folder | `{"doc": <label>, "path": "...", "dirty": bool}` |
 | `known_printers.json` | bundled in the package, and optionally in the data folder | see [printer-definitions.md](printer-definitions.md) |
-| `app_config.json` | bundled | support e-mail address and name |
+| `app_config.json` | bundled | `issues_url` (GitHub issues page for help, must be https://github.com/…/issues), support e-mail address (fallback) and name |
 | `cottage_rules.json` | bundled, and optionally in the data folder | state presets, see [cottage-rules.md](cottage-rules.md) |
 | `cottage_overrides.json` | data folder | the baker's own wording / required items, see [cottage-rules.md](cottage-rules.md) |
 | `my_bakery.json` | data folder | `{"format": "food-labeler-bakery", "version": 1, "state", "business", "legal_entity", "street", "street2", "city", "region", "zip", "phone", "email", "permit", ...}`; first created from the package-label kitchen details in `settings.json` |

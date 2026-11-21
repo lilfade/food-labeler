@@ -1,5 +1,6 @@
 import json
-from urllib.parse import unquote
+from pathlib import Path
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 from food_labeler import __version__, known, model, printers, report, settings, usbscan
 from conftest import FakeRun, linux_only, make_fake_sysfs
@@ -135,3 +136,69 @@ def test_report_checkbox_still_has_no_label_content_or_user(tmp_path, monkeypatc
         assert "mabelq" not in text and home not in text
         assert "PHONESERIAL98765" not in text
         assert ("Logitech" in text) == everything
+
+
+# -- asking for help on GitHub ------------------------------------------------------------
+
+def test_issue_link_is_our_github_issue_form():
+    url = report.issue_link()
+    parts = urlsplit(url)
+    assert (parts.scheme, parts.netloc) == ("https", "github.com")
+    assert parts.path == "/lilfade/food-labeler/issues/new"
+    q = parse_qs(parts.query)
+    assert q == {"template": [report.PRINTER_TEMPLATE], "title": [report.ISSUE_TITLE]}
+    # the template it names really exists
+    assert (Path(__file__).resolve().parents[1] / ".github" / "ISSUE_TEMPLATE"
+            / report.PRINTER_TEMPLATE).is_file()
+
+
+def test_issue_link_urlencodes_the_title():
+    url = report.issue_link("Zebra & LP610 #2 / ça?  ok")
+    assert " " not in url and "#" not in url and url.count("?") == 1
+    assert "&title=Zebra%20%26%20LP610%20%232%20%2F%20%C3%A7a%3F%20ok" in url
+    assert report.issue_link("").endswith("title=" + quote(report.ISSUE_TITLE))
+
+
+def test_issue_link_only_allows_github_issue_pages():
+    ok = {"issues_url": "https://github.com/someone/fork/issues/"}
+    assert report.issue_link(config=ok).startswith("https://github.com/someone/fork/issues/new?")
+    for bad in ["http://github.com/lilfade/food-labeler/issues",
+                "https://github.com.evil.example/lilfade/food-labeler/issues",
+                "https://evil.example/https://github.com/a/b/issues",
+                "https://github.com/a/b/issues?x=1", "https://github.com/a/b/pulls",
+                "https://github.com/a/b/issues#x", "javascript:alert(1)",
+                "file:///etc/passwd", "https://user@github.com/a/b/issues", "", None, 42]:
+        url = report.issue_link(config={"issues_url": bad})
+        assert url.startswith(report.ISSUES_URL + "/new?"), bad
+    # a strange template name never gets into the address
+    assert "template=" + report.PRINTER_TEMPLATE in report.issue_link(template="../x?y=1")
+
+
+def test_app_config_issues_url_is_a_github_issues_page():
+    url = known.app_config()["issues_url"]
+    assert url.startswith("https://github.com/") and report.issues_url() == url
+
+
+def test_ask_on_github_copies_report_and_never_puts_it_in_the_address():
+    text = "Food Labeler printer report\nUSB printers:\n  - secret-serial 1234 & stuff\n"
+    copied, opened = [], []
+    report.ask_on_github(text, copied.append, opened.append)
+    assert copied == [text]
+    assert len(opened) == 1 and opened[0] == report.issue_link()
+    for piece in ("secret-serial", "1234", "USB printers", "printer report"):
+        assert piece not in unquote(opened[0])
+
+
+def test_ask_on_github_uses_webbrowser_and_says_if_it_failed(monkeypatch):
+    import webbrowser
+    calls = []
+    monkeypatch.setattr(webbrowser, "open", lambda url: calls.append(url) or True)
+    assert report.ask_on_github("r", lambda t: None) is True
+    assert calls and calls[0].startswith("https://github.com/")
+
+    def boom(url):
+        raise webbrowser.Error("no browser")
+    monkeypatch.setattr(webbrowser, "open", boom)
+    assert report.ask_on_github("r", lambda t: None) is False
+    monkeypatch.setattr(webbrowser, "open", lambda url: False)
+    assert report.ask_on_github("r", lambda t: None) is False
