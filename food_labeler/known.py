@@ -8,7 +8,10 @@ from anywhere can't make matching slow), which language it speaks (TSPL, ZPL, or
 preferred darkness/speed per label size, its print head's resolution (203 or
 300 dpi), how wide it can print, how to set up a new roll by hand and whether we have
 tested it on paper ("verified_on_paper"; untested models are shown as
-"alpha — not tested yet"). Files are validated strictly:
+"alpha — not tested yet"). Bluetooth has its own flag ("verified_bluetooth"):
+a model tested over USB is still alpha when it is reached over Bluetooth,
+until someone prints on it that way. "bt_chunk" and "bt_delay_ms" say how
+to pace a Bluetooth job for printers with small buffers. Files are validated strictly:
 anything unexpected rejects the whole file, so a bad update can never leave
 the program half-configured.
 
@@ -33,13 +36,16 @@ USER_FILE_NAME = "known_printers.json"
 
 ALLOWED_KEYS = {"id", "name", "brands", "language", "dpi", "max_width_dots", "media", "usb",
                 "ieee1284", "windows", "density", "speed", "stocks", "notes",
-                "calibrate_by_hand", "max_width_mm", "verified_on_paper"}
+                "calibrate_by_hand", "max_width_mm", "verified_on_paper",
+                "verified_bluetooth", "bt_chunk", "bt_delay_ms"}
 LANGUAGES = ("tspl", "zpl", "driver")   # "driver": only through the maker's (Windows) driver
 SUPPORT_TESTED = "Tested"
 SUPPORT_ALPHA = "Alpha — not tested yet"
 DPI_VALUES = (203, 300)        # print head resolutions Food Labeler lays out for
 MAX_WIDTH_RANGE = (64, 4000)   # sane print head widths, in the printer's own dots
 MAX_WIDTH_MM_RANGE = (8, 300)  # the same in mm ("max_width_mm")
+BT_CHUNK_RANGE = (64, 65536)   # bytes per Bluetooth write ("bt_chunk")
+BT_DELAY_RANGE = (0, 1000)     # pause between Bluetooth writes, ms ("bt_delay_ms")
 STOCK_IDS = {"small", "medium", "large", "round", "xl"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 VIDPID_RE = re.compile(r"^[0-9a-f]{4}:[0-9a-f]{4}$")
@@ -88,6 +94,9 @@ class Definition:
     notes: str = ""
     calibrate_by_hand: str = ""  # how to set up a new roll with the printer's own button
     verified_on_paper: bool = False  # we printed real labels on one; else "alpha"
+    verified_bluetooth: bool = False  # ...and also over Bluetooth; else alpha on Bluetooth
+    bt_chunk: int = 0                # bytes per Bluetooth write; 0 = the program's default
+    bt_delay_ms: int | None = None   # pause between Bluetooth writes; None = default
 
     @property
     def support(self) -> str:
@@ -234,6 +243,21 @@ def validate_entry(e) -> Definition:
     if not isinstance(verified, bool):
         raise DefinitionError(f"Printer “{name}” has a bad “verified_on_paper” "
                               "(true or false).")
+    verified_bt = e.get("verified_bluetooth", False)
+    if not isinstance(verified_bt, bool):
+        raise DefinitionError(f"Printer “{name}” has a bad “verified_bluetooth” "
+                              "(true or false).")
+    bt_chunk = e.get("bt_chunk", 0)
+    if (isinstance(bt_chunk, bool) or not isinstance(bt_chunk, int)
+            or not (bt_chunk == 0 or BT_CHUNK_RANGE[0] <= bt_chunk <= BT_CHUNK_RANGE[1])):
+        raise DefinitionError(f"Printer “{name}” has a bad “bt_chunk” (it should be a number "
+                              f"of bytes from {BT_CHUNK_RANGE[0]} to {BT_CHUNK_RANGE[1]}).")
+    bt_delay = e.get("bt_delay_ms")
+    if bt_delay is not None and (isinstance(bt_delay, bool) or not isinstance(bt_delay, int)
+                                 or not BT_DELAY_RANGE[0] <= bt_delay <= BT_DELAY_RANGE[1]):
+        raise DefinitionError(f"Printer “{name}” has a bad “bt_delay_ms” (it should be a "
+                              f"number of milliseconds from {BT_DELAY_RANGE[0]} to "
+                              f"{BT_DELAY_RANGE[1]}).")
     media = e.get("media", "gap")
     if media not in ("gap", "continuous", "black-mark"):
         raise DefinitionError(f"Printer “{name}” has an unknown media type.")
@@ -253,6 +277,7 @@ def validate_entry(e) -> Definition:
         density=_int_map(e.get("density"), "density"), speed=_int_map(e.get("speed"), "speed"),
         stocks=stocks_ or sorted(STOCK_IDS), notes=notes,
         calibrate_by_hand=by_hand.strip(), verified_on_paper=verified,
+        verified_bluetooth=verified_bt, bt_chunk=bt_chunk, bt_delay_ms=bt_delay,
     )
 
 
@@ -291,6 +316,12 @@ def _to_json(d: Definition) -> dict:
         out["calibrate_by_hand"] = d.calibrate_by_hand
     if d.verified_on_paper:
         out["verified_on_paper"] = True
+    if d.verified_bluetooth:
+        out["verified_bluetooth"] = True
+    if d.bt_chunk:
+        out["bt_chunk"] = d.bt_chunk
+    if d.bt_delay_ms is not None:
+        out["bt_delay_ms"] = d.bt_delay_ms
     return out
 
 

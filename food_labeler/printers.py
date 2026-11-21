@@ -6,6 +6,9 @@ Connections ("methods"):
   cups            Linux/Mac CUPS queue, sent with `lp -o raw`
   device          Linux device file such as /dev/usb/lp0
   network         host:port raw TCP (Advanced only)
+  bluetooth       Bluetooth address, Classic SPP over an RFCOMM socket (Linux)
+  serial          a serial port: the COM port Windows makes for a paired
+                  Bluetooth printer ("COM5"), or a /dev/rfcommN-style device
 
 All errors reaching the user are PrinterError with a plain-English message.
 Set FOOD_LABELER_DRY_RUN=<folder> to write jobs to files instead of printing.
@@ -50,6 +53,32 @@ labels. Every other printer, matched or not, is "alpha": its name carries
 ALPHA_TAG wherever printers are listed, and the first print to it shows
 ALPHA_NOTICE once (remembered per printer as ``"alpha_ok"``).
 
+Bluetooth (alpha)
+-----------------
+LP610BT-type printers also speak Classic Bluetooth (the Serial Port Profile,
+SPP), and take exactly the same TSPL bytes as over USB. Pairing is always
+done by the person in the computer's own Bluetooth settings; Food Labeler
+only lists printers that are already paired (btscan.py, which never
+connects) and only connects when it prints.
+
+* Linux: ``send_bluetooth`` opens an AF_BLUETOOTH/BTPROTO_RFCOMM socket to
+  (address, channel). The channel is the one chosen in Advanced, else the
+  one that worked last time, else 1, 2, 3 in turn (a wrong channel is
+  refused at once, so trying the next is quick). The job goes out in
+  chunks (``bt_chunk`` bytes, ``bt_delay_ms`` apart, per model in
+  known_printers.json) because these printers have small buffers.
+* Windows: a paired SPP printer gets an outgoing virtual COM port.
+  ``send_serial`` writes to that port (``COM5``) in the same chunks. If the maker's
+  driver is installed on that port, the printer is an ordinary Windows
+  printer and ``windows_raw`` works as for USB.
+* macOS is not supported.
+
+The id is ``bt:<address>`` (``bt:COM5`` on Windows when the address can't be
+read), so two printers that are both called "LP610BT" stay apart; the list
+shows the last two bytes of the address ("Bluetooth (…3F:A2)").
+Bluetooth is alpha even for a model tested over USB, until the model's entry
+says ``"verified_bluetooth": true``.
+
 Resolution
 ----------
 The print head's resolution (203 or 300 dpi) belongs to the printer. Its
@@ -88,6 +117,8 @@ METHODS = {
     "cups": "Printer queue",
     "device": "USB cable (direct)",
     "network": "Network (address and port)",
+    "bluetooth": "Bluetooth",
+    "serial": "Bluetooth (COM port)",
 }
 
 MSG_NOT_ANSWERING = ("The printer isn't answering. Check it is switched on "
@@ -103,6 +134,41 @@ ALPHA_NOTICE = ("This printer hasn't been tested with Food Labeler yet. It shoul
                 "if it doesn't, please tell us on GitHub (Ask for help on GitHub).")
 MSG_PERMISSION = ("This computer won't let Food Labeler use the printer yet. Ask your helper "
                   "to add you to the “lp” group, then log out and back in.")
+ALPHA_NOTICE_BLUETOOTH = ("Printing over Bluetooth hasn't been tested with Food Labeler yet. It "
+                          "should work, but if it doesn't, use the printer's USB cable instead, "
+                          "and please tell us on GitHub (Ask for help on GitHub).")
+
+MSG_BT_OFF = ("Bluetooth is switched off on this computer. Switch it on in the computer's "
+              "Bluetooth settings, then try again.")
+MSG_BT_UNAVAILABLE = ("Food Labeler can't use Bluetooth on this computer. Use the printer's "
+                      "USB cable instead.")
+MSG_BT_NOT_PAIRED = ("The printer isn't paired with this computer. Pair it in the computer's "
+                     "Bluetooth settings (if it asks for a PIN, try 0000 or 1234), then press "
+                     "“Look for printers again”.")
+MSG_BT_AWAY = ("The printer isn't answering over Bluetooth. Check it is switched on and close "
+               "to the computer, then try again.")
+MSG_BT_PERMISSION = ("This computer won't let Food Labeler use Bluetooth. Ask your helper to "
+                     "allow it, or use the printer's USB cable instead.")
+MSG_BT_CHANNEL = ("The printer answered, but wouldn't take the label. Ask your helper to pick "
+                  "its Bluetooth channel in Settings → Advanced.")
+MSG_BT_BAD_ADDRESS = ("This printer's Bluetooth address doesn't look right, so nothing was "
+                      "sent. Click “Set up my printer” to choose it again.")
+MSG_SERIAL_MISSING = ("I can't find the printer's Bluetooth port. Check it is still paired in "
+                      "the computer's Bluetooth settings, then press “Look for printers again”.")
+MSG_SERIAL_BUSY = ("Another program is using the printer's Bluetooth port. Close it (the "
+                   "printer maker's app, for example) and try again.")
+BT_HELP = (
+    "Printing over Bluetooth is new and hasn't been tested yet (alpha). The USB cable "
+    "always works.\n\n"
+    "1. Switch the printer on, close to the computer.\n"
+    "2. Pair it in the computer's own Bluetooth settings. On Windows: Settings → "
+    "Bluetooth & devices → Add device → Bluetooth, then pick the printer. On Linux: the "
+    "Bluetooth settings of your desktop. If it asks for a PIN, try 0000 or 1234.\n"
+    "3. Come back to Food Labeler and press “Look for printers again”. The printer "
+    "shows up with “Bluetooth” and the end of its address after its name.\n\n"
+    "Food Labeler never pairs by itself. Two printers with the same name? The end of "
+    "the address tells them apart: in My printers, press “Which one is it?” and give "
+    "each one a name.")
 
 
 class PrinterError(Exception):
@@ -126,6 +192,7 @@ class Printer:
     vidpid: str = ""         # USB vendor:product, e.g. "0483:2025"
     family: object = None    # known.Definition this printer matched, if any
     dpi: int = 203           # print head resolution as detected (see printer_dpi)
+    bluetooth: bool = False  # reached over Bluetooth (its own "alpha" until tested)
 
     def default_name(self) -> str:
         """A friendly name when the user hasn't given one."""
@@ -153,8 +220,11 @@ class Printer:
 
     @property
     def alpha(self) -> bool:
-        """Not a model we have tested on paper (unknown printers included)."""
-        return not getattr(self.family, "verified_on_paper", False)
+        """Not a model we have tested on paper (unknown printers included), or a
+        tested model reached over Bluetooth, which isn't tested on paper yet."""
+        if not getattr(self.family, "verified_on_paper", False):
+            return True
+        return self.bluetooth and not getattr(self.family, "verified_bluetooth", False)
 
     @property
     def driver_only(self) -> bool:
@@ -259,14 +329,28 @@ def printer_config(p: "Printer", info: dict | None = None) -> dict:
     if p.method == "windows_raw" and (info.get("via_driver")
                                       or (p.driver_only and not info.get("kind"))):
         cfg["method"] = "windows_driver"      # the picture through the maker's driver
-    elif p.driver_only and not info.get("kind") and p.method in ("device", "cups"):
+    elif p.driver_only and not info.get("kind") and p.method in ("device", "cups",
+                                                                  "bluetooth", "serial"):
         cfg["method"] = "needs_driver"        # send() says so plainly; nothing is sent
+    if p.method in ("bluetooth", "serial"):
+        chunk = getattr(p.family, "bt_chunk", 0) or BT_CHUNK
+        delay = getattr(p.family, "bt_delay_ms", None)
+        cfg["bt_chunk"] = chunk
+        cfg["bt_delay_ms"] = BT_DELAY_MS if delay is None else delay
+    if p.method == "bluetooth":
+        cfg["channel"] = bt_channel_or_none(info.get("bt_channel"))
+        cfg["channel_hint"] = bt_channel_or_none(info.get("bt_channel_found"))
     return cfg
 
 
 def alpha_notice_due(p: "Printer | None", info: dict | None = None) -> bool:
     """True the first time something is printed to an untested ("alpha") printer."""
     return p is not None and p.alpha and not (info or {}).get("alpha_ok")
+
+
+def alpha_notice(p: "Printer | None") -> str:
+    """The one-time "not tested yet" message for this printer."""
+    return ALPHA_NOTICE_BLUETOOTH if p is not None and p.bluetooth else ALPHA_NOTICE
 
 
 def kind_from_text(text: str) -> str:
@@ -465,11 +549,20 @@ def discover_linux(sys_root="/sys", dev_root="/dev", run=subprocess.run,
     return out
 
 
-def discover(known=None) -> list[Printer]:
-    """All printers on this computer. Slow-ish: the app calls it off the UI thread."""
-    if IS_WINDOWS:
-        return discover_windows(known=known)
-    return discover_linux(known=known)
+def discover(known=None, bt_max_age: float = 0) -> list[Printer]:
+    """All printers on this computer, paired Bluetooth printers included.
+
+    Slow-ish: the app calls it off the UI thread. Windows that call it
+    directly pass ``bt_max_age`` (seconds) to reuse a recent Bluetooth list
+    instead of asking the system again."""
+    found = discover_windows(known=known) if IS_WINDOWS else discover_linux(known=known)
+    try:
+        from . import btscan
+        devs = btscan.scan_cached(known, bt_max_age) if bt_max_age else btscan.scan(known)
+        found = btscan.merge(found, btscan.to_printers(devs, known))
+    except Exception:  # noqa: BLE001 - never lose the USB printers over Bluetooth
+        log.exception("Bluetooth discovery failed")
+    return found
 
 
 def network_printer(target: str, kind: str = "tspl") -> Printer:
@@ -480,8 +573,14 @@ def network_printer(target: str, kind: str = "tspl") -> Printer:
 
 
 def auto_pick(found: list[Printer]) -> Printer | None:
-    """Pick a label printer only if there is exactly one that looks like one."""
-    matches = [p for p in found if p.matches]
+    """Pick a label printer only if there is exactly one that looks like one.
+
+    A cable beats Bluetooth: a printer that is both plugged in and paired is
+    picked on its cable, and a Bluetooth printer is only picked by itself
+    when it is the only label printer there is."""
+    matches = [p for p in found if p.matches and not p.bluetooth]
+    if not matches:
+        matches = [p for p in found if p.matches]
     if len(matches) == 1:
         return matches[0]
     if not matches and len(found) == 1 and not IS_WINDOWS:
@@ -583,6 +682,14 @@ def send(cfg: dict, data: bytes, image=None, copies: int = 1) -> str:
             send_device(target, data)
         elif method == "network":
             return send_network(target, data)
+        elif method == "bluetooth":
+            send_bluetooth(target, data, channel=cfg.get("channel"),
+                           hint=cfg.get("channel_hint"),
+                           chunk=cfg.get("bt_chunk") or BT_CHUNK,
+                           delay_ms=cfg.get("bt_delay_ms", BT_DELAY_MS))
+        elif method == "serial":
+            send_serial(target, data, chunk=cfg.get("bt_chunk") or BT_CHUNK,
+                        delay_ms=cfg.get("bt_delay_ms", BT_DELAY_MS))
         else:
             raise PrinterError(MSG_NO_PRINTER)
     except PrinterError:
@@ -770,6 +877,236 @@ def send_network(target: str, data: bytes, connect=socket.create_connection,
 
 
 # ---------------------------------------------------------------------------
+# Bluetooth (alpha): RFCOMM socket (Linux) and serial / COM port (Windows)
+# ---------------------------------------------------------------------------
+
+BT_CHUNK = 4096            # bytes per write unless the model says otherwise
+BT_DELAY_MS = 20           # pause between writes unless the model says otherwise
+BT_CONNECT_TIMEOUT = 8.0   # seconds to reach the printer
+BT_SEND_TIMEOUT = 30.0     # seconds for one chunk to go out
+BT_SETTLE_S = 0.5          # let the last bytes leave before closing
+BT_CHANNELS = (1, 2, 3)    # RFCOMM channels tried when none is known
+MAC_RE = re.compile(r"^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$")
+COM_RE = re.compile(r"^COM[1-9][0-9]{0,2}$", re.I)
+
+# The RFCOMM channel that worked, per address, while the program runs; the
+# window copies it into the printer's settings ("bt_channel_found").
+LEARNED_CHANNELS: dict[str, int] = {}
+
+# errno / Windows socket error numbers, by what they mean to the person
+_BT_OFF_ERRNOS = {19, 99, 100, 113, 10050, 10065}         # ENODEV EADDRNOTAVAIL ENETDOWN
+                                                         # EHOSTUNREACH, WSAENETDOWN/UNREACH
+_BT_AWAY_ERRNOS = {104, 103, 110, 112, 10053, 10054, 10060, 10064}  # reset, timeout, host down
+_BT_PAIR_ERRNOS = {13, 52, 10013}                         # EACCES / EBADE: no or bad pairing
+_BT_REFUSED_ERRNOS = {111, 10061}
+
+
+def bt_channel_or_none(v) -> int | None:
+    """A valid RFCOMM channel (1-30) from settings, else None."""
+    if isinstance(v, bool):
+        return None
+    try:
+        n = int(v)
+    except (TypeError, ValueError):
+        return None
+    return n if 1 <= n <= 30 else None
+
+
+def parse_bt_target(target: str) -> tuple[str, int | None]:
+    """"AA:BB:CC:DD:EE:FF" or "AA:BB:CC:DD:EE:FF/2" -> (address upper-case, channel)."""
+    t = str(target or "").strip()
+    addr, _, ch = t.partition("/")
+    if not MAC_RE.match(addr):
+        raise PrinterError(MSG_BT_BAD_ADDRESS)
+    channel = None
+    if ch:
+        channel = bt_channel_or_none(ch)
+        if channel is None:
+            raise PrinterError(MSG_BT_BAD_ADDRESS)
+    return addr.upper(), channel
+
+
+def short_address(addr: str) -> str:
+    """The last two bytes of a Bluetooth address, "…3F:A2" (all the list shows)."""
+    parts = str(addr or "").upper().replace("-", ":").split(":")
+    if len(parts) == 6:
+        return "…" + ":".join(parts[-2:])
+    hexes = re.sub(r"[^0-9A-F]", "", str(addr or "").upper())
+    return f"…{hexes[-4:-2]}:{hexes[-2:]}" if len(hexes) == 12 else ""
+
+
+def bluetooth_switched_off(sys_root: str = "/sys") -> bool:
+    """True if Linux says plainly that Bluetooth is off: there is no adapter, or
+    every Bluetooth radio is blocked (rfkill). Only reads /sys; False if unsure."""
+    if not sys.platform.startswith("linux") and sys_root == "/sys":
+        return False
+    try:
+        adapters = [n for n in os.listdir(os.path.join(sys_root, "class", "bluetooth"))
+                    if re.fullmatch(r"hci\d+", n)]
+    except OSError:
+        adapters = []
+    radios = []
+    base = os.path.join(sys_root, "class", "rfkill")
+    try:
+        names = sorted(os.listdir(base))
+    except OSError:
+        names = []
+    for n in names:
+        d = os.path.join(base, n)
+        if _read(os.path.join(d, "type")).strip() != "bluetooth":
+            continue
+        blocked = (_read(os.path.join(d, "soft")).strip() == "1"
+                   or _read(os.path.join(d, "hard")).strip() == "1")
+        radios.append(blocked)
+    if radios and all(radios):
+        return True
+    return not adapters and not radios and os.path.isdir(os.path.join(sys_root, "class"))
+
+
+def _bt_socket():
+    """A new RFCOMM socket. Raises PrinterError if this Python has no Bluetooth."""
+    fam = getattr(socket, "AF_BLUETOOTH", None)
+    proto = getattr(socket, "BTPROTO_RFCOMM", None)
+    if fam is None or proto is None:
+        raise PrinterError(MSG_BT_UNAVAILABLE)
+    try:
+        return socket.socket(fam, socket.SOCK_STREAM, proto)
+    except PermissionError as e:
+        raise PrinterError(MSG_BT_PERMISSION) from e
+    except OSError as e:
+        # EAFNOSUPPORT: no Bluetooth in this system at all
+        raise PrinterError(MSG_BT_OFF if bluetooth_switched_off() else MSG_BT_UNAVAILABLE) from e
+
+
+def _errno_of(e: BaseException) -> int | None:
+    return getattr(e, "winerror", None) or getattr(e, "errno", None)
+
+
+def _bt_message(e: BaseException) -> str:
+    """The plain message for a failed Bluetooth connect or send."""
+    if isinstance(e, socket.timeout) or isinstance(e, TimeoutError):
+        return MSG_BT_AWAY
+    n = _errno_of(e)
+    if n in _BT_OFF_ERRNOS:
+        return MSG_BT_OFF
+    if n in _BT_PAIR_ERRNOS:
+        return MSG_BT_NOT_PAIRED
+    if n in _BT_REFUSED_ERRNOS:
+        return MSG_BT_CHANNEL
+    return MSG_BT_AWAY
+
+
+def _close(s) -> None:
+    try:
+        s.close()
+    except OSError:
+        pass
+
+
+def _send_chunks(write, data: bytes, chunk: int, delay_ms: int, sleep) -> None:
+    """write(piece) for each ``chunk``-byte piece, with ``delay_ms`` between them."""
+    chunk = max(1, int(chunk or BT_CHUNK))
+    pause = max(0, int(delay_ms or 0)) / 1000.0
+    for i in range(0, len(data), chunk):
+        if i and pause:
+            sleep(pause)
+        write(data[i:i + chunk])
+
+
+def send_bluetooth(target: str, data: bytes, channel: int | None = None,
+                   hint: int | None = None, chunk: int = BT_CHUNK,
+                   delay_ms: int = BT_DELAY_MS, make_socket=None, sleep=time.sleep,
+                   sys_root: str = "/sys") -> int:
+    """Send a job over Classic Bluetooth (SPP, RFCOMM). Returns the channel used.
+
+    ``channel`` (from Advanced, or "/N" in the target) is the only one tried
+    when given. Otherwise ``hint`` (the channel that worked last time) is
+    tried first, then 1, 2, 3; a refused channel moves on to the next at
+    once, anything else stops with a plain message. ``make_socket`` and
+    ``sleep`` are replaceable for tests."""
+    addr, fixed = parse_bt_target(target)
+    fixed = fixed or bt_channel_or_none(channel)
+    if fixed:
+        order = [fixed]
+    else:
+        first = bt_channel_or_none(hint) or LEARNED_CHANNELS.get(addr)
+        order = ([first] if first else []) + [c for c in BT_CHANNELS if c != first]
+    if make_socket is None:
+        make_socket = _bt_socket
+        if bluetooth_switched_off(sys_root):
+            raise PrinterError(MSG_BT_OFF)
+    last: BaseException | None = None
+    for ch in order:
+        s = make_socket()
+        try:
+            s.settimeout(BT_CONNECT_TIMEOUT)
+            s.connect((addr, ch))
+        except OSError as e:
+            _close(s)
+            last = e
+            if isinstance(e, ConnectionRefusedError) or _errno_of(e) in _BT_REFUSED_ERRNOS:
+                log.info("Bluetooth channel %s refused, trying the next", ch)
+                continue
+            log.warning("Bluetooth connect failed: %s", e)
+            raise PrinterError(_bt_message(e)) from e
+        try:
+            s.settimeout(BT_SEND_TIMEOUT)
+            _send_chunks(s.sendall, data, chunk, delay_ms, sleep)
+            sleep(BT_SETTLE_S)
+            try:
+                s.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        except OSError as e:
+            log.warning("Bluetooth send failed: %s", e)
+            raise PrinterError(_bt_message(e)) from e
+        finally:
+            _close(s)
+        LEARNED_CHANNELS[addr] = ch
+        log.info("sent %d bytes over Bluetooth channel %s", len(data), ch)
+        return ch
+    log.warning("Bluetooth: every channel refused (%s)", last)
+    raise PrinterError(MSG_BT_CHANNEL) from last
+
+
+def serial_path(target: str, dev_root: str = "/dev", windows: bool | None = None) -> str:
+    """Where to write for method "serial": "\\\\.\\COM5" on Windows (COM1-COM999
+    only), a device under /dev elsewhere. Raises PrinterError for anything else."""
+    t = str(target or "").strip()
+    win = IS_WINDOWS if windows is None else windows
+    if win:
+        if not COM_RE.match(t):
+            raise PrinterError(MSG_NOT_A_DEVICE)
+        return "\\\\.\\" + t.upper()
+    if not device_path_ok(t, dev_root):
+        raise PrinterError(MSG_NOT_A_DEVICE)
+    return t
+
+
+def send_serial(target: str, data: bytes, chunk: int = BT_CHUNK, delay_ms: int = BT_DELAY_MS,
+                opener=open, sleep=time.sleep, dev_root: str = "/dev",
+                windows: bool | None = None) -> None:
+    """Write a job to a serial port, in chunks: the COM port Windows made for a
+    paired Bluetooth printer (baud rate doesn't matter on those), or a
+    /dev/rfcommN-style device. Opening the port is what connects to the printer."""
+    path = serial_path(target, dev_root, windows)
+    try:
+        # "r+b", not "wb": Windows only opens a COM port as an existing file
+        # (OPEN_EXISTING); "wb" would ask to create or empty it.
+        with opener(path, "r+b", buffering=0) as f:
+            _send_chunks(f.write, data, chunk, delay_ms, sleep)
+            f.flush()
+    except FileNotFoundError as e:
+        raise PrinterError(MSG_SERIAL_MISSING) from e
+    except PermissionError as e:
+        raise PrinterError(MSG_SERIAL_BUSY if (IS_WINDOWS if windows is None else windows)
+                           else MSG_PERMISSION) from e
+    except OSError as e:
+        log.warning("serial send failed: %s", e)
+        raise PrinterError(MSG_BT_AWAY) from e
+
+
+# ---------------------------------------------------------------------------
 # status
 # ---------------------------------------------------------------------------
 
@@ -800,6 +1137,11 @@ def status(p: Printer | None, name: str = "") -> tuple[str, str]:
                     return "problem", f"{name} \u2014 offline. Is it switched on?"
         elif p.method == "network":
             return "ready", f"{name} (network)"
+        elif p.method in ("bluetooth", "serial"):
+            # Never connect just to look: it would wake the printer.
+            if p.method == "bluetooth" and bluetooth_switched_off():
+                return "problem", f"{name} — Bluetooth is switched off on this computer"
+            return "ready", f"{name} (Bluetooth)"
     except Exception:  # noqa: BLE001
         log.exception("status check failed")
     return "ready", f"{name} \u2014 ready"

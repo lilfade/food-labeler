@@ -23,6 +23,14 @@ def _isolate(tmp_path, monkeypatch):
     def no_network(*a, **k):
         raise AssertionError("tests must never open a real network connection")
     monkeypatch.setattr(socket, "create_connection", no_network)
+    # Never Bluetooth either: without AF_BLUETOOTH, a real RFCOMM socket can't be
+    # made (the same as a Python built without Bluetooth, e.g. on Windows CI), and
+    # discovery never runs the real bluetoothctl / PowerShell.
+    monkeypatch.delattr(socket, "AF_BLUETOOTH", raising=False)
+    from food_labeler import btscan, printers
+    monkeypatch.setattr(btscan, "scan", lambda known=None: [])
+    monkeypatch.setattr(btscan, "_cache", None)
+    monkeypatch.setattr(printers, "LEARNED_CHANNELS", {})
     yield
 
 
