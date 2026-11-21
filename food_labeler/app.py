@@ -22,7 +22,7 @@ from tkinter import filedialog, ttk
 from PIL import Image, ImageTk
 
 from . import APP_NAME, BRAND, dates, known, model, printers, render, settings as settings_mod, stocks
-from . import templates
+from . import bakery, cottage, templates
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, WARN_BG,
                       CalendarDialog, ScrollFrame, Toggle, ask, button, tell)
 
@@ -65,6 +65,15 @@ class App:
         self._scanning = False
         self._choices: list[str] = []
         self._printer_choice = tk.StringVar(master=root)
+        # cottage food labels: state rules (+ the user's own edits) and My bakery
+        data = settings_mod.data_dir()
+        self.rules = cottage.CottageRules(data)
+        self.profile = bakery.Profile(data / bakery.PROFILE_NAME, cfg["kitchen"])
+        self._ingredients = None
+        self._products = None
+        self.check_frame = None
+        self.net_hint = None
+        self._check_sig = None
 
         root.report_callback_exception = self.on_error
         self._setup_fonts()
@@ -75,6 +84,7 @@ class App:
         root.protocol("WM_DELETE_WINDOW", self.on_close)
         root.after(AUTOSAVE_MS, self._autosave_tick)
         root.after(200, self.rescan_printers)
+        root.after(700, self._bakery_start)
 
     # ------------------------------------------------------------------ setup
     def _setup_fonts(self):
@@ -473,6 +483,8 @@ class App:
             self.text_field(f, "address", "Address", 2)
             self.text_field(f, "disclaimer", "Disclaimer", 3)
             self.entry_field(f, "qr", "QR code (a web address, if you want one)")
+        elif t == "cottage":
+            self._cottage_form(f)
         elif t == "sticker":
             self.entry_field(f, "lot", "Lot number", big=True)
             self.date_field(f, "made", "Made", today_button=True)
@@ -664,17 +676,20 @@ class App:
     # ------------------------------------------------------------------ pickers
     def pick_template(self):
         from .dialogs import TemplatePicker
-        t = TemplatePicker(self.root, self.doc, self.cfg.render_ctx()).run()
+        t = TemplatePicker(self.root, self.doc, self.render_ctx()).run()
         if not t or t == self.doc.template:
             return
         self.doc.set_template(t)
         self._fill_kitchen(self.doc)
         if self.doc.stock not in templates.ALLOWED_STOCKS[t]:
             self.doc.stock = "large"
-            self.flash("Package labels need a bigger label, so I picked Large — 4 × 2 inches.",
+            kind = "Cottage food" if t == "cottage" else "Package"
+            self.flash(f"{kind} labels need a bigger label, so I picked Large — 4 × 2 inches.",
                        8000)
         self._sync_ui_from_doc()
         self._snapshot()
+        if t == "cottage" and not self.profile["setup_done"]:
+            self.bakery_wizard()
 
     def pick_stock(self):
         from .dialogs import StockPicker
@@ -695,7 +710,7 @@ class App:
     def render_now(self):
         """Render the printer bitmap, show the preview, mark an overflowing field."""
         self._render_job = None
-        res = render.render(self.doc, self.cfg.render_ctx())
+        res = render.render(self.doc, self.render_ctx())
         self.last_result = res
         cw, ch = max(50, self.canvas.winfo_width()), max(50, self.canvas.winfo_height())
         img = render.preview(res, cw, ch)
@@ -707,6 +722,8 @@ class App:
             fr.configure(highlightbackground=WARN if bad else PANEL,
                          bg=WARN_BG if bad else PANEL)
         self.warn_lbl.configure(text=("⚠ " + res.message) if res.overflow else "")
+        if self.doc.template == "cottage":
+            self.refresh_check(res)
         return res
 
     # ------------------------------------------------------------------ copies
@@ -1025,6 +1042,8 @@ class App:
             tell(self.root, "Nothing to print yet",
                  "The label is empty. Type something on the left first.")
             return
+        if self.doc.template == "cottage" and not self._cottage_ok_to_print():
+            return
         p = self.current_printer()
         sel = self.cfg["selected"]
         if p is None:
@@ -1133,6 +1152,250 @@ class App:
         from .dialogs import SetupWizard
         SetupWizard(self.root, self).run()
         self.refresh_status()
+
+    # ------------------------------------------------------------------ cottage food
+    @property
+    def ingredients(self) -> bakery.Ingredients:
+        """My ingredients (read on first use; the starter list is copied in then)."""
+        if self._ingredients is None:
+            self._ingredients = bakery.Ingredients(settings_mod.data_dir()
+                                                   / bakery.INGREDIENTS_NAME)
+        return self._ingredients
+
+    @property
+    def products(self) -> bakery.Products:
+        if self._products is None:
+            self._products = bakery.Products(settings_mod.data_dir() / bakery.PRODUCTS_NAME)
+        return self._products
+
+    def cottage_rule(self) -> cottage.Effective:
+        """The chosen state's rules with the user's own edits."""
+        return self.rules.effective(self.profile["state"] or cottage.CUSTOM_ID)
+
+    def render_ctx(self) -> dict:
+        """Settings that change the printout, plus the cottage rules and My bakery."""
+        ctx = self.cfg.render_ctx()
+        ctx["cottage"] = {"rule": self.cottage_rule().to_ctx(), "profile": dict(self.profile.data)}
+        return ctx
+
+    def _bakery_start(self):
+        """Once, at start: offer "Set up my bakery"; later, ask about state wording
+        that changed under the user's own edits."""
+        try:
+            if not self.profile.exists and not self.cfg["bakery_offered"]:
+                self.cfg["bakery_offered"] = True
+                self.cfg.save()
+                if ask(self.root, "Do you sell home-baked food?",
+                       "Food Labeler can make labels for home bakers with the wording your "
+                       "state asks for. Set that up now? (You can always do it later in "
+                       "Settings.)",
+                       [("Set up my bakery", True, "primary"), ("Not now", False, "normal")]):
+                    self.bakery_wizard()
+                return
+            if self.profile["state"] and self.rules.pending_changes(self.profile["state"]):
+                from .bakery_dialogs import ask_about_changes
+                ask_about_changes(self.root, self)
+                self._sync_ui_from_doc()
+        except Exception:  # noqa: BLE001 - never stop the app over this
+            log.exception("bakery start")
+
+    def _cottage_form(self, f):
+        """The cottage food label form (fields from the label; the rest from My bakery)."""
+        eff = self.cottage_rule()
+        top = tk.Frame(f, bg=PANEL, padx=16, pady=6)
+        top.pack(fill="x")
+        tk.Label(top, text="Rules for:", font="ui", bg=PANEL, fg=MUTED).pack(side="left")
+        tk.Label(top, text=eff.name if self.profile["state"] else "not chosen yet",
+                 font="ui_bold", bg=PANEL, fg=INK).pack(side="left", padx=6)
+        button(top, "My bakery…", self.my_bakery, "chip").pack(side="right")
+        self.check_frame = tk.Frame(f, bg=PANEL, padx=12, pady=8, highlightthickness=2,
+                                    highlightbackground=BORDER)
+        self.check_frame.pack(fill="x", padx=14, pady=(4, 0))
+        self._check_sig = None
+        row = tk.Frame(f, bg=PANEL, padx=14)
+        row.pack(fill="x", pady=(10, 0))
+        button(row, "Choose from My products…", self.choose_product).pack(side="left")
+        button(row, "Save to My products", self.save_product, "chip").pack(side="left", padx=8)
+        self.entry_field(f, "product", "Product name", big=True)
+        fr = self.entry_field(f, "net", "Net weight (for example 8 oz, 1.5 lb or 12 cookies)")
+        self.net_hint = tk.Label(fr, text="", font="ui", bg=PANEL, fg=MUTED, anchor="w",
+                                 justify="left")
+        self.net_hint.pack(anchor="w", pady=(2, 0))
+        fr = self.text_field(f, "ingredients", "Ingredients, heaviest first", 3)
+        button(fr, "Build from My ingredients…", self.build_ingredients, "chip").pack(
+            anchor="w", pady=(6, 0))
+        self.allergen_field(f, "contains", "Contains (allergens)  —  tap any that are in it")
+        cf = self.field_frames["contains"]
+
+        def none_flip():
+            self.doc.fields["no_allergens"] = none.value
+            if none.value and self.field_setters.get("contains"):
+                self.field_setters["contains"]("")
+            self.changed()
+        none = Toggle(cf, "None of these 9 allergens are in it", none_flip,
+                      bool(self.doc.fields.get("no_allergens")))
+        none.pack(anchor="w", pady=(6, 0))
+        self.entry_field(f, "storage", "How to store it (if you want it on the label)")
+        self.chips(f, "storage", model.STORAGE_CHIPS)
+        self.date_field(f, "made_on", "Made on", today_button=True)
+        self._show_date_toggle(self.field_frames["made_on"], "show_made", "date_made", eff)
+        self.date_field(f, "best_by", "Best by", quick_from="made_on")
+        self._show_date_toggle(self.field_frames["best_by"], "show_best_by", "sell_by", eff)
+
+    def _show_date_toggle(self, frame, flag, field_id, eff):
+        if field_id in eff.required:
+            tk.Label(frame, text=f"Always on the label: {eff.name} asks for it.", font="ui",
+                     bg=PANEL, fg=MUTED).pack(anchor="w", pady=(6, 0))
+            return
+
+        def flip():
+            self.doc.fields[flag] = tg.value
+            self.changed()
+        tg = Toggle(frame, "Put this date on the label", flip, bool(self.doc.fields.get(flag)))
+        tg.pack(anchor="w", pady=(6, 0))
+
+    def refresh_check(self, res):
+        """Redraw the Label check (green = there, red = missing) if anything changed."""
+        fr = self.check_frame
+        try:
+            if fr is None or not fr.winfo_exists():
+                return
+        except tk.TclError:
+            return
+        eff = self.cottage_rule()
+        ctx = eff.to_ctx()
+        items = cottage.check_label(self.doc.fields, self.profile.data, ctx)
+        if self.net_hint is not None and self.net_hint.winfo_exists():
+            metric = self.profile.metric_for(eff.rule.metric_required)
+            net = cottage.format_net(self.doc.fields.get("net"), metric)
+            self.net_hint.configure(text=f"Prints as: {net}" if net else "")
+        sig = (tuple((i.key, i.ok, i.label) for i in items), res.overflow, eff.id)
+        if sig == self._check_sig:
+            return
+        self._check_sig = sig
+        for w in fr.winfo_children():
+            w.destroy()
+        bad = cottage.missing(items)
+        if bad:
+            title = f"Label check: {len(bad)} thing{'s' if len(bad) != 1 else ''} missing"
+        else:
+            title = "Label check: everything on the list is there"
+        tk.Label(fr, text=title, font="ui_bold", bg=PANEL,
+                 fg=WARN if bad else GREEN_DARK).pack(anchor="w")
+        for it in items:
+            text = ("✔ " if it.ok else "✘ ") + it.label + (f" — {it.hint}" if it.hint else "")
+            tk.Label(fr, text=text, font="ui", bg=PANEL, fg=GREEN_DARK if it.ok else WARN,
+                     wraplength=520, justify="left").pack(anchor="w")
+        if res.overflow:
+            tk.Label(fr, text="✘ It doesn't fit on this label size (see the message on the "
+                     "right)", font="ui", bg=PANEL, fg=WARN, wraplength=520,
+                     justify="left").pack(anchor="w")
+        rule = eff.rule
+        if not self.profile["state"]:
+            tk.Label(fr, text="Choose your state in My bakery to get its wording.", font="ui",
+                     bg=PANEL, fg=WARN, wraplength=520, justify="left").pack(anchor="w")
+        elif rule.sales_allowed is False:
+            tk.Label(fr, text="The public guidance we found says home-baked goods can't be "
+                     "sold this way here. Please check with your state.", font="ui", bg=PANEL,
+                     fg=WARN, wraplength=520, justify="left").pack(anchor="w")
+        elif rule.id != cottage.CUSTOM_ID and not rule.verified:
+            tk.Label(fr, text="Unverified — check with your state.", font="ui", bg=PANEL,
+                     fg=WARN).pack(anchor="w")
+        tk.Label(fr, text=cottage.RESPONSIBILITY, font="small", bg=PANEL, fg=MUTED,
+                 wraplength=520, justify="left").pack(anchor="w", pady=(4, 0))
+        button(fr, f"About {rule.name}'s rules…", self.about_rules, "quiet").pack(anchor="w")
+
+    def about_rules(self):
+        rule = self.cottage_rule().rule
+        parts = [rule.notes or "No notes."]
+        if rule.source_url:
+            parts.append("Source: " + rule.source_url
+                         + (f" (checked {rule.checked_on})" if rule.checked_on else ""))
+        parts.append(cottage.RESPONSIBILITY)
+        tell(self.root, f"{rule.name}: cottage food rules", "\n\n".join(parts))
+
+    def _cottage_ok_to_print(self) -> bool:
+        """Ask (never block) when the Label check finds something missing."""
+        eff = self.cottage_rule()
+        bad = cottage.missing(cottage.check_label(self.doc.fields, self.profile.data,
+                                                  eff.to_ctx()))
+        if not bad:
+            return True
+        names = [i.label for i in bad]
+        what = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+        who = "Your state requires" if eff.id != cottage.CUSTOM_ID else "Your rules ask for"
+        return bool(ask(self.root, "Label check",
+                        f"{who} {what} on the label. Print anyway?",
+                        [("Go back and fix it", False, "primary"),
+                         ("Print anyway", True, "warn")]))
+
+    def bakery_wizard(self):
+        """First-run "Set up my bakery" (also in Settings)."""
+        from .bakery_dialogs import BakeryWizard
+        if BakeryWizard(self.root, self).run():
+            self._sync_ui_from_doc()
+
+    def my_bakery(self):
+        """Settings → My bakery: state, details, wording, required items."""
+        from .bakery_dialogs import MyBakeryDialog
+        MyBakeryDialog(self.root, self).run()
+        self._sync_ui_from_doc()
+
+    def build_ingredients(self):
+        """Pick from My ingredients: fills the ingredient line and the allergens."""
+        from .bakery_dialogs import IngredientPicker
+        picked = IngredientPicker(self.root, self).run()
+        if not picked:
+            return
+        self.doc.fields["ingredients"] = bakery.build_ingredients(picked)
+        allergens = bakery.allergens_for(picked)
+        if allergens:
+            self.doc.fields["contains"] = ", ".join(allergens)
+            self.doc.fields["no_allergens"] = False
+        self._sync_ui_from_doc()
+        self.changed()
+        if any(p.get("check") for p in picked):
+            self.flash("Some ingredients are starter examples: check them against your "
+                       "packages (My ingredients → Change…).", 10000)
+
+    def choose_product(self):
+        from .bakery_dialogs import ProductPicker
+        p = ProductPicker(self.root, self).run()
+        if not p:
+            return
+        self.doc.fields = bakery.apply_product(self.doc.fields, p)
+        self._sync_ui_from_doc()
+        self.changed()
+
+    def save_product(self):
+        from .bakery_dialogs import ask_text
+        name = str(self.doc.fields.get("product") or "").strip()
+        name = ask_text(self.root, "Save to My products", "What is this product called?", name)
+        if not name:
+            return
+        existing = self.products.find(name)
+        if existing and not ask(self.root, "Replace?",
+                                f"You already have “{name}” in My products. Replace it?",
+                                [("Replace it", True, "primary"), ("Cancel", False, "normal")]):
+            return
+        entry = bakery.product_from_fields(self.doc.fields, name,
+                                           existing["id"] if existing else None)
+        self.products.put(entry)
+        self.flash(f"✔ Saved “{name}” to My products.")
+
+    def my_products(self):
+        """Settings → My products (choosing one switches to a cottage label)."""
+        from .bakery_dialogs import ProductPicker
+        p = ProductPicker(self.root, self).run()
+        if not p:
+            return
+        if self.doc.template != "cottage":
+            self.doc.set_template("cottage")
+            if self.doc.stock not in templates.ALLOWED_STOCKS["cottage"]:
+                self.doc.stock = "large"
+        self.doc.fields = bakery.apply_product(self.doc.fields, p)
+        self._sync_ui_from_doc()
+        self.changed()
 
     def settings_dialog(self):
         """Settings; afterwards re-apply kitchen details and redraw."""

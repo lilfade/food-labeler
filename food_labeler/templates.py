@@ -34,6 +34,7 @@ TEMPLATE_INFO = {
     "package": ("Package label", "Ingredients, weight, kitchen details"),
     "sticker": ("Date sticker", "Lot number and dates"),
     "free": ("Free text", "Just type what you want"),
+    "cottage": ("Cottage food label", "For home bakers: your state's wording"),
 }
 
 # Templates that need room: package label doesn't fit Small or Round.
@@ -42,6 +43,7 @@ ALLOWED_STOCKS = {
     "package": ["medium", "large", "xl"],
     "sticker": stocks.ORDER,
     "free": stocks.ORDER,
+    "cottage": ["medium", "large", "xl"],
 }
 
 # Friendly names for fields (used in "too much writing" messages).
@@ -52,7 +54,10 @@ FIELD_NAMES = {
     "cross_contact": "cross-contact notice", "lot": "lot", "best_by": "Best by",
     "business": "business name", "address": "address", "disclaimer": "disclaimer",
     "qr": "QR code", "made": "Made", "count": "count", "text": "writing",
+    "brand": "business name", "storage": "storage line", "dates": "dates",
+    "produced": "business name", "contact": "phone and email", "permit": "permit number",
 }
+# Label statements of the cottage template are keyed "statement:<id>".
 
 
 @lru_cache(maxsize=512)
@@ -376,6 +381,9 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
         ]
         return blocks, "top", _s(f.get("qr"))
 
+    if doc.template == "cottage":
+        return _cottage_blocks(doc, stock, ctx, base, mn), "top", ""
+
     if doc.template == "sticker":
         made = dates.fmt(dates.parse(f.get("made")), "mdy_short")
         best = dates.fmt(dates.parse(f.get("best_by")), "mdy_short")
@@ -410,6 +418,105 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
     return blocks, "center", ""
 
 
+def cottage_ctx(ctx: dict) -> dict:
+    """The cottage part of the render context ({"rule", "profile"}), or defaults
+    (bundled rules, empty bakery) when the caller didn't supply one."""
+    cc = ctx.get("cottage") if ctx else None
+    if cc:
+        return cc
+    from . import bakery, cottage
+    return {"rule": cottage.CottageRules().effective(cottage.CUSTOM_ID).to_ctx(),
+            "profile": dict(bakery.PROFILE_DEFAULTS)}
+
+
+def statement_min_dots(st: dict) -> int:
+    """Smallest font size (dots) a legal statement may print at."""
+    from .cottage import pt_to_dots
+    mp = st.get("min_pt")
+    return max(12, pt_to_dots(mp, stocks.DPI)) if mp else 12
+
+
+def _cottage_blocks(doc, stock, ctx, base, mn):
+    """The cottage food label, laid out like High Thyme Kitchen's package label:
+    brand line, product, net quantity, INGREDIENTS, CONTAINS, storage, dates,
+    "Produced by", address, contact, permit, then the state's statement(s) and
+    the kitchen's cross-contact notice. Legal statements never shrink below the
+    state's minimum size (their Block.min)."""
+    from . import bakery, cottage
+    f = doc.fields
+    cc = cottage_ctx(ctx)
+    rule, prof = cc["rule"], cc["profile"]
+    req = set(rule.get("required", []))
+    style = ctx.get("date_style", "us")
+    metric = bool(rule.get("metric_required")) or prof.get("metric") is True
+    biz, legal = _s(prof.get("business")), _s(prof.get("legal_entity"))
+    net = cottage.format_net(f.get("net"), metric)
+    ingr = cottage.strip_prefix(f.get("ingredients"), "ingredients")
+    # "None of these" only answers the question; anything typed still prints.
+    contains = cottage.strip_prefix(f.get("contains"), "contains")
+    made = dates.fmt(dates.parse(f.get("made_on")), style)
+    best = dates.fmt(dates.parse(f.get("best_by")), style)
+    show_made = bool(f.get("show_made")) or "date_made" in req
+    show_best = bool(f.get("show_best_by")) or "sell_by" in req
+    dateline = "\u2002\u2002".join(x for x in [f"Made {made}" if made and show_made else "",
+                                           f"Best by {best}" if best and show_best else ""]
+                                    if x)
+    addr = bakery.address_lines(prof)
+    if not addr and all(_s(prof.get(k)) for k in ("city", "region", "zip")):
+        addr = [f"{_s(prof.get('city'))}, {_s(prof.get('region'))} {_s(prof.get('zip'))}"]
+    contact = []
+    if _s(prof.get("phone")) and (prof.get("show_phone") or "phone" in req):
+        contact.append(_s(prof.get("phone")))
+    if _s(prof.get("email")) and (prof.get("show_email") or "email" in req):
+        contact.append(_s(prof.get("email")))
+    permit = _s(prof.get("permit"))
+    permit_line = f"{_s(prof.get('permit_label')) or 'Permit #'} {permit}" if permit else ""
+    produced = ""
+    if biz:
+        produced = f"Produced by: {biz}" + (f" \u00b7 {legal}" if legal else "")
+    blocks = [
+        Block("brand", biz, base * 0.055, mn, True, "center", 0),
+        Block("product", _s(f.get("product")), base * 0.15, 20, True, "center", 0.15, True),
+        Block("net", net, base * 0.07, mn, False, "center", 0.15),
+        Block("ingredients", f"INGREDIENTS: {ingr}" if ingr else "", base * 0.058, mn, False,
+              "left", 0.4),
+        Block("contains", f"CONTAINS: {contains}" if contains else "", base * 0.062, mn, True,
+              "left", 0.3),
+        Block("storage", _s(f.get("storage")), base * 0.055, mn, True, "left", 0.3),
+        Block("dates", dateline, base * 0.055, mn, True, "left", 0.3),
+        Block("produced", produced, base * 0.05, mn, False, "left", 0.4),
+        Block("address", "\n".join(addr), base * 0.048, 12, False, "left", 0.1),
+        Block("contact", "  \u00b7  ".join(contact), base * 0.048, 12, False, "left", 0.1),
+        Block("permit", permit_line, base * 0.048, 12, False, "left", 0.1),
+    ]
+    for st in rule.get("statements", []):
+        text, _empty = cottage.fill_placeholders(st["text"], prof)
+        lo = statement_min_dots(st)
+        blocks.append(Block("statement:" + st["id"], text, max(lo, base * 0.05), lo, False,
+                            "left", 0.35))
+    blocks.append(Block("cross_contact", _s(prof.get("cross_contact")), base * 0.044, 12, False,
+                        "left", 0.3))
+    return blocks
+
+
+def cottage_overflow_message(doc, stock: stocks.Stock, ctx: dict) -> str:
+    """Friendly "doesn't fit" for cottage labels: never shrink the law, go bigger."""
+    rule = cottage_ctx(ctx)["rule"]
+    sizes = [st.get("min_pt") for st in rule.get("statements", []) if st.get("min_pt")]
+    bigger = [stocks.get(s) for s in ALLOWED_STOCKS["cottage"]
+              if stocks.get(s).w * stocks.get(s).h > stock.w * stock.h]
+    tip = (f" Try a bigger label, like {bigger[-1].name}, or use fewer words."
+           if bigger else " Try fewer words in the ingredients, or split the product "
+                          "into a second label.")
+    if sizes:
+        from .cottage import _trim
+        return (f"Everything your state asks for doesn't fit on {stock.name} labels with the "
+                f"required wording at least {_trim(max(sizes), 1)} pt tall. Food Labeler won't "
+                "make the required wording smaller or leave anything out." + tip)
+    return ("Everything this label needs doesn't fit on " + stock.name + " labels. Food "
+            "Labeler won't leave anything out." + tip)
+
+
 def qr_matrix(text: str):
     """QR code modules as rows of booleans (segno is imported only when needed)."""
     import segno
@@ -436,4 +543,10 @@ def layout(doc, stock: stocks.Stock, ctx: dict | None = None) -> Layout:
         region.exclusions.append((qx - 16, qy, region.right, qy + side + 8))
     out = fit(blocks, region, valign)
     out.qr = qr
+    if out.overflow and doc.template == "cottage":
+        out.message = cottage_overflow_message(doc, stock, ctx)
+        # Point at something the baker can shorten, never at the required wording.
+        if out.overflow_key.startswith("statement:") or out.overflow_key not in FIELD_NAMES:
+            if any(ln.key == "ingredients" for ln in out.lines):
+                out.overflow_key = "ingredients"
     return out

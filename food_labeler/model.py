@@ -44,7 +44,11 @@ DATE_PAIRS = {
     "package": (None, "best_by"),
     "sticker": ("made", "best_by"),
     "free": (None, None),
+    "cottage": ("made_on", "best_by"),
 }
+
+STORAGE_CHIPS = ["Store at room temperature", "Keep refrigerated", "Keep frozen",
+                 "Store in a cool, dry place"]
 
 
 class LabelFileError(Exception):
@@ -73,12 +77,19 @@ def default_fields(template: str, today: dt.date | None = None) -> dict:
                 "best_by": (t + dt.timedelta(days=7)).isoformat(), "count": ""}
     if template == "free":
         return {"text": ""}
+    if template == "cottage":
+        # Business details and the state's statements are not stored here: they
+        # come from My bakery (bakery.Profile) and the state rules when drawn.
+        return {"product": "", "net": "", "ingredients": "", "contains": "",
+                "no_allergens": False, "storage": "", "made_on": iso,
+                "best_by": (t + dt.timedelta(days=7)).isoformat(),
+                "show_made": True, "show_best_by": True}
     return {"food": "", "made_on": iso,
             "use_by": (t + dt.timedelta(days=5)).isoformat(),
             "contains": "", "note": "", "made_by": "", "kitchen": False}
 
 
-TEMPLATES = ["simple", "package", "sticker", "free"]
+TEMPLATES = ["simple", "package", "sticker", "free", "cottage"]
 
 
 @dataclass
@@ -113,7 +124,7 @@ class LabelDoc:
         name = str(old.get("food") or old.get("product") or old.get("text") or "")
         if template == "simple":
             new["food"] = name
-        elif template == "package":
+        elif template in ("package", "cottage"):
             new["product"] = name
         elif template == "free":
             new["text"] = name
@@ -127,6 +138,9 @@ class LabelDoc:
             new[nu] = old[ou]
         if old.get("lot") and "lot" in new:
             new["lot"] = old["lot"]
+        for k in ("net", "ingredients"):
+            if old.get(k) and k in new:
+                new[k] = old[k]
         self.template = template
         self.fields = new
 

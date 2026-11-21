@@ -20,6 +20,9 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
 | `printers.py` | printer discovery (Linux sysfs + CUPS, Windows spooler, network), sending jobs, status |
 | `known.py` | known printer models: bundled `known_printers.json` + the user's update file |
+| `cottage.py` | cottage food state rules (bundled `cottage_rules.json` < imported update < the user's own edits), "Label check", net quantity wording |
+| `bakery.py` | the baker's files: *My bakery* details, *My ingredients* (seeded from `starter_ingredients.json`), *My products* |
+| `bakery_dialogs.py` | Set up my bakery, My bakery, My ingredients, My products windows |
 | `usbscan.py` | lists every USB device for "My printer isn't in the list" |
 | `report.py` | the plain-text printer report a user can send for help (no label content) |
 | `settings.py` | settings file, data/labels folders, log file, autosave |
@@ -27,7 +30,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
 | `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell`, calendar, toggles |
 
-Nothing outside `app.py`, `dialogs.py` and `widgets.py` imports Tk, so
+Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py` and `widgets.py` imports Tk, so
 everything else is tested headless.
 
 ## Data flow
@@ -81,6 +84,37 @@ On round labels each line's width depends on its height in the circle, which
 depends on vertical centring, which depends on the wrapping — `_try()`
 iterates until the top edge stops moving.
 
+### Cottage food labels
+
+The cottage template (`templates._cottage_blocks`) reads only the label's
+own fields from the document; the business details and the state's
+statements come from the render context, which `App.render_ctx()` builds
+from `bakery.Profile` and `cottage.CottageRules.effective(state)`:
+
+```
+ cottage_rules.json (bundled)  ─┐
+ <data>/cottage_rules.json     ─┼─▶ CottageRules.base(state)      (update wins if checked_on ≥ bundled)
+ <data>/cottage_overrides.json ─┘   CottageRules.effective(state) (user edits on top, with markers)
+                                            │ .to_ctx()
+ <data>/my_bakery.json ──▶ Profile ─────────┼──▶ ctx["cottage"] = {"rule", "profile"}
+                                            ▼
+                         templates._cottage_blocks()  ──▶ fit() ──▶ render
+                         cottage.check_label()        ──▶ Label check panel, PRINT question
+```
+
+Each statement becomes a Block whose minimum size is the state's minimum
+(points → dots), so `fit()` can never shrink it further; if the label still
+doesn't fit, the overflow message suggests a bigger label and points at the
+ingredients. Statements may contain `{business_name}`, `{permit_number}` or
+`{county}`, filled from *My bakery*.
+
+User edits remember the default they were based on, so a changed default is
+detected (`CottageRules.pending_changes`) and asked about once
+(`bakery_dialogs.ask_about_changes`) instead of being overwritten. User
+files are versioned; unreadable ones are renamed `*.broken` rather than
+overwritten, and files written by a newer version are read but not written.
+See [cottage-rules.md](cottage-rules.md).
+
 ### Bitmap polarity
 
 Pillow's mode "1" packs 8 pixels per byte, MSB first, 1 = white, with each
@@ -126,10 +160,18 @@ fsync + rename).
 | `autosave.json` | data folder | `{"doc": <label>, "path": "...", "dirty": bool}` |
 | `known_printers.json` | bundled in the package, and optionally in the data folder | see [printer-definitions.md](printer-definitions.md) |
 | `app_config.json` | bundled | support e-mail address and name |
+| `cottage_rules.json` | bundled, and optionally in the data folder | state presets, see [cottage-rules.md](cottage-rules.md) |
+| `cottage_overrides.json` | data folder | the baker's own wording / required items, see [cottage-rules.md](cottage-rules.md) |
+| `my_bakery.json` | data folder | `{"format": "food-labeler-bakery", "version": 1, "state", "business", "legal_entity", "street", "street2", "city", "region", "zip", "phone", "email", "permit", ...}`; first created from the package-label kitchen details in `settings.json` |
+| `my_ingredients.json` | data folder | `{"format": "food-labeler-ingredients", "version": 1, "ingredients": [{"id", "name", "sub", "allergens", "check"}]}`; seeded once from the bundled `starter_ingredients.json` |
+| `my_products.json` | data folder | `{"format": "food-labeler-products", "version": 1, "products": [{"id", "name", "net", "ingredients", "contains", "no_allergens", "storage", "best_by_days", ...}]}`; also the backup file format |
 | `food-labeler.log` | data folder | text log, rotated at 512 kB (3 files) |
 
 The `.label` format id `easy-labels` is the project's original name and must
-not change, or existing files stop opening.
+not change, or existing files stop opening. Adding the cottage template did
+not change the format version (still 1): 1.0.0 files open unchanged, and a
+cottage label opened in 1.0.0 falls back to a simple label instead of being
+refused. `tests/test_cottage.py` keeps 1.0.0 files of every kind opening.
 
 ## Settings locations
 
@@ -144,7 +186,8 @@ Environment overrides: `FOOD_LABELER_DATA`, `FOOD_LABELER_LABELS`,
 ## Packaging
 
 `food_labeler.spec` builds a one-file, windowed program and bundles the
-fonts, icons, `known_printers.json` and `app_config.json`. On Windows it also
+fonts, icons, `known_printers.json`, `app_config.json`, `cottage_rules.json`
+and `starter_ingredients.json`. On Windows it also
 embeds a version resource (file/product version from `__version__`, product
 "Food Labeler", company "High Thyme Kitchen"). `--selftest` is run on every
 build to prove the bundle is complete.

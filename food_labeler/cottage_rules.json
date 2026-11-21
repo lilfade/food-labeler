@@ -1,0 +1,1791 @@
+{
+  "format": "food-labeler-cottage-rules",
+  "version": 1,
+  "updated": "2026-11-20",
+  "states": [
+    {
+      "id": "AL",
+      "name": "Alabama",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "The rule says what the statements must cover but gives no exact wording, so no verbatim text is recorded. The label must include 'A statement that the food is not inspected by the department or local health department' and, with the ingredient list, 'a disclaimer that the food may contain allergens'. Write your own sentence that says both things clearly, or ask your county health department. Every required item must be in at least 10-point font. The address can be the home address or a P.O. Box. List ingredients in descending order of predominance; the rule does not mention sub-ingredients. No FALCPA 'Contains:' list is required, only the 'may contain allergens' disclaimer. The label does not need a permit number, net quantity, date or phone. You must complete an approved food safety course. ADPH asks you to take the course certificate, a sample label and the Cottage Food Review Form to your county health department for review. Sales are direct to consumers in Alabama only (in person, phone or online, delivered in state). ADPH's FAQ says a QR code cannot replace the required name, address or ingredients. Note that a separate Dept. of Agriculture & Industries farmers-market sheet uses the wording 'THIS FOOD IS NOT INSPECTED BY THE DEPARTMENT OF PUBLIC HEALTH'. That sheet is for a different program and is not the cottage food rule.",
+      "source_url": "https://admincode.legislature.state.al.us/api/rule/420-3-22-.01",
+      "extra_sources": [
+        "https://www.alabamapublichealth.gov/foodsafety/cottage-food.html"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "AK",
+      "name": "Alaska",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This food was made in a home kitchen, is not regulated or inspected, except for meat and meat products, and may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "permit_number"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "These rules come from Alaska's 2024 'homemade food' law (HB 251, AS 17.20.332). It replaced the old 18 AAC 31.012 rule and its 'THESE PRODUCTS ARE NOT SUBJECT TO STATE INSPECTION' wording; DEC repealed 18 AAC 31.012(a) in 2025. Packaged food must be 'clearly and prominently labeled', but no font size is set. The label needs the producer's name, current address and telephone number, plus the business license number 'if applicable' (that is the permit_number field). The law requires no product name, ingredient list, allergen list, net weight or date; the 'may contain allergens' sentence is the only allergen rule. Unpackaged food: before the sale, tell the buyer it was prepared under AS 17.20.332-17.20.338 and is not subject to certain state requirements, and give them your name, address, phone and license number. A retail space selling homemade food must display a sign saying it was made in a home kitchen, may contain allergens and is not regulated or inspected. Sales must be within Alaska; no interstate sales. Anchorage may have its own municipal guidance, so check it if you sell there. SB 226 (2026, on reduced-oxygen packaging) appears to have died; it did not change labels.",
+      "source_url": "https://www.akleg.gov/pdf/33/Bills/HB0251C.pdf",
+      "extra_sources": [
+        "https://codes.findlaw.com/ak/title-17-food-and-drugs/ak-st-sect-17-20-332/",
+        "https://dec.alaska.gov/eh/fss/homemade-food/requirements"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "AZ",
+      "name": "Arizona",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced in a home kitchen that may come in contact with common food allergens and pet allergens and is not subject to public health inspection.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "website",
+          "text": "To obtain additional information about cottage foods or to report a food-borne illness, go to azdhs.gov/Cottagefood",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "ingredients",
+        "business_name",
+        "permit_number",
+        "date_made"
+      ],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "allergens",
+        "address",
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "You must register with ADHS's online cottage food registry, and the label must show the preparer's name and registration number. You also need an accredited food handler card. The label must list all ingredients and the production date. It must carry the allergen/home-kitchen statement and a department website address, which rule R9-8-101.02 gives as the 'go to azdhs.gov/Cottagefood' sentence. The rule capitalizes 'FOOD' in its copy of the allergen statement; the statute uses lowercase, as recorded here. Only a 'clear and legible printed or handwritten font' is required; no point size is set. The law does not explicitly require a product name or net weight, but adding them is sensible. The dd_facility statement applies only if the food was made in a facility for individuals with developmental disabilities; the law gives no fixed wording for it. If you sell online, post the same name, registration number, ingredients, production date, statement and website prominently. Third-party vendors must shelve cottage food separately and post a sign. Food made with dairy, meat or poultry must be sold by you and delivered in person.",
+      "source_url": "https://www.azleg.gov/ars/36/00932.htm",
+      "extra_sources": [
+        "https://www.law.cornell.edu/regulations/arizona/Ariz-Admin-Code-SS-R9-8-101.02",
+        "https://www.azdhs.gov/documents/preparedness/epidemiology-disease-control/food-safety-environmental-services/cottage-food-program/r9-8-101-02-cottage-food.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "AR",
+      "name": "Arkansas",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced in a private residence that is exempt from state licensing and inspection. This product may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address",
+        "phone",
+        "date_made"
+      ],
+      "optional": [
+        "permit_number"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "These rules come from the Arkansas Food Freedom Act (Ark. Code 20-57-501 et seq.; the disclosures are in 20-57-505). Only non-TCS homemade food may be sold, and there is no registration. Required disclosures: the date the food was made, produced or processed; the producer's name, address and telephone number; the common name of the food; ingredients in descending order of predominance; and the statement. If you don't want your name, address and phone on the label for safety reasons, you can request an ID number from the Arkansas Department of Agriculture and print it instead (the permit_number field). Put the label on the package, or on the container for bulk sales, and give the buyer a written copy at the time of sale. If you sell online, the website must show the same information, and the package must still be labeled. Acidified foods also need a batch number. No font size or net weight is specified. Source: Arkansas Department of Health Homemade Food Guide, updated 5/21/2026.",
+      "source_url": "https://healthy.arkansas.gov/wp-content/uploads/Homemade-Food-Guide-5.21.2026-Update.pdf",
+      "extra_sources": [
+        "https://codes.findlaw.com/ar/title-20-public-health-and-welfare/ar-code-sect-20-57-505/"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "CA",
+      "name": "California",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a Home Kitchen",
+          "min_pt": 12,
+          "kind": "label"
+        },
+        {
+          "id": "repackaged",
+          "text": "Repackaged in a Home Kitchen",
+          "min_pt": 12,
+          "kind": "alternative"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip",
+        "permit_number"
+      ],
+      "optional": [
+        "address",
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 12,
+      "metric_required": true,
+      "notes": "Put 'Made in a Home Kitchen' (or 'Repackaged in a Home Kitchen') in 12-point type on the principal display panel, the front of the package. California Health & Safety Code 114365.2 requires this. Next to it, show your CFO registration (Class A) or permit (Class B) number and the name of the county that issued it. A county sample layout is 'Permit #: 12345' / 'Issued in county: County name'. Give the operation's name, city and zip code. Add the street address if you are not listed in a current telephone directory. List ingredients in descending order by weight; the county sample also lists sub-ingredients in parentheses. State net quantity (count, weight or volume) in both English and metric units, for example 'Net Wt. 3 oz. (85g)'. Declare major allergens the federal way: a 'Contains:' line next to the ingredients, or within the ingredient list. Nutrition Facts are needed only if you make a nutrient-content or health claim. Labels must be legible and in English. Counties may add requirements, so check with yours. I could not open the statute text itself (leginfo and Justia blocked automated access), so this relies on Imperial County Public Health Department's official CFO labeling handout (rev. 1/2025). Its wording matches the statute citations reported elsewhere.",
+      "source_url": "https://www.icphd.org/assets/Environmental-Health/Food/Cottage-Food/CFLabelingReq.pdf",
+      "extra_sources": [
+        "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=HSC&sectionNum=114365.2",
+        "https://www.cdph.ca.gov/Programs/CEH/DFDCS/CDPH%20Document%20Library/FDB/FoodSafetyProgram/CottageFood/CFORequirements.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "CO",
+      "name": "Colorado",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced in a home kitchen that is not subject to state licensure or inspection and that may also process common food allergens such as tree nuts, peanuts, eggs, soy, wheat, milk, fish, and crustacean shellfish. This product is not intended for resale.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "point_of_sale_placard",
+          "text": "This product was produced in a home kitchen that is not subject to state licensure or inspection. This product is not intended for resale.",
+          "min_pt": null,
+          "kind": "sign"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address",
+        "date_made"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "permit_number"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Current law (C.R.S. 25-4-1614(3)) requires an affixed label with: identification of the product; the producer's name; the address where the food was prepared; the producer's current phone number OR email (one is required, so phone and email are listed as optional); the date it was produced; a complete list of ingredients; and the disclaimer. The disclaimer includes 'not intended for resale', so not_for_resale is covered by the statement. Display the shorter placard at the point of sale, including online. No font size is set. CHANGE COMING 1 JAN 2027: HB26-1033, the 'Tamale Act' signed 6/4/2026, amends (3)(a)(II). The label must then show the producer's name, the DEPARTMENT-ISSUED REGISTRATION NUMBER and the COUNTY in which the food was prepared, in place of the street address, plus phone or email. A new (VI) adds a department-provided website address (for illness reports and checking registration). Producers must register with CDPHE every year. The disclaimer wording was not changed. The same act allows some TCS foods (such as tamales), raises the revenue cap to $150,000 and takes effect 1/1/2027 for these sections. The signed act's PDF text extraction is slightly garbled around the struck 'address at' text, so confirm the final codified wording when CDPHE publishes guidance.",
+      "source_url": "https://colorado.public.law/statutes/crs_25-4-1614",
+      "extra_sources": [
+        "https://leg.colorado.gov/bill_files/117161/download",
+        "https://leg.colorado.gov/bills/hb26-1033",
+        "https://cdphe.colorado.gov/dehs/cottage-foods"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "CT",
+      "name": "Connecticut",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a Cottage Food Operation that is not Subject to Routine Government Food Safety Inspection.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": true,
+      "notes": "CT Department of Consumer Protection (DCP) label checklist: product name; business name and address, including city, state and zip; ingredients in descending order of predominance by weight, including sub-ingredients of prepared items (for example 'soy sauce (wheat, soybeans, salt)'); and net weight or volume WITH the metric equivalent, largest unit first (for example 'Net Wt: 1 lb 2 oz / ___g'). Print the statement in at least 10-point type, clearly and conspicuously. Handwritten labels are OK if legible, in permanent ink and at least 10-point equivalent. Allergens: name ingredients made from milk, eggs, wheat, peanuts, sesame, soybeans, fish (including shellfish) and tree nuts, naming the specific nut. Do it in the ingredient list or in a 'Contains:' statement after it. You must apply to DCP's cottage food program. Sales must happen in Connecticut, and products may not be shipped. The checklist doesn't mention a registration number on the label. I could not open the statute (CGS 21a-62b) because cga.ct.gov failed certificate checks, so the wording comes from the DCP checklist.",
+      "source_url": "https://portal.ct.gov/dcp/knowledge-base/articles/cottage-foods/cottage-food-label-checklist",
+      "extra_sources": [
+        "https://portal.ct.gov/dcp/knowledge-base/articles/cottage-foods/how-to-label-allergens-for-cottage-food-products",
+        "https://portal.ct.gov/dcp/cottage-foods"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "DE",
+      "name": "Delaware",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This food is made in a Cottage Food Establishment and is NOT subject to routine Government Food Safety Inspections",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip",
+        "date_made"
+      ],
+      "optional": [
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "From 16 DE Admin. Code 4458A, section 8.2. The label needs: the CFE name; the product name; '\"town/city, Delaware\"' (town and state only, no zip or street); phone number OR email (one is required, so both are listed as optional); net weight or unit count; and the date of production OR a lot number. That date/lot slot is date_made here; a lot number is acceptable instead. List ingredients in decreasing order by weight. If the label is too small, the list can be given on request. Name the food source of each major allergen (milk, eggs, fish, tree nuts, wheat, peanuts, soybeans, sesame) unless it is already in the ingredient's name. Shellfish is not listed in the rule. The whole label must be in at least 10-point type in a contrasting color. In the source the closing quote mark comes before the period, so no period is recorded. You need a DPH cottage food registration/permit (an on-site kitchen inspection, training, recall plan and records). A February 2026 proposed revision changes 'registration' to 'permit' terminology; the labeling text in 8.2 appears unchanged. A separate Dept. of Agriculture On-Farm Home Processing program has its own rules.",
+      "source_url": "https://regulations.delaware.gov/api/register/february2026/f36c1f42-d73c-4700-9153-e1f04fdcfaec",
+      "extra_sources": [
+        "https://regulations.delaware.gov/AdminCode/title16/Department%20of%20Health%20and%20Social%20Services/Division%20of%20Public%20Health/Health%20Systems%20Protection%20(HSP)/4458A.shtml"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "DC",
+      "name": "District of Columbia",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made by a cottage food business that is not subject to the District of Columbia's food safety regulations.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "permit_number"
+      ],
+      "optional": [
+        "business_name",
+        "address",
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "D.C. Code 7-742.02(c)(2): products must be prepackaged with a label showing the cottage food business identification number (the CFBRID from DC Health, in the permit_number field); the product name; ingredients in descending order by weight; net weight or net volume; allergen information as specified by federal labeling requirements (FALCPA: 'Contains:' or in the ingredient list); and nutrition information only if you make a nutritional claim. Print the statement in at least 10-point type in a contrasting color. The statute does not require a business name or address on the label. You must register with DC Health's Cottage Food Business Registry, and DC Health may inspect before you start. The official code page omits the closing quotation mark after the statement. DC Health's older checklist capitalizes 'Food Safety Regulations'; the statute wording is recorded here.",
+      "source_url": "https://code.dccouncil.gov/us/dc/council/code/sections/7-742.02",
+      "extra_sources": [
+        "https://dchealth.dc.gov/sites/default/files/dc/sites/doh/publication/attachments/Cottage%20Food%20Business%20Checklist.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "FL",
+      "name": "Florida",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a cottage food operation that is not subject to Florida’s food safety regulations.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Fla. Stat. 500.80(3): the label must give the name and address of the operation, the product name, ingredients in descending order of predominance by weight, net weight or net volume, allergen information as specified by federal labeling requirements (FALCPA), and nutrition information only if you make a nutritional claim. Print the statement in at least 10-point type in a contrasting color. The source uses a curly apostrophe in 'Florida’s'. No permit or registration is needed if annual gross sales are $250,000 or less. Internet and mail-order sales are allowed, including shipping by USPS or a commercial carrier. No wholesale. Local governments cannot prohibit cottage food operations (state preemption).",
+      "source_url": "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0500-0599/0500/Sections/0500.80.html",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "GA",
+      "name": "Georgia",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "MADE IN A COTTAGE FOOD OPERATION THAT IS NOT SUBJECT TO STATE FOOD SAFETY INSPECTIONS.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "permit_number",
+        "date_made"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Requires a Georgia Dept. of Agriculture cottage food license. Pre-packaged foods: label with operator name and home address, common name, ingredients in descending order of predominance by weight, net weight or volume, allergen labeling per FDA requirements, nutrition info only if a nutritional claim is made, plus the statement (Times New Roman or Arial, min 10 pt, contrasting color). Custom direct-sale orders (e.g. wedding cakes) need business name, home address and the statement. Bulk sales: info on a card/sign/booklet at point of sale and the statement affixed to the bulk container. Allergen rule follows FDA (FALCPA major allergens).",
+      "source_url": "https://www.law.cornell.edu/regulations/georgia/Ga-Comp-R-Regs-R-40-7-19-.09",
+      "extra_sources": [
+        "https://rules.sos.ga.gov/GAC/40-7-19",
+        "https://agr.georgia.gov/cottage-food"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "HI",
+      "name": "Hawaii",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a home kitchen not routinely inspected by the Department of Health",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "phone"
+      ],
+      "optional": [
+        "net_quantity",
+        "address",
+        "email",
+        "date_made"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Homemade Food (HMF) operations are exempt from a food establishment permit but need DOH-approved food safety training (ANSI-accredited course OK). Label: statement, common or descriptive name, ingredients in descending order by weight (if 2+ ingredients), list of major food allergens (milk, eggs, fish, shellfish, tree nuts, peanuts, wheat, soybeans, sesame; DOH sample uses 'CONTAINS: MILK, NUTS'), and name and contact information of the producer (rule says 'contact information' - phone, email or website; DOH sample shows business name, website and email, so 'phone' here stands in for any contact method). No font size specified. DOH sample label ends the statement with a period. Baked goods without custard or cream fillings allowed. Rules amended effective Aug 24, 2025.",
+      "source_url": "https://www.law.cornell.edu/regulations/hawaii/Haw-Code-R-SS-11-50-35",
+      "extra_sources": [
+        "https://health.hawaii.gov/san/files/2019/09/hmf-foods-01.29.2026.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "ID",
+      "name": "Idaho",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is not subject to government food safety inspection or licensing requirements. It may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "phone"
+      ],
+      "optional": [
+        "net_quantity",
+        "allergens",
+        "address",
+        "email",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "SB 1283 (Idaho Direct-to-Consumer Commerce Act, Idaho Code Title 37 Ch. 2) took effect March 20, 2026 and replaces the old IDAPA 16.02.19 cottage food rule. No license/permit. The notice may be on a conspicuous sign, a label, or a card given to the buyer, and must include the statement, producer name and contact information, and an ingredient list if 2+ ingredients. Sales must be direct to an informed end consumer, within Idaho only. Shelf-stable baked goods (no frosting/filling made from animal products or other perishable ingredients) are shelf-stable; baked goods with perishable frosting/filling are 'perishable food' and must include handling instructions for safe storage (use 'storage'). Product name is not explicitly listed in the statute but recommended; weights & measures law still applies (net quantity if sold by weight). Text read from the introduced bill PDF; IDHW page confirms identical statement wording.",
+      "source_url": "https://legislature.idaho.gov/wp-content/uploads/sessioninfo/2026/legislation/S1283.pdf",
+      "extra_sources": [
+        "https://healthandwelfare.idaho.gov/health-wellness/community-health/food-safety",
+        "https://legislature.idaho.gov/sessioninfo/2026/legislation/S1283/"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "IL",
+      "name": "Illinois",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced in a home kitchen not inspected by a health department that may also process common food allergens. If you have safety concerns, contact your local health department.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "placard",
+          "text": "This product was produced in a home kitchen not subject to public health inspection that may also process common food allergens.",
+          "min_pt": null,
+          "kind": "sign"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip",
+        "permit_number",
+        "date_made"
+      ],
+      "optional": [
+        "address",
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Must register with the local health department (registration number goes on label). Label items per 410 ILCS 625/4: (A) name of the cottage food operation and the unit of local government (county, township, city or village) where it is located; (B) registration number from the local health department plus the name of the municipality or county where registration was filed ({permit_number}); (C) common or usual name; (D) all ingredients incl. color, artificial flavor, preservative, in descending order by weight with common names; (E) the statement; (F) date the product was processed; (G) allergen labeling per federal requirements (milk, eggs, wheat, peanuts, soybeans, fish, crustacean shellfish, tree nuts by type, sesame - in ingredient list or 'Contains' statement). Packaging must also conform to Illinois Food, Drug and Cosmetic Act labeling (Extension says net weight required). Full street address not required by the statute. Placard statement is separate from the label statement. Statute text read via FindLaw copy because ilga.gov TLS failed; confirm on ilga.gov.",
+      "source_url": "https://ilga.gov/legislation/ilcs/documents/041006250K4.htm",
+      "extra_sources": [
+        "https://codes.findlaw.com/il/chapter-410-public-health/il-st-sect-410-625-4/",
+        "https://extension.illinois.edu/cottage-food/food-labeling-and-placards"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "IN",
+      "name": "Indiana",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is home produced and processed, and the production area has not been inspected by the State Department of Health. NOT FOR RESALE.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "business_name",
+        "address",
+        "date_made"
+      ],
+      "optional": [
+        "allergens",
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Home-Based Vendor (IC 16-42-5.3). No permit, but each HBV must hold an ANSI-accredited food handler certificate. Label: name and address of producer, common or usual name, ingredients in descending order by predominance by weight, net weight or volume by standard measure or numerical count, date processed, and the 10-pt statement (which itself contains 'NOT FOR RESALE.'). Products must also be posted (label info) on any website/online platform used. In-state sales only, direct to end consumer (in person, phone, internet; delivery in person, mail or third-party carrier). Allergen declaration not listed in the HBV statute but recommended. IDOH sample label shows 'Net Wt. 17 OZ (485g)' but metric not mandated.",
+      "source_url": "https://secure.in.gov/health/food-protection/files/Indiana-Home-Based-Vendor-Handbook-2.pdf",
+      "extra_sources": [
+        "https://law.justia.com/codes/indiana/title-16/article-42/chapter-5-3/section-16-42-5-3-5"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "IA",
+      "name": "Iowa",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced at a home food processing establishment.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name"
+      ],
+      "optional": [
+        "address",
+        "phone",
+        "email",
+        "permit_number",
+        "date_made",
+        "sell_by"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Requires a home food processing establishment license from Iowa DIAL ($50/yr; gross annual sales under $50,000). Label per 137D.2(7): info identifying the establishment name, common name, ingredients in descending order of predominance, net quantity of contents, expiration date based on food safety for refrigerated TCS foods (sell_by - only for those), the statement, and an allergen statement naming each major food allergen by common name if any are present. No font size specified. Labels must be truthful and not misleading (481 IAC 34.7).",
+      "source_url": "https://www.legis.iowa.gov/docs/code/137D.html",
+      "extra_sources": [
+        "https://www.legis.iowa.gov/docs/iac/chapter/02-18-2026.481.34.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "KS",
+      "name": "Kansas",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "date_made"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Kansas has no specific cottage food statute; non-licensed foods (e.g. cookies, breads, cakes, fruit pies) may be made in a home kitchen and sold direct to consumer (incl. online with direct delivery/shipping) under the Kansas Food Law exemption. No 'home kitchen / not inspected' statement is required. Packaged product labels per KDA/K-State guide (rev. Jan 2026): common name; name and physical address of the person that made or is selling the product; ingredients in descending order by weight with the nine major allergens named in plain language (e.g. 'casein (milk)'); quantity (net weight, volume, or count). Wholesale/consignment/craft-mall sales require a KDA license. Source is a joint K-State Extension / Kansas Dept. of Agriculture publication (KDA site blocked automated fetch).",
+      "source_url": "https://bookstore.ksre.ksu.edu/pubs/foods-sold-directly-to-consumers-in-kansas-regulations-and-food-safety-best-practices_MF3138.pdf",
+      "extra_sources": [
+        "https://www.agriculture.ks.gov/divisions-programs/food-safety-and-lodging/farmers-markets-similar-locations"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "KY",
+      "name": "Kentucky",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is home-produced and processed",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "date_made"
+      ],
+      "optional": [
+        "phone",
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Home-based processor: must register with the Dept. for Public Health, Food Safety Branch (902 KAR 45:090). Label per KRS 217.136(3) (effective July 15, 2026): name and address of the operation; common or usual name; ingredients in descending order of predominance by weight; net weight and volume by standard measure, or numerical count; the 10-pt statement; date processed. Allergens per 21 U.S.C. 343(w) (FALCPA) required by 902 KAR 45:090. In-state direct-to-consumer sales only (home, market, roadside stand, event, online). Statute text has no trailing period inside the quotes.",
+      "source_url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=57382",
+      "extra_sources": [
+        "https://apps.legislature.ky.gov/law/kar/titles/902/045/090/",
+        "https://www.chfs.ky.gov/agencies/dph/dphps/fsb/FSDocs/hbplabelguide.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "LA",
+      "name": "Louisiana",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name"
+      ],
+      "optional": [
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone",
+        "email",
+        "date_made"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "R.S. 40:4.9 (low-risk foods incl. baked goods: breads, cakes, cookies, pies) requires a label 'which clearly indicates that the food was not produced in a licensed or regulated facility' - the law prescribes NO exact wording, so write your own clear statement to that effect (statements left empty to avoid inventing wording). No other label elements are mandated by the statute; product_name listed as practical minimum. Must hold a parish sales tax certificate; gross annual sales must be under $30,000. 2025 HB 150 (would have added name/address/phone/ingredients) died and was not enacted.",
+      "source_url": "https://www.legis.la.gov/Legis/LawPrint.aspx?d=98431",
+      "extra_sources": [
+        "https://legis.la.gov/Legis/Law.aspx?d=98431"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "ME",
+      "name": "Maine",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "allergens",
+        "phone",
+        "email",
+        "permit_number",
+        "date_made"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Requires a Home Food Manufacturing license from Maine DACF ($20 per 01-001 CMR ch. 330; kitchen inspected before licensing, so no 'not inspected' statement exists). Labels required (01-001 CMR ch. 345 sec. 7) when sold to stores, wholesale, or retailed by any public marketing (e.g. farmers markets); each item must bear: common or usual name, ingredients in order of predominance, net weight or numerical count, and name and address (with zip code) of producer/manufacturer/distributor. Products sold directly to a consumer from the home do not require a label. Shelf-stable foods only. Allergen declaration not in the rule but federal FALCPA applies to packaged food - recommended.",
+      "source_url": "https://www.law.cornell.edu/regulations/maine/01-001-C-M-R-ch-345-SS-7",
+      "extra_sources": [
+        "https://www.maine.gov/DACF/qar/permits_and_licenses/documents/home-license-101.pdf",
+        "https://www.law.cornell.edu/regulations/maine/department-01/division-001/chapter-345"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MD",
+      "name": "Maryland",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made by a cottage food business that is not subject to Maryland’s food safety regulations.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "permit_number",
+        "date_made"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Md. Code, Health-Gen. §21-330.1(c)(2). Label must show EITHER (A) business name and address, OR (B) business name and phone number plus the unique identification number MDH assigns on request (§21-330.1(d)) in place of the street address. Ingredients in descending order by weight; net weight or net volume; allergen information 'as specified by federal labeling requirements' (FALCPA 'Contains:' style); nutrition info only if a nutritional claim is made. Statement must be 10 pt or larger in a color with clear contrast to the label background. For products sold at a retail food store the label must ALSO carry the business phone number and e-mail address and the date the product was made, and before selling to a retail store the owner must submit a food-safety course certificate and the label to MDH. No metric requirement stated in the statute; allergen/nutrition defer to federal rules. The source statute text uses a curly apostrophe (Maryland’s).",
+      "source_url": "https://mgaleg.maryland.gov/2026RS/Statute_Web/ghg/21-330.1.pdf",
+      "extra_sources": [
+        "https://health.maryland.gov/phpa/OEHFP/OFPCHS/Documents/Updated_CF_Guidelines_2025.pdf",
+        "https://health.maryland.gov/phpa/OEHFP/OFPCHS/Documents/CFB%20Labeling%20Guide_9-26-2022_FINAL.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MA",
+      "name": "Massachusetts",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Massachusetts has no cottage-food exemption: home bakers need a Retail Residential Kitchen ('Cottage Food Operation') permit from the local board of health under 105 CMR 590 (Retail Food Code), and the kitchen IS inspected. DPH guidance requires no 'not inspected' disclaimer. Per DPH 'Retail Food Code Standards for Permitted Residential Kitchens' (updated April 2019): products must be prepackaged with an ingredient label printed in English containing (a) name and address of the Cottage Food Operation; (b) product name; (c) ingredients in descending order of predominance by weight, including sub-ingredients of prepared ingredients (e.g. 'soy sauce (wheat, soybeans, salt)'); (d) net weight or net volume; (e) allergen information as specified by federal labeling requirements (milk, eggs, wheat, peanuts, soybeans, fish/shellfish, tree nuts are named; the guidance pre-dates sesame being added federally); (f) nutrition labeling only if a nutrient content/health claim or other nutritional info is provided. Massachusetts labeling regulation 105 CMR 520 also applies. Some local boards (and DPH Q&A) may also ask for a sell-by date or phone; check your local board of health. Pending bills (194th session H.114, H.140, S.69) would create a true cottage-food exemption with a label statement, but none was confirmed enacted as of this check. The DPH document was read from a municipal (southboroughma.gov) copy because mass.gov blocked automated download.",
+      "source_url": "https://southboroughma.gov/DocumentCenter/View/743/Retail-Food-Code-Standards-for-Permitted-Residential-Kitchens-PDF",
+      "extra_sources": [
+        "https://www.mass.gov/guidance/retail-food-code-standards-for-permitted-residential-kitchens",
+        "https://www.boston.gov/departments/inspectional-services/retail-residential-kitchens",
+        "https://malegislature.gov/Bills/194/S69"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MI",
+      "name": "Michigan",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a home kitchen that has not been inspected by the Michigan department of agriculture and rural development.",
+          "min_pt": 11,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "permit_number"
+      ],
+      "min_statement_pt": 11,
+      "metric_required": false,
+      "notes": "MCL 289.4102 (amended 2025 PA 51, eff. Mar. 24, 2026). Label must show EITHER name and address of the cottage food operation, OR name, telephone number and MSU Product Center registration number (optional registration under subsec. (8)); if registered, the registration number must be on the label (subsec. (9)). Ingredients in descending order of predominance by weight; net weight or net volume; allergen labeling per federal requirements; nutrition only if a nutritional claim is made. Statement at least 11-pt equivalent, clear contrast. The statute capitalizes it as quoted (lowercase 'department of agriculture and rural development'); MDARD guidance reportedly title-cases it ('Michigan Department of Agriculture & Rural Development') — spelling out the department name rather than 'MDARD' is the safe choice. MDARD guidance says the address must be the physical home address (no P.O. box). As of 2026, sales by internet/mail order/third-party delivery to Michigan consumers allowed if the buyer can interact directly (face-to-face or virtual) with the operator; no consignment/wholesale.",
+      "source_url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-289-4102",
+      "extra_sources": [
+        "https://www.michigan.gov/mdard/food-dairy/cottage-food/labeling"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MN",
+      "name": "Minnesota",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "These products are homemade and not subject to state inspection.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "point_of_sale_sign",
+          "text": "These products are homemade and not subject to state inspection.",
+          "min_pt": null,
+          "kind": "sign"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "date_made"
+      ],
+      "optional": [
+        "address",
+        "permit_number"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Minn. Stat. §28A.152 subd. 1. Label must show the name of the producer (or registered cottage food business name) AND either the MDA registration number OR the address; date the food was prepared; ingredients and any possible allergens; and the statement. No font size specified. The same statement must also be on a clearly legible sign/placard at the point of sale and on any website offering the food (subd. 2(d)). Annual registration with MDA (subd. 4) and approved food-safety training required. Statute does not require net quantity or descending-weight ordering (MDA/UMN guidance may recommend). Laws 2025 ch. 34 art. 5 amends subds. 1-5 effective Aug. 1, 2027 (HF 2446) — re-check wording then.",
+      "source_url": "https://www.revisor.mn.gov/statutes/cite/28A.152",
+      "extra_sources": [
+        "https://www.mda.state.mn.us/sites/default/files/docs/2026-03/CottageFoodsFactSheet11.25.pdf",
+        "https://www.mda.state.mn.us/food/cottage-food-producer-registration"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MS",
+      "name": "Mississippi",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a cottage food operation that is not subject to Mississippi's food safety regulations.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Miss. Code Ann. §75-29-951(3). Label: name and address of the cottage food operation; product name; ingredients in descending order of predominance by weight; net weight or net volume; allergen information per federal labeling requirements; nutrition info only if a nutritional claim is made; statement in at least 10-pt type with clear contrast. Gross sales cap $35,000/yr; direct-to-consumer only. Current text verified from the Mississippi Legislature's 2026 HB 910 (which reproduces §75-29-951 and left subsection (3) unchanged); HB 910 (would remove the cap / allow online sales) died in 2026, so the existing text remains in force. The MSDH cottage food FAQ PDF previously used was no longer reachable (404).",
+      "source_url": "https://billstatus.ls.state.ms.us/documents/2026/html/HB/0900-0999/HB0910IN.htm",
+      "extra_sources": [
+        "https://billstatus.ls.state.ms.us/2026/pdf/history/HB/HB0910.xml",
+        "https://extension.msstate.edu/publications/labeling-mississippi-cottage-food-products"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MO",
+      "name": "Missouri",
+      "sales_allowed": true,
+      "verified": false,
+      "statements": [],
+      "required": [
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "RSMo §196.298.4 (eff. Aug. 28, 2022) requires: \"The label shall include the name and address of the cottage food production operation and a statement that the food is not inspected by the department or local health department.\" The statute does NOT prescribe exact wording and I could not retrieve DHSS's implementing guidance (home-based kitchen guidance and cottage-food Q&A PDFs now 404), so the exact statement text is unverified — check with your state (DHSS). Write a statement that the food is not inspected by the Missouri Department of Health and Senior Services or the local health department. Covers baked goods, canned jams/jellies, dried herbs sold directly to consumers; internet sales only when seller and buyer are both in Missouri. Product name/ingredients/allergens are good practice but not named in the statute. Requirements basis verified from statute; statement wording unverified — check with your state.",
+      "source_url": "https://revisor.mo.gov/main/OneSection.aspx?section=196.298",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "MT",
+      "name": "Montana",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a home kitchen that is not subject to retail food establishment regulations or inspections.",
+          "min_pt": 11,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": 11,
+      "metric_required": false,
+      "notes": "MCA 50-50-116(2)(b) (2025 MCA) and ARM 37.110.504. Label: name, address, city, state and zip of the operation; product name; ingredients in descending order of predominance by weight (DPHHS: sub-ingredients in parentheses, e.g. 'butter (milk, salt)'); net quantity, weight, count or volume; allergen labeling per federal and state requirements ('Contains:' statement accepted); nutrition label only if a nutritional claim is made. Statement at least 11-pt, clear contrast, conspicuously on the PRINCIPAL (front) label. Must register with the local health authority (one-time $40; re-register for new recipes/labels) and submit a label per product. Metric not stated in statute, but DPHHS sample label shows 'Net Wt. 8oz (227g)' and the FAQ explains metric conversion — dual units are recommended. Unpackaged cakes: all label info on the invoice delivered with the cake. Montana also has a separate Local Food Choice Act (homemade food sold directly with consumer notice) not covered here.",
+      "source_url": "https://archive.legmt.gov/bills/mca/title_0500/chapter_0500/part_0010/section_0160/0500-0500-0010-0160.html",
+      "extra_sources": [
+        "https://www.dphhs.mt.gov/assets/publichealth/FCS/CottageFood/cottagefoodregistrationfillable2020Dec.pdf",
+        "https://prod-dphhs.mt.gov/assets/publichealth/FCS/CottageFood/cottagefoodfrequentlyaskedquestions2024.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NE",
+      "name": "Nebraska",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This food was prepared in a kitchen that is not subject to regulation and inspection by the regulatory authority and may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "product_name",
+        "ingredients",
+        "allergens"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Neb. Rev. Stat. 81-2,280. The label must give the producer's name and the specific mailing address where you can be contacted (a city alone or a P.O. box is not enough). Foods that must be kept cold (for example cheesecake or cream-filled pastries) must also list ingredients, heaviest first. The notice “This food was prepared in a kitchen that is not subject to regulation and inspection by the regulatory authority and may contain allergens.” must be clearly visible to buyers: on a sign where you sell, and on your website and ads for pickup or delivery sales. Food Labeler also prints it on the label, as High Thyme Kitchen's own Nebraska labels do. Register with the Nebraska Department of Agriculture and complete a food-safety course before selling.",
+      "source_url": "https://nebraskalegislature.gov/laws/statutes.php?statute=81-2,280",
+      "extra_sources": [
+        "https://nda.nebraska.gov/fscp/foods/cottagefood.html",
+        "https://nebraskalegislature.gov/pdf/reports/committee/agriculture/sessionsummary_2025-2026.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NV",
+      "name": "Nevada",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "MADE IN A COTTAGE FOOD OPERATION THAT IS NOT SUBJECT TO GOVERNMENT FOOD SAFETY INSPECTION",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "NRS 446.866 was repealed in 2025; cottage food is now NRS 580.600 (effective through June 30, 2027), and from July 1, 2027 NRS 585.730 (Nevada Department of Agriculture license; same statement; internet/phone sales allowed). Statement must be printed 'prominently' (no point size given), in all caps as quoted. Label must comply with federal labeling: 21 U.S.C. §343(w) (allergens/FALCPA), 9 CFR 317 and 21 CFR Part 101 — i.e., full federal food label: statement of identity, net quantity (federal 21 CFR 101.105 calls for both metric and US customary units), ingredients in descending order by weight incl. sub-ingredients, allergen declaration, name and place of business. Nutrition Facts: 21 CFR 101 applies; small-business exemptions may apply — check. DPBH FAQ: use the physical address of the home kitchen, not a P.O. box. Sold only to a natural person for consumption 'and not for resale' (sale condition, not label text). Must register with the food safety authority (SNHD in Clark County) before selling.",
+      "source_url": "https://www.leg.state.nv.us/NRS/NRS-580.html",
+      "extra_sources": [
+        "https://www.leg.state.nv.us/NRS/NRS-585.html",
+        "https://www.leg.state.nv.us/NRS/NRS-446.html",
+        "https://www.southernnevadahealthdistrict.org/permits-and-regulations/cottage-food-operations/cottage-food-faq/"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NH",
+      "name": "New Hampshire",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is exempt from New Hampshire licensing and inspection.",
+          "min_pt": 10,
+          "kind": "label"
+        },
+        {
+          "id": "licensed",
+          "text": "This product is made in a residential food production area licensed by the New Hampshire Department of Health and Human Services.",
+          "min_pt": null,
+          "kind": "alternative"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone",
+        "date_made"
+      ],
+      "optional": [
+        "email"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "RSA 143-A:12 V (amended through 2025, eff. Nov. 12, 2025) and He-P 2310.01(d) (eff. 8-25-26). Exempt homestead operations (no license; sales from home, own farm stand, farmers markets, retail food stores) label each package with: operation name; PHYSICAL OR E-MAIL address (email may replace the street address); phone number; product name; each major food allergen; ingredients in descending order of predominance by weight; the exempt statement in at least 10-pt equivalent with clear contrast; and a product code with batch number OR date of manufacture (recall aid). For home/farm-stand sales only, ingredients may instead be given via QR code or website plus a sign at the display; farmers-market/retail-store sales need the full ingredient list on the label. Licensed (non-exempt) homestead operations — required to sell to restaurants, online, mail order or for resale — use the 'licensed' statement instead. No net-quantity requirement in these sections. 'date_made' here = batch code or manufacture date.",
+      "source_url": "https://gc.nh.gov/rsa/html/X/143-A/143-A-12.htm",
+      "extra_sources": [
+        "https://www.gencourt.state.nh.us/rules/state_agencies/he-p2300.html",
+        "https://dhhs.nh.gov/programs-services/environmental-health-and-you/food-protection/homestead-food-operations"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NJ",
+      "name": "New Jersey",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This food is prepared pursuant to N.J.A.C. 8:24-11 in a home kitchen that has not been inspected by the Department of Health.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip",
+        "permit_number"
+      ],
+      "optional": [
+        "net_quantity",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Cottage Food Operator (CFO) permit from NJ Dept. of Health required; the CFO# must be printed on the label (write \"CFO#_____ (pending)\" if not yet issued). Label must show your FULL PERSONAL NAME plus business name (business name alone is rejected). Location = the municipality on file as your registered residence kitchen followed by \"New Jersey\" or \"NJ\" (e.g. \"Bakersfield, NJ\"); no street address or zip required. Ingredients most to least by weight; if a major allergen is present, the word \"Contains\" followed by the allergens (eggs, fish, milk, peanuts, sesame, shellfish, soy, tree nuts, wheat). Statement must be copied exactly. No font size, net quantity, date, phone or email rule found. Off-site sales also require displaying the permit and a placard (N.J.A.C. 8:24-11.4(b)).",
+      "source_url": "https://www.nj.gov/health/cottagefood/requirements/labeling",
+      "extra_sources": [
+        "https://www.law.cornell.edu/regulations/new-jersey/N-J-A-C-8-24-11-4"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NM",
+      "name": "New Mexico",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is home produced and is exempt from state licensing and inspection. This product may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address",
+        "phone",
+        "email"
+      ],
+      "optional": [
+        "net_quantity",
+        "allergens",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Homemade Food Act (eff. July 1, 2021): no state permit needed for non-TCS foods sold directly to NM consumers, but a Food Handler Card is required. Required info: the processor's name, HOME address, telephone number AND email address; common/usual name; ingredients in descending order of predominance — NMED says all sub-ingredients must be listed (e.g. \"butter (cream (milk), salt)\"). The statement itself covers allergens (\"This product may contain allergens.\"); no FALCPA 'Contains' line is mandated, but listing allergens is good practice. Info may be on a package label, a bulk-container label, a point-of-sale placard (unpackaged items), or the webpage. No font size specified. Albuquerque/Bernalillo County (combined local health dept.) may run its own permit system — check locally. Old 7.6.2.15 NMAC 'home produced' 12-pt home-based processor rule applies only to legacy NMED permits, which are no longer issued.",
+      "source_url": "https://nmlegis.gov/Sessions/21%20Regular/final/HB0177.PDF",
+      "extra_sources": [
+        "https://www.env.nm.gov/foodprogram/wp-content/uploads/sites/8/2025/06/Homemade-Food-Act-FAQ.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NY",
+      "name": "New York",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a Home Kitchen",
+          "min_pt": 4.5,
+          "kind": "label"
+        },
+        {
+          "id": "alt_made_at_home_by",
+          "text": "Made at Home by {business_name}",
+          "min_pt": 4.5,
+          "kind": "alternative"
+        },
+        {
+          "id": "alt_home_kitchen_of",
+          "text": "Made in the Home Kitchen of {business_name}",
+          "min_pt": 4.5,
+          "kind": "alternative"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": 4.5,
+      "metric_required": false,
+      "notes": "Home Processor Exemption from Article 20-C licensing (1 NYCRR 276.4) — must register with NYS Agriculture & Markets (Home Processor Registration Request), complete food handler + Basic Sanitation Practices training; no number printed on label. Label: common/usual name, ingredients in predominance by weight (example lists sub-ingredients in parentheses), net quantity, processor name and FULL address; all allergens must be clearly identified (example uses \"Contains: milk, eggs, wheat, soy\"). The home phrase is worded as 'should' with three acceptable examples; minimum 1/16 inch (~4.5 pt). Official example shows dual units \"NET WT 1 lbs (453g)\" — metric not explicitly mandated on the page but follows federal FPLA practice; include grams. Products must be prepackaged at home and sold only within NY.",
+      "source_url": "https://agriculture.ny.gov/food-safety/home-processing",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "NC",
+      "name": "North Carolina",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": true,
+      "notes": "NC has no uninspected cottage food law: home processors must pass an NCDA&CS Food & Drug Protection Division home kitchen inspection (no pets in home; no permit number issued for labels). No 'home kitchen' disclaimer is required. Labels required when individually packaged for self-service, sold wholesale, or shipped; made-to-order/hand-to-customer sales can be exempt (ingredient info on request). Label: product name; manufacturer's name and address; net weight in ounces/pounds AND gram equivalent; complete ingredients in order of predominance by weight with sub-ingredients in parentheses (e.g. Butter (cream (milk), salt)); allergens in the ingredient list or a \"Contains\" statement immediately following. Nutrition facts not required unless claims (low fat, sugar free) are made. Page points to 21 CFR 101 / FDA Food Labeling Guide.",
+      "source_url": "https://www.ncagr.gov/divisions/food-drug-protection/food-program/fdpd-food-program-home-processor",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "ND",
+      "name": "North Dakota",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is made in a home kitchen that is not inspected by the state or local health department.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip",
+        "phone",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "NDCC ch. 23-09.5: no license, permit, or labeling may be required by the state; sales only directly to an informed end consumer for home consumption. The statement may be on the label OR on a consumer advisory sign at the point of sale. Operator must inform the consumer the product is not certified, labeled, licensed, packaged, regulated, or inspected. Products requiring refrigeration (cream, custard, meringue, cheesecake, pumpkin pie, cream cheese) must be labeled with safe handling instructions and a disclosure that the product was transported and maintained frozen (NDCC 23-09.5-02(7)); no exact wording given. No font size. Allergen/ingredient labeling not mandated but recommended.",
+      "source_url": "https://ndlegis.gov/cencode/t23c09-5.pdf",
+      "extra_sources": [
+        "https://www.hhs.nd.gov/food-and-hospitality/cottage-food"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "OH",
+      "name": "Ohio",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is home produced.",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "No registration needed for cottage food production operations (non-potentially hazardous foods per OAC 901:3-20-04). ORC 3715.023 requires: name and address of the business; name of the product; ingredients in descending order of predominance by weight; net weight and volume; and the statement in 10-point type. OAC 901:3-20-02 additionally requires the food labeling requirements of 21 CFR Part 101 — so FALCPA allergen declaration (\"Contains:\"), sub-ingredients, and federal net-quantity rules (dual inch-pound/metric under FPLA practice) apply; nutrition facts apply under 21 CFR 101 unless the small-business exemption applies. ODA fact sheet shows the statement capitalized as \"This Product is Home Produced\"; the statute text is used here.",
+      "source_url": "https://codes.ohio.gov/ohio-revised-code/section-3715.023",
+      "extra_sources": [
+        "https://codes.ohio.gov/ohio-administrative-code/rule-901:3-20-02",
+        "https://codes.ohio.gov/ohio-administrative-code/rule-901:3-20-04"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "OK",
+      "name": "Oklahoma",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced in a facility that is exempt from government licensing and inspection.",
+          "min_pt": 10,
+          "kind": "label"
+        },
+        {
+          "id": "third_party_placard",
+          "text": "This product was produced in a facility that is exempt from government licensing and inspection. This product may contain allergens.",
+          "min_pt": null,
+          "kind": "sign"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [
+        "net_quantity",
+        "permit_number",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Local Food Freedom Act (formerly Homemade Food Freedom Act), 2 O.S. § 5-4.1 et seq. HB 3720 (signed May 2026, effective Nov. 1, 2026) changed the statement from \"...produced in a private residence that is exempt...\" to \"...produced in a facility that is exempt...\"; labels printed before Nov. 1, 2026 used the old wording. All required info in legible 10-point minimum: producer name and phone number; physical address where produced; description of product; ingredients in descending order of proportion; statement of presence of major allergens (law lists milk, eggs, peanuts, tree nuts, soy, wheat). Optional ODAFF registration ($15/yr, HB 2975, 2024): the registration number may replace name, phone, and physical address on the label. Products in interstate commerce must meet federal labeling. The older Home Bakery Act text (\"Made in a home food establishment that is not licensed by the State Department of Health.\") was struck in 2021. Food safety training required for TCS foods.",
+      "source_url": "https://www.oklegislature.gov/cf_pdf/2025-26%20ENR/hB/HB3720%20ENR.PDF",
+      "extra_sources": [
+        "https://www.oklegislature.gov/cf_pdf/2023-24%20ENR/hB/HB2975%20ENR.PDF",
+        "https://www.okhouse.gov/posts/news-20260507_4",
+        "https://content.govdelivery.com/accounts/OKDAFF/bulletins/2fa9bdb"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "OR",
+      "name": "Oregon",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product is homemade, is not prepared in an inspected food establishment, and must be stored and displayed separately if merchandised by a retailer.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "placard_single_items",
+          "text": "This product is homemade and is not prepared in an inspected food establishment.",
+          "min_pt": null,
+          "kind": "sign"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [
+        "city_state_zip",
+        "permit_number",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": true,
+      "notes": "Cottage Food Exemption (OAR 603-025-0300 to -0335; ORS 616.723), no license needed; sales cap $52,700/yr. Statement must be on the principal display panel. Label: name of food; ingredients AND sub-ingredients in descending order by weight or volume; business name; business phone (required); address = full street address/city/state/zip, OR city/state/zip if listed in a city directory, OR an ODA Unique Identification Number (UIN, $25/yr) — no P.O. boxes; net weight/volume in BOTH U.S. and metric units; FALCPA allergen warnings. If pets live in the dwelling, the label must state pets were present and name the species (e.g. cat, dog) — no fixed wording. All label text: conspicuous, minimum lowercase 'o' height of 1/16 inch (not a point size), not obscured by artwork. Nutrition info only if claims are made. Unpackaged items (e.g. wedding cake) need a written notice/receipt with all label info.",
+      "source_url": "https://www.oregon.gov/oda/Documents/Publications/FoodSafety/CottageFoodExemptionENG.pdf",
+      "extra_sources": [
+        "https://oregon.gov/oda/Documents/Publications/FoodSafety/CottageFoodExemptionFAQENG.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "PA",
+      "name": "Pennsylvania",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "PA has no uninspected cottage food law: home bakers register as a Limited Food Establishment with PA Dept. of Agriculture (inspection, label submission with application). No 'home kitchen' disclaimer required. Packaged products: name of product; ingredients most to least by weight including sub-ingredients; allergen declaration if needed; name and address of manufacturer/processor; net wt. or count placed in the bottom 1/3 of the principal display panel in no less than 8 pt font. Bakery items sold directly to a PA consumer by the baker/employee (incl. at farmers markets) need no label, but ingredient info must be available on request. Items sold through a retail facility not owned by the baker need full labeling. Nutrition facts only for interstate sales (small business exemption via FDA) or when claims are made. Only commercially registered businesses may use \"Reg. Penna. Dept. of Agr.\"",
+      "source_url": "https://www.pa.gov/content/dam/copapwp-pagov/en/pda/documents/consumer_protection/foodsafety/documents/limited%20food%20establishment%20application%20packet.pdf",
+      "extra_sources": [
+        "https://www.pa.gov/agencies/pda/food/food-safety/limited-food-establishment-.html"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "RI",
+      "name": "Rhode Island",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made by a Cottage Food Business Registrant that is not Subject to Routine Government Food Safety Inspection",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "permit_number",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "R.I. Gen. Laws § 21-27-6.2: must register annually with RIDOH (notarized affidavit, food safety course, fee); baked goods not requiring refrigeration only; direct-to-consumer in-state, $50,000/yr cap. Affixed label must contain: name, address, and telephone number; ingredients in descending order of predominance by weight or volume; allergen information per federal/state rules (FALCPA). Statement in at least 10-point type, clear and conspicuous, contrasting with background (statute shows no terminal period inside the quote; the comma belongs to the sentence). Statement not required if made in a licensed commercial kitchen. Product name not listed in the statute but expected under general labeling. Separate Farm Home Food Manufacture registration (§ 21-27-6.1) has different label rules (farm name, address, phone). RIDOH cottage food webpage was not reachable (403); statute used.",
+      "source_url": "http://webserver.rilegislature.gov/Statutes/TITLE21/21-27/21-27-6.2.htm",
+      "extra_sources": [
+        "https://health.ri.gov/food-safety/cottage-foods"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "SC",
+      "name": "South Carolina",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "PROCESSED AND PREPARED BY A HOME-BASED FOOD PRODUCTION OPERATION THAT IS NOT SUBJECT TO SOUTH CAROLINA'S FOOD SAFETY REGULATIONS.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "net_quantity",
+        "allergens",
+        "permit_number"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "S.C. Code 44-1-143(D): label 'must comply with federal laws and regulations' and include name and address of the operation, product name, ingredients in descending order of predominance by weight, and the statement in ALL CAPITAL LETTERS in a color that clearly contrasts with the background (no point size given). If the operator doesn't want to show the home address, the department will issue an identification number on request to use instead of the address (stored here as permit_number). Because federal labeling compliance is required, include net quantity and FALCPA allergen declaration ('Contains:') as well. The 2022 amendment removed the former 'NOT FOR RESALE—' prefix. Applies only to non-potentially-hazardous foods; sales direct to consumers incl. online/mail order and to retail stores (stores must post signage). Operations with net earnings under $1,500/yr are outside the section. No date-made or phone requirement.",
+      "source_url": "https://www.scstatehouse.gov/code/t44c001.php",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "SD",
+      "name": "South Dakota",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was not produced in a commercial kitchen. It has been home-processed in a kitchen that may also process common food allergens such as tree nuts, peanuts, eggs, soy, wheat, milk, fish, and crustacean shellfish.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address",
+        "phone",
+        "date_made"
+      ],
+      "optional": [
+        "net_quantity",
+        "allergens",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "SDCL 34-18-37 requires: product name, producer name, physical address of production, mailing address of producer, telephone number, date made/processed, ingredients, and the disclaimer. No font size specified; no exact wording for the refrigeration directive (statute only requires 'a directive to keep refrigerated or frozen' for TCS foods such as cheesecake, cream/custard-filled baked goods, kuchen, which require food safety training under 34-18-36/36.1). Mailing address is required in addition to physical address. No registration/permit; licensing exemption (34-18-38) requires sale in the seller's physical presence at home, farmers market, roadside stand or other temporary venue, with personal delivery. Statute does not require ingredient order by weight or net quantity.",
+      "source_url": "https://sdlegislature.gov/api/Statutes/34-18-37.html",
+      "extra_sources": [
+        "https://sdlegislature.gov/api/Statutes/34-18-36.1.html",
+        "https://sdlegislature.gov/api/Statutes/34-18-38.html"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "TN",
+      "name": "Tennessee",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was produced at a private residence that is exempt from state licensing and inspection. This product may contain allergens.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "ingredients",
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [
+        "net_quantity",
+        "allergens"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Tennessee Food Freedom Act, Tenn. Code Ann. § 53-1-118(b)(4)-(5): provide the producer's name, home address, and telephone number; common or usual name; ingredients in descending order of predominance; and the statement. Information goes on a label affixed to the package (or bulk container), on a placard at point of sale if unpackaged, or on the web page if sold only online; for telephone/custom orders the seller must disclose verbally that it was produced at a private residence exempt from state licensing and inspection and may contain allergens, and provide the rest on request. No font size, no permit, no date. Intrastate sales only. TDA does not issue permits under this law. Text read from a UT Extension reproduction of the current code (current through 2025 session); TDA's page confirms the exemption but tn.gov page did not list label wording.",
+      "source_url": "https://foodscience.tennessee.edu/wp-content/uploads/sites/52/2025/12/TENN_53-1-118_FINAL.pdf",
+      "extra_sources": [
+        "https://www.tn.gov/agriculture/consumers/food-safety/tennessee-food-freedom-act.html"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "TX",
+      "name": "Texas",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "THIS PRODUCT WAS PRODUCED IN A PRIVATE RESIDENCE THAT IS NOT SUBJECT TO GOVERNMENTAL LICENSING OR INSPECTION.",
+          "min_pt": null,
+          "kind": "label"
+        },
+        {
+          "id": "tcs_safe_handling",
+          "text": "SAFE HANDLING INSTRUCTIONS: To prevent illness from bacteria, keep this food refrigerated or frozen until the food is prepared for consumption.",
+          "min_pt": 12,
+          "kind": "optional"
+        }
+      ],
+      "required": [
+        "product_name",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "net_quantity",
+        "ingredients",
+        "permit_number",
+        "date_made",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "SB 541 (eff. Sept 1, 2025) amended Health & Safety Code 437.0193: the old statement ('This food is made in a home kitchen and is not inspected by the Department of State Health Services or a local health department.') was replaced by the all-caps disclosure above. DSHS label list: legible writing; name of the operation; address OR the DSHS-issued unique identification number (if registered; stored as permit_number); common/usual name; major food allergens (e.g., eggs, tree nuts, soy, peanuts, milk, wheat, sesame) must be listed. TCS foods (e.g., cream pies, cheesecake): registration with DSHS is required, the label must show the date made, and the 12-point safe-handling statement goes on the label or invoice/receipt. Products sold through a cottage food vendor must show the date made. Unpackaged food: label info on invoice/receipt. Online sales: post label info on website before payment. DSHS said it will adopt new rules (25 TAC 229.661) — check for updates; net quantity is not listed on the DSHS page.",
+      "source_url": "https://www.dshs.texas.gov/foodestablishments/cfpo",
+      "extra_sources": [
+        "https://capitol.texas.gov/tlodocs/89R/billtext/pdf/SB00541F.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "UT",
+      "name": "Utah",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Home Produced",
+          "min_pt": 12,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address",
+        "phone"
+      ],
+      "optional": [],
+      "min_statement_pt": 12,
+      "metric_required": true,
+      "notes": "Cottage food operations must register with/be approved by UDAF (Utah Admin. Code R70-560). R70-560-6: label per state and federal law (21 CFR); name; ingredients in descending order by weight; major allergen food-source names; net quantity; name and place of business; telephone; nutrition labeling unless exempt (small-business exemption usually applies; claims void it); 'Home Produced' in bold, conspicuous 12-point type on the principal display panel. UDAF guidelines (July 2025): full address (street, city, state, zip), minimum print height 1/16 inch for required info, net weight in both units (e.g., 'NET WT 8 OZ (227 g)'), sub-ingredients in parentheses, allergens via ingredient names or a 'Contains' statement. Alternative path: Home Consumption and Homemade Food Act (Utah Code 4-5a-104), sales direct to an informed final consumer with no license; label must show producer's name and address, a disclosure that the product is not for resale and processed and prepared without state or local inspection, and an allergen statement (no verbatim wording prescribed by statute).",
+      "source_url": "https://www.law.cornell.edu/regulations/utah/Utah-Admin-Code-R70-560-6",
+      "extra_sources": [
+        "https://ag.utah.gov/wp-content/uploads/Basic-Labeling-Guidelines-for-Cottage-Foods.pdf",
+        "https://le.utah.gov/xcode/Title4/Chapter5a/C4-5a-S104_2026050620260506.html"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "VT",
+      "name": "Vermont",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a home kitchen not inspected by the Vermont Department of Health",
+          "min_pt": 10,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [],
+      "min_statement_pt": 10,
+      "metric_required": false,
+      "notes": "Statement applies to cottage food operators under the license exemption (Act 42 of 2025: gross annual receipts of $30,000 or less, non-TCS foods made in the home kitchen). Exempt operators must complete annual online training and file the exemption self-attestation with the Health Department each year before January 15. Licensed Home Bakeries (inspected) do not use the exemption statement. Label: name and address of producer, product name, ingredients greatest to smallest, net weight/volume, allergens per federal rules (parentheses or 'Contains' statement); Nutrition Facts only if claims are made. Bulk items may use a sign/placard. Exempt food cannot be sold to restaurants/licensed establishments.",
+      "source_url": "https://www.healthvermont.gov/node/386",
+      "extra_sources": [],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "VA",
+      "name": "Virginia",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "NOT FOR RESALE PROCESSED AND PREPARED WITHOUT STATE INSPECTION.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "business_name",
+        "address",
+        "phone",
+        "date_made"
+      ],
+      "optional": [
+        "allergens"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Va. Code § 3.2-5130(C)(3) private home exemption (baked goods not requiring time/temperature control). Label on the principal display panel (or a sign if the package is too small): name, physical address OR post office box number, telephone, date processed, and the statement. The Code text has no dash; VDACS's July 2026 FAQ prints it as 'NOT FOR RESALE — PROCESSED AND PREPARED WITHOUT STATE INSPECTION' (the statement itself is the not-for-resale notice). VDACS FAQ says labels must also follow standard labeling requirements (product name, net weight, name/address, ingredients and sub-ingredients, possibly nutrition). As of 2026 (ch. 605) sales may be at any location, online or by phone, delivered in person/mail/delivery service, to individuals in Virginia for their own consumption; not for resale/consignment or use in retail food establishments. No permit; no font size rule.",
+      "source_url": "https://law.lis.virginia.gov/vacode/title3.2/chapter51/section3.2-5130/",
+      "extra_sources": [
+        "https://www.vdh.virginia.gov/content/uploads/sites/126/Virginias-Home-Food-Processing-Exemptions-FAQ-July-2026-1.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "WA",
+      "name": "Washington",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "main",
+          "text": "Made in a home kitchen that has not been subject to standard inspection criteria.",
+          "min_pt": 11,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "permit_number"
+      ],
+      "optional": [],
+      "min_statement_pt": 11,
+      "metric_required": false,
+      "notes": "Cottage food permit from WSDA required (RCW 69.22.030); label must show business name and permit number, product name, ingredients in descending order by weight with sub-ingredients listed (WAC 16-149-110), net weight or net volume (WAC: 'metric weight is not required'), allergens per federal labeling, nutrition only if a nutritional claim is made, and the statement in at least 11-point type in a contrasting color. WAC 16-149-110(1)(g) capitalizes it as \"Made in a Home Kitchen that has not been subject to standard inspection criteria.\" (statute RCW 69.22.020 text used above). Labels printed in English. Direct-to-consumer sales only; no internet/mail order. Large cakes/bulk may use a product label sheet. No address, phone, or date required.",
+      "source_url": "https://app.leg.wa.gov/RCW/default.aspx?cite=69.22.020",
+      "extra_sources": [
+        "https://app.leg.wa.gov/WAC/default.aspx?cite=16-149-110"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "WV",
+      "name": "West Virginia",
+      "sales_allowed": true,
+      "verified": false,
+      "statements": [
+        {
+          "id": "main",
+          "text": "This product was made in a non-commercial kitchen establishment that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.",
+          "min_pt": null,
+          "kind": "label"
+        }
+      ],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip"
+      ],
+      "optional": [
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": true,
+      "notes": "Unverified — check with your state. The wording here is from the West Virginia Department of Agriculture's Farmers Market Vendor Guide (December 2025), but the current law could not be read and older law used different wording. Source is the WVDA Farmers Market Vendor Guide (revised December 2025). Required elements: statement of identity on the principal display panel; company name; city, state and zip; ingredients beginning 'Ingredients:' in descending order by weight; net contents in the bottom third of the principal panel in U.S. units followed by metric in parentheses (hand-written net contents OK for non-PHF); 'Contains' allergen statement directly below ingredients (9 major allergens, species for tree nuts/fish/shellfish). Labels 'generally conform to FDA rules.' The same guide elsewhere prints a shorter variant: “This product was made in a non-commercial kitchen that may not be subject to inspection and may contain cross-contact allergens not included in the allergen statement.” DOUBT: the 2019 statute (§19-35-6, SB 285) used “This product was produced at a private residence that is exempt from State licensing and inspection. This product may contain allergens.” — the official code site (code.wvlegislature.gov) was unreachable so the current statutory text could not be confirmed; 2026 bills HB 4076/SB 44 were pending. Non-PHF cottage foods need no permit; potentially hazardous cottage foods need a WVDA permit and inspection. Non-PHF info may be on a placard, receipt, or website instead of an affixed label.",
+      "source_url": "https://agriculture.wv.gov/wp-content/uploads/Farmers-Market-Vendor-Guide.pdf",
+      "extra_sources": [
+        "https://agriculture.wv.gov/divisions/regulatory-and-environmental-affairs/potentially-hazardous-cottage-foods/"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "WI",
+      "name": "Wisconsin",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [],
+      "required": [],
+      "optional": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "city_state_zip"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "No statute or rule prescribes a home-baker label statement. Home sales of non-potentially-hazardous baked goods directly to consumers are allowed because court orders (Lafayette County Case No. 2016CV06) bar enforcement of licensing for home bakers (DATCP fact sheet, 05/2025); wholesaling requires a license. General Wisconsin packaged-food labeling (DATCP guidance: identity, net quantity, responsible party, ingredients, allergens) is a prudent default but no home-baker-specific requirement was found. For comparison, the home-canned (pickles) exemption under Wis. Stat. 97.29(2)(b)2 requires \"This product was made in a private home not subject to state licensing or inspection.\" plus name, address, canning date and ingredients — this does NOT apply to baked goods by statute. Ongoing litigation may change this; confirm with DATCP (608-224-4923).",
+      "source_url": "https://datcp.wi.gov/Documents2/HomemadeBakedGoods.pdf",
+      "extra_sources": [
+        "https://docs.legis.wisconsin.gov/document/statutes/97.29",
+        "https://datcp.wi.gov/Documents/PackagedFoodLabelingGuidance.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "WY",
+      "name": "Wyoming",
+      "sales_allowed": true,
+      "verified": true,
+      "statements": [
+        {
+          "id": "retail_display",
+          "text": "this food was made in a home kitchen, is not regulated or inspected and may contain allergens",
+          "min_pt": null,
+          "kind": "optional"
+        }
+      ],
+      "required": [],
+      "optional": [
+        "product_name",
+        "ingredients",
+        "allergens",
+        "business_name"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Wyoming Food Freedom Act, W.S. 11-49-103: homemade food sold to an informed end consumer is exempt from state licensure, permitting, inspection, packaging and labeling requirements. The producer must inform the end consumer that the food is not certified, labeled, licensed, packaged, regulated or inspected (no verbatim wording). The quoted label statement is required only when non-potentially-hazardous food is sold by a third party at a retail location or grocery store (where it must also be kept off shelves with licensed products); retail spaces must also post a sign that the food has not been inspected. Statute quotes the statement in lowercase without terminal period. Intrastate only; no permit, address, date, or font size requirements.",
+      "source_url": "https://wyoleg.gov/statutes/compress/title11.pdf",
+      "extra_sources": [
+        "https://www.wyoleg.gov/2023/Enroll/SF0102.pdf"
+      ],
+      "checked_on": "2026-11-20"
+    },
+    {
+      "id": "custom",
+      "name": "Custom / my own rules",
+      "sales_allowed": null,
+      "verified": false,
+      "statements": [],
+      "required": [
+        "product_name",
+        "net_quantity",
+        "ingredients",
+        "allergens",
+        "business_name",
+        "address"
+      ],
+      "optional": [
+        "phone",
+        "email",
+        "permit_number",
+        "date_made",
+        "sell_by",
+        "storage"
+      ],
+      "min_statement_pt": null,
+      "metric_required": false,
+      "notes": "Type the wording your state or county asks for under “My own statements”, and tick what has to be on the label.",
+      "source_url": "",
+      "extra_sources": [],
+      "checked_on": ""
+    }
+  ]
+}

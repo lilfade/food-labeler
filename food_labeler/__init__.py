@@ -8,6 +8,8 @@ Package layout (see docs/ARCHITECTURE.md for the full picture):
     tspl, zpl  turn that picture into a job in the printer's own language
     printers   finds printers and sends jobs to them
     known      printer models we recognise (known_printers.json + user updates)
+    cottage    cottage food state rules, the user's own edits, the Label check
+    bakery     My bakery details, My ingredients, My products
     app, dialogs, widgets   the Tk user interface
 
 ``__version__`` below is the single source of truth for the version number:
@@ -18,4 +20,4 @@ PyInstaller Windows version resource and the release workflow all read it.
 APP_NAME = "Food Labeler"
 APP_ID = "food-labeler"
 BRAND = "High Thyme Kitchen"
-__version__ = "1.0.0"
+__version__ = "1.1.0"

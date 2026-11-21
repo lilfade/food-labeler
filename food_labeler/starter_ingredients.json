@@ -1,0 +1,260 @@
+{
+  "format": "food-labeler-ingredients",
+  "version": 1,
+  "note": "Starter list. Sub-ingredients are typical examples only: check the package of the brand you use and edit to match.",
+  "ingredients": [
+    {
+      "name": "All-purpose flour",
+      "sub": "wheat flour, niacin, reduced iron, thiamine mononitrate, riboflavin, folic acid",
+      "allergens": [
+        "Wheat"
+      ],
+      "id": "starter-01"
+    },
+    {
+      "name": "Bread flour",
+      "sub": "wheat flour, malted barley flour, niacin, reduced iron, thiamine mononitrate, riboflavin, folic acid",
+      "allergens": [
+        "Wheat"
+      ],
+      "id": "starter-02"
+    },
+    {
+      "name": "Whole wheat flour",
+      "sub": "",
+      "allergens": [
+        "Wheat"
+      ],
+      "id": "starter-03"
+    },
+    {
+      "name": "Cake flour",
+      "sub": "bleached wheat flour, niacin, reduced iron, thiamine mononitrate, riboflavin, folic acid",
+      "allergens": [
+        "Wheat"
+      ],
+      "id": "starter-04"
+    },
+    {
+      "name": "Sugar",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-05"
+    },
+    {
+      "name": "Brown sugar",
+      "sub": "sugar, molasses",
+      "allergens": [],
+      "id": "starter-06"
+    },
+    {
+      "name": "Powdered sugar",
+      "sub": "sugar, corn starch",
+      "allergens": [],
+      "id": "starter-07"
+    },
+    {
+      "name": "Butter",
+      "sub": "cream, salt",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-08"
+    },
+    {
+      "name": "Unsalted butter",
+      "sub": "cream",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-09"
+    },
+    {
+      "name": "Eggs",
+      "sub": "",
+      "allergens": [
+        "Eggs"
+      ],
+      "id": "starter-10"
+    },
+    {
+      "name": "Milk",
+      "sub": "milk, vitamin D3",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-11"
+    },
+    {
+      "name": "Buttermilk",
+      "sub": "cultured low fat milk, salt",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-12"
+    },
+    {
+      "name": "Heavy cream",
+      "sub": "cream",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-13"
+    },
+    {
+      "name": "Cream cheese",
+      "sub": "pasteurized milk and cream, salt, carob bean gum, cheese culture",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-14"
+    },
+    {
+      "name": "Sour cream",
+      "sub": "cultured cream",
+      "allergens": [
+        "Milk"
+      ],
+      "id": "starter-15"
+    },
+    {
+      "name": "Baking soda",
+      "sub": "sodium bicarbonate",
+      "allergens": [],
+      "id": "starter-16"
+    },
+    {
+      "name": "Baking powder",
+      "sub": "sodium acid pyrophosphate, sodium bicarbonate, corn starch, monocalcium phosphate",
+      "allergens": [],
+      "id": "starter-17"
+    },
+    {
+      "name": "Salt",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-18"
+    },
+    {
+      "name": "Vanilla extract",
+      "sub": "vanilla bean extractives in water, alcohol",
+      "allergens": [],
+      "id": "starter-19"
+    },
+    {
+      "name": "Semi-sweet chocolate chips",
+      "sub": "sugar, chocolate, cocoa butter, milkfat, soy lecithin, natural flavor",
+      "allergens": [
+        "Milk",
+        "Soy"
+      ],
+      "id": "starter-20"
+    },
+    {
+      "name": "Cocoa powder",
+      "sub": "cocoa processed with alkali",
+      "allergens": [],
+      "id": "starter-21"
+    },
+    {
+      "name": "Canola oil",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-22"
+    },
+    {
+      "name": "Honey",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-23"
+    },
+    {
+      "name": "Molasses",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-24"
+    },
+    {
+      "name": "Pure maple syrup",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-25"
+    },
+    {
+      "name": "Corn starch",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-26"
+    },
+    {
+      "name": "Active dry yeast",
+      "sub": "yeast, sorbitan monostearate, ascorbic acid",
+      "allergens": [],
+      "id": "starter-27"
+    },
+    {
+      "name": "Ground cinnamon",
+      "sub": "cinnamon",
+      "allergens": [],
+      "id": "starter-28"
+    },
+    {
+      "name": "Rolled oats",
+      "sub": "whole grain rolled oats",
+      "allergens": [],
+      "id": "starter-29"
+    },
+    {
+      "name": "Raisins",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-30"
+    },
+    {
+      "name": "Walnuts",
+      "sub": "",
+      "allergens": [
+        "Tree nuts (walnuts)"
+      ],
+      "id": "starter-31"
+    },
+    {
+      "name": "Pecans",
+      "sub": "",
+      "allergens": [
+        "Tree nuts (pecans)"
+      ],
+      "id": "starter-32"
+    },
+    {
+      "name": "Almonds",
+      "sub": "",
+      "allergens": [
+        "Tree nuts (almonds)"
+      ],
+      "id": "starter-33"
+    },
+    {
+      "name": "Peanut butter",
+      "sub": "peanuts, sugar, hydrogenated vegetable oils (rapeseed, cottonseed, soybean), salt",
+      "allergens": [
+        "Peanuts"
+      ],
+      "id": "starter-34"
+    },
+    {
+      "name": "Sesame seeds",
+      "sub": "",
+      "allergens": [
+        "Sesame"
+      ],
+      "id": "starter-35"
+    },
+    {
+      "name": "Lemon juice",
+      "sub": "",
+      "allergens": [],
+      "id": "starter-36"
+    }
+  ]
+}

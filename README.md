@@ -69,8 +69,8 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 ### Other things you can do
 
 - **Kind of label → Change…**: *Simple food label*, *Package label* (with
-  ingredients and your kitchen's name and address), *Date sticker*, or
-  *Free text*.
+  ingredients and your kitchen's name and address), *Date sticker*,
+  *Free text*, or *Cottage food label* (for home bakers, see below).
 - **Label size → Change…**: pick the size of the labels in your printer.
 - **Save** keeps the label so you can print it again. Saved labels appear
   under **My saved labels** at the top — one click opens them. When you open
@@ -81,6 +81,45 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 - If the writing doesn't fit, a message tells you which part is too long.
   Use shorter words or a bigger label.
 - Your work is kept safe automatically, even if the computer switches off.
+
+### For home bakers (cottage food labels)
+
+If you bake at home and sell under your state's *cottage food* law, choose
+**Kind of label → Cottage food label**.
+
+1. **Set up my bakery** (Food Labeler offers this the first time):
+   pick your state, then type your bakery's name, full address (street,
+   city, state and ZIP), phone, email and permit number if you have one.
+   You can change these any time in **Settings → My bakery**.
+2. Fill in the label: product name, net weight (type *8 oz* or *1.5 lb*;
+   grams are added when your state asks for them), ingredients, allergens,
+   how to store it and the dates.
+3. **Build from My ingredients…** lets you pick ingredients in order,
+   heaviest first. Each one remembers what's in it ("Butter (cream, salt)")
+   and its allergens, so **Contains** fills itself in. The starter list is
+   only an example: check each ingredient against your own package and
+   press **Change…** to match it.
+4. **Save to My products** keeps the product so next time **Choose from
+   My products…** fills the whole label in one click.
+5. The **Label check** at the top of the form shows, in green, everything
+   your state asks for that is on the label, and in red what is missing.
+   If something is missing, **PRINT** asks before printing.
+6. Your state's required wording is printed at the size your state asks
+   for. If it doesn't all fit, Food Labeler says so and suggests a bigger
+   label; it never makes the required wording smaller or leaves it out.
+
+**Your own wording is kept.** In **Settings → My bakery** you can change
+the wording and the list of what must be on the label. Your changes are
+marked *edited by you* and have a **Reset to state default** button. New
+versions of Food Labeler never overwrite them; if your state's suggestion
+changes, Food Labeler asks once whether to keep yours or use the new one.
+
+> These are suggestions from public state guidance. You are responsible for
+> following your state's rules. Each state's source and the date it was
+> checked are shown in **My bakery**. States marked *Unverified — check with
+> your state* could not be confirmed from an official source.
+
+Details for helpers: [docs/cottage-rules.md](docs/cottage-rules.md).
 
 ### The printer
 
@@ -130,8 +169,12 @@ folder*, file `food-labeler.log`.
   user in the `lp` group (`sudo usermod -aG lp $USER`, then log out and in);
   a raw CUPS queue also works.
 - **Where things are kept:** saved labels in `Documents\My Food Labels`
-  (Linux: `~/Documents/My Food Labels`); settings, autosave, log and printer
-  updates in `%APPDATA%\FoodLabeler` (Linux: `~/.local/share/food-labeler`).
+  (Linux: `~/Documents/My Food Labels`); settings, autosave, log, printer
+  updates, *My bakery*, *My ingredients*, *My products* and your own
+  cottage wording in `%APPDATA%\FoodLabeler` (Linux:
+  `~/.local/share/food-labeler`). Updates to Food Labeler never change them.
+- **State cottage food rules** and how to update them:
+  [docs/cottage-rules.md](docs/cottage-rules.md).
 - **New printer models** can be added with a printer update file — see
   [docs/printer-definitions.md](docs/printer-definitions.md).
 - **How it works:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

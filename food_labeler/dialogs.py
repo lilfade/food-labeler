@@ -35,6 +35,8 @@ SAMPLE_FIELDS = {
                 "address": "123 Garden Lane"},
     "sticker": {"count": "12"},
     "free": {"text": "Happy\nBirthday!"},
+    "cottage": {"product": "Lemon Shortbread", "net": "8 oz", "ingredients": "Butter (cream, "
+                "salt), flour, sugar, lemon", "contains": "Milk, Wheat"},
 }
 KIND_CHOICES = [
     ("Label printer like the LP610BT", "tspl"),
@@ -69,6 +71,7 @@ class TemplatePicker(Modal):
         grid = tk.Frame(self.body, bg=BG)
         grid.pack()
         self._imgs = []
+        cols = 3 if len(model.TEMPLATES) > 4 else 2
         for i, t in enumerate(model.TEMPLATES):
             stock = doc.stock if doc.stock in templates.ALLOWED_STOCKS[t] else "large"
             d = model.LabelDoc(t, stock, model.default_fields(t))
@@ -84,7 +87,7 @@ class TemplatePicker(Modal):
                           highlightthickness=3,
                           highlightbackground=GREEN if selected else BORDER, cursor="hand2",
                           padx=10, pady=10, command=lambda t=t: self.finish(t), wraplength=320)
-            b.grid(row=i // 2, column=i % 2, padx=8, pady=8, sticky="nsew")
+            b.grid(row=i // cols, column=i % cols, padx=8, pady=8, sticky="nsew")
         button(self.body, "Cancel", self.cancel, "quiet").pack(anchor="e", pady=(10, 0))
 
 
@@ -301,6 +304,23 @@ class SettingsDialog(Modal):
             t.pack(fill="x")
             self.kvars[key] = t
 
+        heading("My bakery (cottage food labels)")
+        tk.Label(b, text="Your state, your bakery's details, the wording on your labels, "
+                 "and your saved ingredients and products.", font="ui", bg=BG, fg=MUTED,
+                 wraplength=700, justify="left").pack(anchor="w")
+        row = tk.Frame(b, bg=BG)
+        row.pack(anchor="w", pady=(6, 0))
+        button(row, "My bakery…", lambda: app.my_bakery(), "primary").pack(side="left")
+        button(row, "Set up my bakery", lambda: app.bakery_wizard()).pack(side="left", padx=8)
+        row = tk.Frame(b, bg=BG)
+        row.pack(anchor="w", pady=(8, 0))
+        button(row, "My products…", lambda: app.my_products()).pack(side="left")
+        button(row, "Back up or restore my ingredients…",
+               lambda: _ingredients_backup(self, app)).pack(side="left", padx=8)
+        tk.Label(b, text="These are suggestions from public state guidance. You are "
+                 "responsible for following your state's rules.", font="small", bg=BG,
+                 fg=MUTED, wraplength=700, justify="left").pack(anchor="w", pady=(6, 0))
+
         heading("Printer")
         row = tk.Frame(b, bg=BG)
         row.pack(anchor="w")
@@ -334,6 +354,11 @@ class SettingsDialog(Modal):
             self.app.cfg["kitchen"][key] = t.get("1.0", "end-1c").strip()
         self.app.cfg.save()
         self.finish(True)
+
+
+def _ingredients_backup(parent, app):
+    from .bakery_dialogs import backup_ingredients
+    backup_ingredients(parent, app)
 
 
 class AdvancedDialog(Modal):

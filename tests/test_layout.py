@@ -27,7 +27,8 @@ def lines_inside(res):
 def test_everything_fits_and_stays_inside():
     for t in model.TEMPLATES:
         for sid in templates.ALLOWED_STOCKS[t]:
-            key = {"simple": "food", "package": "product", "sticker": "lot", "free": "text"}[t]
+            key = {"simple": "food", "package": "product", "sticker": "lot", "free": "text",
+                   "cottage": "product"}[t]
             res = render.render(doc_with(t, sid, **{key: "Chicken Noodle Soup"}))
             assert not res.overflow, (t, sid)
             lines_inside(res)

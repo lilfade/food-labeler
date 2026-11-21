@@ -49,6 +49,8 @@ datas = [
     (str(ROOT / "food_labeler" / "assets"), "food_labeler/assets"),
     (str(ROOT / "food_labeler" / "known_printers.json"), "food_labeler"),
     (str(ROOT / "food_labeler" / "app_config.json"), "food_labeler"),
+    (str(ROOT / "food_labeler" / "cottage_rules.json"), "food_labeler"),
+    (str(ROOT / "food_labeler" / "starter_ingredients.json"), "food_labeler"),
 ]
 hidden = ["PIL._tkinter_finder", "segno"]
 if IS_WIN:

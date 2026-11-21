@@ -84,6 +84,28 @@ current user with a menu entry.
    publishes a GitHub Release with both files and `SHA256SUMS.txt`, using the
    matching CHANGELOG section as release notes.
 
+## Updating the cottage food state rules
+
+State rules are data, not code: `food_labeler/cottage_rules.json`. The
+format, the layering with the user's own edits and the checklist are in
+[docs/cottage-rules.md](docs/cottage-rules.md). In short:
+
+1. Check every change against the state's **official** source (department
+   of agriculture or health, statute, administrative code) and copy the
+   wording exactly. Never guess: if you can't confirm a state, set
+   `"verified": false` and start the notes with "Unverified — check with
+   your state."
+2. Update `source_url` and `checked_on` (the day you checked).
+3. Run the tests; `tests/test_cottage.py` validates the file and checks the
+   Nebraska preset still matches High Thyme Kitchen's own label wording.
+4. Run `tools/render_samples.py` and look at `docs/samples/cottage-*.png`.
+5. Update the table at the end of `docs/cottage-rules.md` and the CHANGELOG.
+
+Never change what is in a user's data folder from code that runs on update:
+`cottage_overrides.json`, `my_bakery.json`, `my_ingredients.json` and
+`my_products.json` belong to the user. New fields need a default and, if
+the layout changes, a migration in `bakery.Profile.migrate` (and a test).
+
 ## Adding a printer definition
 
 Printer models are data, not code: `food_labeler/known_printers.json`. The

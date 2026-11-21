@@ -27,7 +27,8 @@ def selftest() -> int:
     for t in model.TEMPLATES:
         for sid in templates.ALLOWED_STOCKS[t]:
             doc = model.LabelDoc(t, sid, model.default_fields(t))
-            key = {"simple": "food", "package": "product", "sticker": "lot", "free": "text"}[t]
+            key = {"simple": "food", "package": "product", "sticker": "lot", "free": "text",
+                   "cottage": "product"}[t]
             doc.fields[key] = "Selftest Soup"
             res = render.render(doc, {})
             st = stocks.get(sid)
@@ -39,6 +40,12 @@ def selftest() -> int:
             back = zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h))
             assert back.tobytes() == res.image.tobytes()
             count += 1
+    # the bundled state rules load and every preset is usable
+    from . import bakery, cottage
+    rules = cottage.CottageRules()
+    assert len(rules.states()) >= 52, "state rules missing"
+    assert rules.effective("NE").statements, "Nebraska preset missing"
+    assert bakery.load_starter(), "starter ingredients missing"
     k = known.KnownPrinters()
     assert k.match({}, "0483:2025") is not None
     # Make sure the GUI toolkit is bundled. Importing tkinter never opens a

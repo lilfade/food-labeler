@@ -48,6 +48,7 @@ DEFAULTS = {
         "zpl_darkness": None,
     },
     "recent": [],                # [{"path": ..., "name": ...}]
+    "bakery_offered": False,     # the "Set up my bakery" question was asked once
     "last_folder": "",
     "window": "",
 }
