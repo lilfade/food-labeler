@@ -4,6 +4,16 @@ All notable changes to Food Labeler are listed here. Version numbers follow
 [Semantic Versioning](https://semver.org/); the number itself lives in
 `food_labeler/__init__.py`.
 
+## 1.6.0 — unreleased
+
+- **Check for updates.** *Settings → Check for updates…* asks GitHub whether
+  there is a newer Food Labeler. If there is, it shows what's new and a
+  *Download the new version* button that opens the download page in your
+  web browser; download `FoodLabeler.exe` there and run it. Your labels,
+  products and settings are kept. Food Labeler only goes online when you
+  press the button, never by itself, and it sends nothing about you or your
+  labels. It never downloads or installs anything on its own.
+
 ## 1.5.2 — 2026-11-21
 
 Missouri and West Virginia cottage food rules checked against official

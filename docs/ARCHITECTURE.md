@@ -2,7 +2,8 @@
 
 Food Labeler is a single-process Python program: a Tk window, Pillow for
 drawing, and no server or network service. The only internet use is the
-optional *Get more fonts…* (`fontget.py`), which the user starts by hand; a
+optional *Get more fonts…* (`fontget.py`) and *Check for updates…*
+(`updates.py`), both started by hand, never automatically; a
 network printer the person added is only connected to when printing (or
 *Test the connection*). It is packaged with PyInstaller as
 one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
@@ -21,6 +22,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `templates.py` | per-template text blocks and the auto-fit layout engine |
 | `lettering.py` | font registry (bundled + user fonts), font loading (variable fonts too), which block gets which font, per-font minimum sizes, legal-text rule |
 | `fontget.py` | *Get more fonts*: find and download a Google Fonts family from github.com/google/fonts, add a local font file, install/remove user fonts |
+| `updates.py` | *Check for updates*: asks the GitHub API for the newest published release (owner/repo from `app_config.json`'s `issues_url`), compares version numbers, turns the release notes' Markdown into plain text, and the words of the update window (`window_text`) |
 | `pictures.py` | pictures on labels: reading files (PNG, JPG, GIF, BMP, WebP, TIFF, ICO; EXIF, transparency, CMYK, 16-bit, animations, size limits; a plain message for HEIC/SVG), the embedded picture dict and how it is stored small (`for_storing`, `compact`), colour → black and white (threshold with Otsu, Floyd–Steinberg dither), *My pictures* |
 | `qrcodes.py` | QR codes: what they hold (link / phone / email / text), segno matrix, whole-dot module sizes, minimum size |
 | `extras.py` | places a picture and/or QR code on a label (above, below, left, right, all four corners; top or bottom of the circle on round labels), text flowing around them, the Picture label, shrinking them before the wording, the QR size slider's range (`qr_size_range`) |
@@ -40,7 +42,7 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `settings.py` | settings file, data/labels folders, log file, autosave |
 | `app.py` | main window: My products, the chips above the form (kind, size, wide/tall, extras), form, preview, printer menu and *Printer options*, PRINT |
 | `ui_text.py` | the main window's words that are tested without a window: text sizes (`TEXT_SIZES`, `SCALES`), chip words, the recent labels in *Open ▾* |
-| `dialogs.py` | all other windows: pickers, save/open, settings, printers, Add a network printer, USB devices, report |
+| `dialogs.py` | all other windows: pickers, save/open, settings, printers, Add a network printer, USB devices, report, Check for updates |
 | `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
 | `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings, Set up a new roll windows |
 | `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell` (web addresses in the message become links), calendar, toggles, `LinkLabel` (http/https only, `safe_url`), `ScrollFrame` (scrolls the focused widget into view, `scroll_target`; with `fit`, as tall as its content until the screen is too small), `FlowFrame` (rows that wrap, like words), `menu_button`, `card`, `HintEntry` |
@@ -286,6 +288,23 @@ it and the window offers to get it.
 *Get more fonts* runs `fontget.fetch_family()` on a worker thread (results
 via a queue, like printing); see [fonts.md](fonts.md) for how a family is
 found and checked.
+
+### Check for updates
+
+*Settings → Check for updates…* (`dialogs.UpdateDialog`) runs
+`updates.check()` on a worker thread, only when pressed; nothing checks at
+start-up. It asks `https://api.github.com/repos/<owner>/<repo>/releases/latest`
+(and, only when that is newer, `…/releases?per_page=10` for the notes of the
+versions in between), with only `User-Agent: FoodLabeler/<version>` and
+`Accept: application/vnd.github+json`. The rules are those of `fontget.py`:
+https only, an allow-list of hosts (api.github.com, github.com) that
+redirects must stay in, a 10 second time-out and answers of at most 1 MB.
+Drafts and pre-releases are skipped; tags are compared as numbers
+(`parse_version`: "v1.6.0", "1.6"); a tag that isn't a number is shown as
+it is. *Download the new version* opens the release page in the browser
+(`widgets.open_url`), and only if it is
+`https://github.com/<owner>/<repo>/releases/…`; otherwise our own releases
+page. Food Labeler never downloads or installs anything itself.
 
 ### Cottage food labels
 

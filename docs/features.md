@@ -73,8 +73,11 @@ A plain list of what's in the app. Free, no account, works without internet.
   your computer.
 - **Updates you can trust:** printer and state-rule update files are checked
   before they're used, and your own settings always survive an update.
-- **Private:** no account, no tracking; the only optional internet use is
-  fetching a Google Font when you ask for one.
+- **Check for updates:** *Settings → Check for updates…* tells you whether
+  there is a newer version, shows what's new and opens the download page.
+  Only when you press it; nothing is downloaded or installed by itself.
+- **Private:** no account, no tracking; Food Labeler only goes online when
+  you ask it to (fetching a Google Font, or checking for updates).
 
 ## Getting help
 - [Open an issue on GitHub](https://github.com/lilfade/food-labeler/issues/new/choose)

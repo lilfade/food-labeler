@@ -6,6 +6,7 @@ Package layout (see docs/ARCHITECTURE.md for the full picture):
     templates  turns a document into text blocks and fits them on the label
     lettering  the fonts a label can use (bundled + the user's), min sizes, legal text
     fontget    "Get more fonts": Google Fonts from GitHub, or a font file
+    updates    "Check for updates": the newest release on GitHub, only when asked
     render     draws the fitted layout as the exact 1-bit picture that prints
     tspl, zpl  turn that picture into a job in the printer's own language
     printers   finds printers and sends jobs to them (USB, network, Bluetooth)
@@ -24,4 +25,4 @@ PyInstaller Windows version resource and the release workflow all read it.
 APP_NAME = "Food Labeler"
 APP_ID = "food-labeler"
 BRAND = "High Thyme Kitchen"
-__version__ = "1.5.2"
+__version__ = "1.6.0"

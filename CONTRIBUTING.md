@@ -342,9 +342,10 @@ locked and not installed by CI.
 ## Code style
 
 - Python 3.11+, `from __future__ import annotations`, standard library plus
-  Pillow and segno (pywin32 on Windows). Internet code (only `fontget.py`)
-  uses `urllib` from the standard library, never runs on the Tk thread, and
-  is tested with fake HTTP answers. Network printers are reached with plain
+  Pillow and segno (pywin32 on Windows). Internet code (only `fontget.py`
+  and `updates.py`) uses `urllib` from the standard library, only runs when
+  the user presses a button, never runs on the Tk thread, and is tested
+  with fake HTTP answers. Network printers are reached with plain
   sockets (`printers.send_network`, `printers.check_network`), tested with
   fake connections. New dependencies need a good reason:
   they all end up inside the one-file program.

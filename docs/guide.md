@@ -14,6 +14,7 @@ what comes out of the printer.
 - [Pictures](#pictures)
 - [QR codes](#qr-codes)
 - [For home bakers (cottage food labels)](#for-home-bakers-cottage-food-labels)
+- [Getting a new version](#getting-a-new-version)
 - [Licenses and branding](#licenses-and-branding)
 
 Printer help is in [Your printer](printer.md), and quick fixes are in
@@ -271,6 +272,28 @@ changes, Food Labeler asks once whether to keep yours or use the new one.
 
 Details for helpers, including every state's wording and source:
 [cottage-rules.md](cottage-rules.md).
+
+## Getting a new version
+
+![Check for updates: a new version, what's new, and the download button](screenshot-update.png)
+
+Open **Settings** and, under *About*, press **Check for updates…**.
+Food Labeler asks GitHub whether there is a newer version:
+
+- **You have the newest version**: nothing to do.
+- **A new version is available**: the window shows what's new (for every
+  version since yours). Press **Download the new version**: your web
+  browser opens the download page. Download `FoodLabeler.exe` from that
+  page and run it, the same way as the first time. Your labels, products
+  and settings are kept.
+- **Couldn't reach GitHub**: check that the computer is on the internet and
+  press **Try again**. *GitHub is busy* means: try again in a while.
+
+Food Labeler only goes online when you press the button, never by itself,
+and it sends nothing about you or your labels. It never downloads or
+installs anything on its own. Only download Food Labeler from
+[github.com/lilfade/food-labeler/releases](https://github.com/lilfade/food-labeler/releases),
+never from a link someone sends you.
 
 ## Licenses and branding
 
