@@ -63,7 +63,7 @@ def summary(doc) -> str:
         return "Standard"
     name = lt.get("name", lettering.DEFAULT)
     other = lt.get("other", lettering.DEFAULT)
-    parts = [name] if doc.template == "free" or other == name else [name, other]
+    parts = [name] if doc.template in ("free", "picture") or other == name else [name, other]
     missing = set(lettering.missing(lt))
     return " · ".join(p + (" (not on this computer)" if p in missing else "")
                            for p in parts)
@@ -130,7 +130,7 @@ class LetteringDialog(Modal):
         got = FontPicker(self, role, self.choice.get(role) or lettering.DEFAULT).run()
         if got:
             self.choice[role] = got
-            if self.doc.template == "free":
+            if self.doc.template in ("free", "picture"):
                 self.choice["other"] = lettering.DEFAULT
         self._draw()
 

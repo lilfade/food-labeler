@@ -22,7 +22,7 @@ from tkinter import filedialog, ttk
 from PIL import Image, ImageTk
 
 from . import APP_NAME, BRAND, dates, known, model, printers, render, settings as settings_mod, stocks
-from . import bakery, cottage, templates
+from . import bakery, cottage, printsettings, templates
 from .widgets import (BG, BORDER, GREEN, GREEN_DARK, INK, MUTED, PANEL, WARN, WARN_BG,
                       CalendarDialog, ScrollFrame, Toggle, ask, button, tell)
 
@@ -216,11 +216,16 @@ class App:
                                 height=180)
         self.canvas.grid(row=1, column=0, sticky="nsew", pady=(6, 6))
         self.canvas.bind("<Configure>", lambda e: self.schedule_render())
-        self.warn_lbl = tk.Label(right, text="", font="ui_bold", bg=BG, fg=WARN,
+        notes = tk.Frame(right, bg=BG)
+        notes.grid(row=2, column=0, sticky="ew")
+        self.qr_lbl = tk.Label(notes, text="", font="small", bg=BG, fg=MUTED,
+                               wraplength=600, justify="left", anchor="w")
+        self.qr_lbl.pack(fill="x")
+        self.warn_lbl = tk.Label(notes, text="", font="ui_bold", bg=BG, fg=WARN,
                                  wraplength=600, justify="left")
-        self.warn_lbl.grid(row=2, column=0, sticky="ew")
-        right.bind("<Configure>", lambda e: self.warn_lbl.configure(
-            wraplength=max(200, e.width - 20)))
+        self.warn_lbl.pack(fill="x")
+        right.bind("<Configure>", lambda e: [w.configure(wraplength=max(200, e.width - 20))
+                                             for w in (self.warn_lbl, self.qr_lbl)])
 
         # printer choice (right above the PRINT button)
         pp = tk.Frame(right, bg=PANEL, highlightthickness=1, highlightbackground=BORDER,
@@ -250,6 +255,8 @@ class App:
         button(prow, "Look for printers again", lambda: self.rescan_printers(user=True),
                "chip").pack(side="left", padx=(0, 6))
         button(prow, "My printers\u2026", self.my_printers, "quiet").pack(side="left")
+        button(prow, "Print settings\u2026", self.print_settings, "quiet").pack(side="left",
+                                                                                padx=(6, 0))
         button(pp, "My printer isn't in the list", self.usb_devices, "quiet").grid(
             row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
 
@@ -328,7 +335,7 @@ class App:
         self.path = path
         if mark_saved:
             self.saved_json = doc.dumps()
-        self.history = [doc.dumps()]
+        self.history = [doc.snapshot()]
         self.hpos = 0
         self._sync_ui_from_doc()
 
@@ -407,7 +414,7 @@ class App:
         self._load_snapshot()
 
     def _load_snapshot(self):
-        self.doc = model.LabelDoc.loads(self.history[self.hpos])
+        self.doc = model.LabelDoc.from_snapshot(self.history[self.hpos])
         self._sync_ui_from_doc()
 
     def set_field(self, key, value):
@@ -467,7 +474,25 @@ class App:
                  justify="left").grid(row=2, column=1, sticky="w", padx=8, pady=(8, 0))
         button(kb, "Change…", self.pick_lettering, "chip").grid(row=2, column=2, sticky="e",
                                                                      pady=(8, 0))
-        ttk.Separator(kb).grid(row=3, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        # picture and QR code: on every kind of label
+        pic = self.doc.picture
+        tk.Label(kb, text="Picture:", font="ui", bg=PANEL, fg=MUTED).grid(
+            row=3, column=0, sticky="w", pady=(8, 0))
+        tk.Label(kb, text=(pic.get("name") or "Yes") if pic else "None", font="ui_bold",
+                 bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
+            row=3, column=1, sticky="w", padx=8, pady=(8, 0))
+        button(kb, "Change…" if pic else "Add a picture…", self.pick_picture, "chip").grid(
+            row=3, column=2, sticky="e", pady=(8, 0))
+        from . import qrcodes
+        qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
+        tk.Label(kb, text="QR code:", font="ui", bg=PANEL, fg=MUTED).grid(
+            row=4, column=0, sticky="w", pady=(8, 0))
+        tk.Label(kb, text=qrcodes.WHAT[qrcodes.clean(self.doc.qr)["what"]] if qtext else "None",
+                 font="ui_bold", bg=PANEL, fg=INK, wraplength=240, justify="left").grid(
+            row=4, column=1, sticky="w", padx=8, pady=(8, 0))
+        button(kb, "Change…" if qtext else "Add a QR code…", self.pick_qr, "chip").grid(
+            row=4, column=2, sticky="e", pady=(8, 0))
+        ttk.Separator(kb).grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10, 0))
 
         t = self.doc.template
         f = self.form
@@ -493,7 +518,6 @@ class App:
             self.entry_field(f, "business", "Business name")
             self.text_field(f, "address", "Address", 2)
             self.text_field(f, "disclaimer", "Disclaimer", 3)
-            self.entry_field(f, "qr", "QR code (a web address, if you want one)")
         elif t == "cottage":
             self._cottage_form(f)
         elif t == "sticker":
@@ -501,6 +525,11 @@ class App:
             self.date_field(f, "made", "Made", today_button=True)
             self.date_field(f, "best_by", "Best by", quick_from="made")
             self.entry_field(f, "count", "How many in the batch (if you want it)")
+        elif t == "picture":
+            fr = self._section(f, "picture", "Your picture")
+            button(fr, "Change the picture…" if self.doc.picture else "Choose a picture…",
+                   self.pick_picture, "primary").pack(anchor="w", pady=(4, 0))
+            self.text_field(f, "text", "Words under the picture (if you want them)", 2)
         else:
             self.text_field(f, "text", "Type your words (press Enter for a new line)", 5,
                             big=True)
@@ -704,6 +733,8 @@ class App:
         self._snapshot()
         if t == "cottage" and not self.profile["setup_done"]:
             self.bakery_wizard()
+        if t == "picture" and not self.doc.picture:
+            self.pick_picture()
 
     def pick_lettering(self):
         """Kind bar → Lettering → Change…: the fonts of this label (remembered as the
@@ -752,6 +783,9 @@ class App:
             fr.configure(highlightbackground=WARN if bad else PANEL,
                          bg=WARN_BG if bad else PANEL)
         self.warn_lbl.configure(text=("⚠ " + res.message) if res.overflow else "")
+        from . import qrcodes
+        qtext = qrcodes.payload(qrcodes.clean(self.doc.qr))
+        self.qr_lbl.configure(text=f"The QR code holds: {qtext}" if qtext else "")
         if self.doc.template == "cottage":
             self.refresh_check(res)
         return res
@@ -1069,6 +1103,41 @@ class App:
                        "so I picked that size.", 8000)
         self.refresh_printer_combo()
 
+    def print_settings_for(self, p) -> dict:
+        """This printer's print settings ({} = normal)."""
+        return printsettings.clean(self.cfg["printers"].get(p.id, {}).get("print"))
+
+    def print_settings(self):
+        """"Print settings…" next to the printer: darkness, speed, nudge, … for it."""
+        p = self.current_printer()
+        if p is None:
+            self._highlight_printer_box()
+            tell(self.root, "Which printer?", "Pick your printer first; print settings are "
+                 "kept for each printer.")
+            return
+        from .picture_dialogs import PrintSettingsDialog
+        PrintSettingsDialog(self.root, self, p).run()
+
+    def pick_picture(self):
+        """Kind bar → Picture: add, change or take off the label's picture."""
+        from .picture_dialogs import PictureDialog
+        got = PictureDialog(self.root, self).run()
+        if got is None:
+            return
+        self.doc.picture = None if got == "remove" else got
+        self._sync_ui_from_doc()
+        self._snapshot()
+
+    def pick_qr(self):
+        """Kind bar → QR code: add, change or take off the label's QR code."""
+        from .picture_dialogs import QrDialog
+        got = QrDialog(self.root, self).run()
+        if got is None:
+            return
+        self.doc.qr = None if got == "remove" else got
+        self._sync_ui_from_doc()
+        self._snapshot()
+
     def printer_config(self, p) -> dict:
         """Printer.config() with the user's overrides: language ("Type") and the
         Windows "print through driver" fallback."""
@@ -1093,7 +1162,7 @@ class App:
                 self.scroll.scroll_to(fr)
             tell(self.root, "Too much writing", res.message)
             return
-        if not res.layout.lines and not res.layout.qr:
+        if not res.layout.lines and not res.layout.qr and not res.layout.images:
             tell(self.root, "Nothing to print yet",
                  "The label is empty. Type something on the left first.")
             return
@@ -1133,15 +1202,17 @@ class App:
                        f"This printer might not take \u201c{stock.name}\u201d labels. Print anyway?",
                        [("Print anyway", True, "primary"), ("Cancel", False, "normal")]):
                 return
+        ps = self.print_settings_for(p)
+        img = printsettings.adjust_image(res.image, stock, ps)
         try:
-            data = printers.build_job(res.image, stock, self.printer_config(p),
-                                      self.cfg["advanced"], n, family=fam)
+            data = printers.build_job(img, stock, self.printer_config(p),
+                                      self.cfg["advanced"], n, family=fam, print_settings=ps)
         except printers.PrinterError as e:
             tell(self.root, "Printing didn't work", str(e))
             return
         self.cfg.printer_info(p.id)["stock"] = stock.id
         self.cfg.save()
-        self._start_print(self.printer_config(p), data, res.image, n,
+        self._start_print(self.printer_config(p), data, img, n,
                           f"\u2714 Done! {n} label{'s' if n != 1 else ''} sent to "
                           f"{self.printer_name(p)}.")
 
@@ -1149,10 +1220,11 @@ class App:
         """Test / identify labels (only ever on a click)."""
         stock = stocks.get(stock_id or self.cfg["printers"].get(p.id, {}).get("stock")
                            or self.doc.stock, self.printer_dpi(p))
-        img = render.render_text_label(lines, stock)
+        ps = self.print_settings_for(p)
+        img = printsettings.adjust_image(render.render_text_label(lines, stock), stock, ps)
         try:
             data = printers.build_job(img, stock, self.printer_config(p), self.cfg["advanced"],
-                                      1, family=p.family)
+                                      1, family=p.family, print_settings=ps)
         except printers.PrinterError as e:
             tell(self.root, "Printing didn't work", str(e))
             return

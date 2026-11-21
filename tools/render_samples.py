@@ -5,7 +5,8 @@ font as the name of the food on a simple label (with the matching body font
 where the font may be used for everything else), plus a cottage label to show
 the required wording staying in a readable sans. ``--dpi`` only redraws
 docs/samples/dpi-203-vs-300.png: the same label for a 203 dpi and a 300 dpi
-printer, whole and as a zoomed crop of the same spot on paper.
+printer, whole and as a zoomed crop of the same spot on paper. ``--pictures``
+only redraws docs/samples/picture-*.png and qr-*.png.
 """
 import sys
 from pathlib import Path
@@ -55,7 +56,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     tiles = []
     rules = cottage.CottageRules()
-    for t in model.TEMPLATES:
+    for t in [x for x in model.TEMPLATES if x in SAMPLE]:
         for sid in stocks.ORDER:
             if sid not in templates.ALLOWED_STOCKS[t]:
                 continue
@@ -166,12 +167,114 @@ def dpi_sheet():
     sheet.save(out / "dpi-203-vs-300.png")
 
 
+def synthetic_photo(w=600, h=400):
+    """A made-up "photo" (a shaded loaf on a gradient), so no real photo is needed."""
+    import math
+    im = Image.new("RGB", (w, h))
+    px = im.load()
+    for y in range(h):
+        for x in range(w):
+            bg = int(150 + 90 * x / w)
+            dx, dy = (x - w * 0.5) / (w * 0.36), (y - h * 0.55) / (h * 0.32)
+            d = dx * dx + dy * dy
+            if d < 1:
+                shade = 1 - 0.75 * math.sqrt(max(0.0, (dx + 0.4) ** 2 + (dy + 0.5) ** 2)) / 1.6
+                v = max(0, min(255, int(40 + 190 * shade)))
+                px[x, y] = (v, int(v * 0.75), int(v * 0.45))
+            else:
+                px[x, y] = (bg, bg, int(bg * 0.95))
+    return im
+
+
+def picture_samples():
+    """docs/samples/picture-*.png: colour logo -> solid black, photo -> tiny dots,
+    and a round seal (Picture label)."""
+    from food_labeler import pictures
+    out = ROOT / "docs" / "samples"
+    logo = pictures.normalise(Image.open(ROOT / "food_labeler" / "assets" / "icon.png"))
+    photo = pictures.normalise(synthetic_photo())
+    jobs = []
+    d = model.LabelDoc("simple", "large", model.default_fields("simple"))
+    d.fields.update(SAMPLE["simple"])
+    d.picture = pictures.new_picture(logo, "logo", place="left", size=70)
+    jobs.append(("picture-logo-solid", d, CTX, logo))
+    d = model.LabelDoc("picture", "large", {"text": "Fresh from the oven"})
+    d.picture = pictures.new_picture(photo, "photo", place="fit", size=100, mode="photo")
+    jobs.append(("picture-photo-dither", d, {}, photo))
+    d = model.LabelDoc("picture", "round", {"text": ""})
+    d.picture = pictures.new_picture(logo, "seal", place="fill", size=100)
+    jobs.append(("picture-round-seal", d, {}, logo))
+    for name, doc, ctx, original in jobs:
+        tiles = []
+        for dpi in (203, 300):
+            res = render.render(doc, ctx, dpi=dpi)
+            pv = render.preview(res, 520, 300, highlight=False)
+            ImageDraw.Draw(pv).text((8, 4), f"{dpi} dpi" + ("  OVERFLOW" if res.overflow
+                                                             else ""), fill=(0, 0, 0))
+            tiles.append(pv)
+            print(f"{name} {dpi} overflow={res.overflow} {res.message}")
+            if dpi == 203:
+                res.image.save(out / f"{name}-203.png")
+        src = original.convert("RGBA")
+        src.thumbnail((300, 300))
+        sheet = Image.new("RGB", (300 + 2 * 520, 300), "white")
+        sheet.paste(src, ((300 - src.width) // 2, (300 - src.height) // 2), src)
+        ImageDraw.Draw(sheet).text((8, 4), "original", fill=(0, 0, 0))
+        sheet.paste(tiles[0], (300, 0))
+        sheet.paste(tiles[1], (820, 0))
+        sheet.save(out / f"{name}.png")
+
+
+def qr_samples():
+    """docs/samples/qr-*.png: QR codes in each place, at 203 and 300 dpi."""
+    from food_labeler import qrcodes
+    out = ROOT / "docs" / "samples"
+    jobs = []
+    d = model.LabelDoc("simple", "large", model.default_fields("simple"))
+    d.fields.update(SAMPLE["simple"])
+    d.qr = dict(qrcodes.DEFAULTS, value="highthymekitchen.com/menu",
+                caption="Scan for our menu", place="right", size=45)
+    jobs.append(("qr-simple-right", d, CTX))
+    rules = cottage.CottageRules()
+    d = model.LabelDoc("cottage", "xl", model.default_fields("cottage"))
+    d.fields.update(SAMPLE["cottage"])
+    d.qr = dict(qrcodes.DEFAULTS, what="text", value="Reheat 5 minutes at 350 F. "
+                "Best eaten within 3 days.", caption="Scan for reheating", place="corner",
+                size=25)
+    jobs.append(("qr-cottage-text", d, cottage_ctx(rules, "NE")))
+    d = model.LabelDoc("simple", "round", model.default_fields("simple"))
+    d.fields.update(food="Plum Jam", made_on="2026-11-20", use_by="2027-05-20")
+    d.qr = dict(qrcodes.DEFAULTS, what="phone", value="(555) 010-0199", place="above",
+                size=40)
+    jobs.append(("qr-round-phone", d, CTX))
+    for name, doc, ctx in jobs:
+        tiles = []
+        for dpi in (203, 300):
+            res = render.render(doc, ctx, dpi=dpi)
+            h = 640 if doc.stock == "xl" else 320
+            pv = render.preview(res, 520, h, highlight=False)
+            ImageDraw.Draw(pv).text((8, 4), f"{dpi} dpi, holds: "
+                                    f"{qrcodes.payload(doc.qr)}"
+                                    + ("  OVERFLOW" if res.overflow else ""), fill=(0, 0, 0))
+            tiles.append(pv)
+            print(f"{name} {dpi} overflow={res.overflow} {res.message}")
+        sheet = Image.new("RGB", (1040, tiles[0].height), "white")
+        sheet.paste(tiles[0], (0, 0))
+        sheet.paste(tiles[1], (520, 0))
+        sheet.save(out / f"{name}.png")
+
+
 if __name__ == "__main__":
     if "--fonts" in sys.argv[1:]:
         fonts_sheet()
     elif "--dpi" in sys.argv[1:]:
         dpi_sheet()
+    elif "--pictures" in sys.argv[1:]:
+        picture_samples()
+        qr_samples()
     else:
         main()
         fonts_sheet()
         dpi_sheet()
+        picture_samples()
+        qr_samples()

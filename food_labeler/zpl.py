@@ -34,17 +34,33 @@ def pack_gfa(img: Image.Image) -> tuple[int, int, str]:
 
 
 def build_job(img: Image.Image, stock: Stock, copies: int = 1, darkness: int | None = None,
-              speed: int | None = None) -> bytes:
-    """Complete ZPL job. darkness/speed None = the stock's ^MD/^PR defaults."""
+              speed: int | None = None, media: str | None = None,
+              tear_dots: int | None = None) -> bytes:
+    """Complete ZPL job. darkness/speed None = the stock's ^MD/^PR defaults.
+
+    media: ^MN W (gaps), M (black marks) or N (continuous); tear_dots: ^TA
+    tear-off adjustment. None = not sent (as before they existed). ^MD is
+    clamped to -30..30 and ^PR to 2..6 (Zebra's ranges)."""
     copies = max(1, min(200, int(copies)))
-    md = stock.zpl_md if darkness is None else int(darkness)
-    pr = stock.zpl_pr if speed is None else int(speed)
+    md = stock.zpl_md if darkness is None else max(-30, min(30, int(darkness)))
+    pr = stock.zpl_pr if speed is None else max(2, min(6, int(speed)))
     total, row_bytes, hx = pack_gfa(img)
     w, h = img.size
+    extra = ""
+    if media in ("W", "M", "N"):
+        extra += f"^MN{media}\n"
+    if tear_dots is not None:
+        extra += f"^TA{max(-120, min(120, int(tear_dots))):03d}\n"
     job = (f"^XA\n^CI28\n^PW{w}\n^LL{h}\n^LH0,0\n^LT{stock.zpl_lt}\n^MD{md}\n^PR{pr}\n"
+           f"{extra}"
            f"^FO0,0^GFA,{total},{total},{row_bytes},{hx}^FS\n"
            f"^PQ{copies},0,0,N\n^XZ\n")
     return job.encode("ascii")
+
+
+def feed_job() -> bytes:
+    """Feed one blank label (~PH). Only sent from its button."""
+    return b"~PH\n"
 
 
 def decode_gfa(job: bytes) -> Image.Image:

@@ -38,6 +38,7 @@ TEMPLATE_INFO = {
     "sticker": ("Date sticker", "Lot number and dates"),
     "free": ("Free text", "Just type what you want"),
     "cottage": ("Cottage food label", "For home bakers: your state's wording"),
+    "picture": ("Picture label", "One big picture, like your logo or a seal"),
 }
 
 # Templates that need room: package label doesn't fit Small or Round.
@@ -47,6 +48,7 @@ ALLOWED_STOCKS = {
     "sticker": stocks.ORDER,
     "free": stocks.ORDER,
     "cottage": ["medium", "large", "xl"],
+    "picture": stocks.ORDER,
 }
 
 # Friendly names for fields (used in "too much writing" messages).
@@ -59,6 +61,7 @@ FIELD_NAMES = {
     "qr": "QR code", "made": "Made", "count": "count", "text": "writing",
     "brand": "business name", "storage": "storage line", "dates": "dates",
     "produced": "business name", "contact": "phone and email", "permit": "permit number",
+    "picture": "picture",
 }
 # Label statements of the cottage template are keyed "statement:<id>".
 
@@ -120,6 +123,8 @@ class Layout:
     size and message/overflow_key say what is too long."""
     lines: list = field(default_factory=list)
     qr: tuple | None = None        # (x, y, module_px, segno matrix rows)
+    images: list = field(default_factory=list)   # [(x, y, mode-"1" picture)]
+    qr_box: tuple | None = None    # (x0, y0, x1, y1) code + quiet zone, kept white
     overflow: bool = False
     overflow_key: str = ""
     message: str = ""
@@ -410,6 +415,10 @@ def build_blocks(doc, stock: stocks.Stock, ctx: dict) -> tuple[list[Block], str,
         ]
         return blocks, "center", ""
 
+    if doc.template == "picture":
+        return [Block("text", str(f.get("text") or "").strip("\n"), base * 0.16, d(14), True,
+                      "center", 0, True)], "center", ""
+
     if doc.template == "free":
         return [Block("text", str(f.get("text") or "").strip("\n"), base * 0.22, d(14), True,
                       "center", 0, True)], "center", ""
@@ -549,6 +558,10 @@ def layout(doc, stock: stocks.Stock, ctx: dict | None = None) -> Layout:
     blocks, valign, qr_text = build_blocks(doc, stock, ctx)
     # Fonts: the label's lettering choice; required wording stays a readable sans.
     lettering.apply(blocks, doc.template, getattr(doc, "lettering", None))
+    from . import extras
+    if doc.template == "picture" or extras.has_extras(doc):
+        out = extras.layout_with_extras(doc, stock, blocks, valign)
+        return _cottage_overflow(out, doc, stock, ctx)
     region = region_for(stock)
     qr = None
     if qr_text and not stock.round and stock.w >= stock.d(600):
@@ -563,7 +576,12 @@ def layout(doc, stock: stocks.Stock, ctx: dict | None = None) -> Layout:
         region.exclusions.append((qx - stock.d(16), qy, region.right, qy + side + stock.d(8)))
     out = fit(blocks, region, valign)
     out.qr = qr
-    if out.overflow and doc.template == "cottage":
+    return _cottage_overflow(out, doc, stock, ctx)
+
+
+def _cottage_overflow(out: Layout, doc, stock, ctx) -> Layout:
+    """Cottage labels that don't fit: suggest a bigger label, point at the ingredients."""
+    if out.overflow and doc.template == "cottage" and out.overflow_key not in ("picture", "qr"):
         out.message = cottage_overflow_message(doc, stock, ctx)
         # Point at something the baker can shorten, never at the required wording.
         if out.overflow_key.startswith("statement:") or out.overflow_key not in FIELD_NAMES:

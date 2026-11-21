@@ -49,7 +49,7 @@ MANIFEST_FORMAT = "food-labeler-font"
 
 # Which block is "the name of the food" on each kind of label.
 NAME_KEYS = {"simple": "food", "package": "product", "cottage": "product",
-             "sticker": "lot", "free": "text"}
+             "sticker": "lot", "free": "text", "picture": "text"}
 # What the two choices are called on each kind of label (plain words).
 ROLE_TITLES = {
     "simple": ("Name of the food", "Everything else"),
@@ -57,6 +57,7 @@ ROLE_TITLES = {
     "cottage": ("Name of the food", "Everything else"),
     "sticker": ("Lot number", "Everything else"),
     "free": ("Your words", None),
+    "picture": ("Words under the picture", None),
 }
 # Wording the law asks for: always a readable sans, never a script/display font.
 LEGAL_KEYS = {"ingredients", "contains", "cross_contact", "address", "business", "brand",

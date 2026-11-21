@@ -46,6 +46,37 @@ Sharper printing on 300 dpi printers.
 - Printer update files may now say `"dpi": 300` and give the print width
   (`"max_width_dots"`). Nothing about resolution is saved in label files.
 
+Pictures, QR codes and print settings.
+
+- **Add a picture…** on every kind of label: above the name, on the left or
+  right side or in the top-left corner, with a *Smaller ↔ Bigger* slider.
+  The writing flows around it. Opens PNG, JPG, GIF, BMP and WebP (phone
+  photos the right way up, see-through parts as paper; very big files are
+  refused kindly).
+- Black and white the way you want it, with a live preview of exactly what
+  prints: *Logo / drawing (solid black)* with a *Lighter ↔ Darker* slider
+  (it picks a good starting point by itself), or *Photo (tiny dots)* with
+  brightness and contrast; *Swap black and white*; *Remove the background*.
+- New kind of label, **Picture label**: one big picture (*Fill the label* or
+  *Fit inside*), with a line of words under it if you want, for example a
+  logo sticker or a round seal.
+- The picture is saved inside the label file, so the file is complete on
+  its own. **My pictures** keeps your logo for next time.
+- The wording the law asks for always wins: the picture gets smaller first,
+  and if it still doesn't fit the label says so.
+- **Add a QR code…** on every kind of label: a website link (from *My
+  bakery*, which now has a *Website* line), your phone number, your email or
+  some text, with optional words under it. The code is drawn in whole
+  printer dots with a clear border so phones can read it; a code that would
+  be too small is refused with a plain message. The package label's old
+  QR box is turned into this when an old label is opened.
+- **Print settings…** next to the printer, kept for each printer:
+  darkness, speed, *Nudge the print*, *Print upside down*, label gap, labels
+  with gaps / black marks / continuous roll, and *Stop so I can tear it off*
+  or *Feed a little extra*. **Darkness test** (3 labels, only when you press
+  it) and **Feed one blank label**. **Reset to normal** puts it all back.
+  Nothing changes for printers whose settings you never touch.
+
 ## 1.1.1 — 2026-11-20
 
 - The cottage food form no longer squeezes the label preview and printer

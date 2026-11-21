@@ -444,31 +444,56 @@ def too_wide_message(stock: Stock, family) -> str:
 
 
 def build_job(img, stock: Stock, printer_cfg: dict, advanced: dict, copies: int,
-              family=None) -> bytes:
+              family=None, print_settings: dict | None = None) -> bytes:
     """printer_cfg: {"kind", "method", "target"} (see Printer.config).
 
-    ``img`` and ``stock`` must be at the printer's resolution. Density/speed:
-    Advanced setting for this size, else the printer model's default from
-    known_printers.json, else the label size default. Raises PrinterError if
-    the label is wider than the model's print head.
+    ``img`` and ``stock`` must be at the printer's resolution, and ``img``
+    already nudged/turned (printsettings.adjust_image). Darkness/speed/gap:
+    this printer's print settings, else the Advanced setting for this size,
+    else the printer model's default from known_printers.json, else the label
+    size default. Raises PrinterError if the label is wider than the model's
+    print head.
     """
+    from . import printsettings
     wide = too_wide_message(stock, family)
     if wide:
         raise PrinterError(wide)
+    advanced = advanced or {}
     if printer_cfg.get("kind") == "zpl":
-        return zpl.build_job(img, stock, copies, darkness=advanced.get("zpl_darkness"))
-    dens = advanced.get("density", {}).get(stock.id)
-    spd = advanced.get("speed", {}).get(stock.id)
-    if family is not None:
-        dens = family.density_for(stock.id) if dens is None else dens
-        spd = family.speed_for(stock.id) if spd is None else spd
-    return tspl.build_job(
-        img, stock, copies,
-        density=dens,
-        speed=spd,
-        gap_mm=advanced.get("gap", {}).get(stock.id),
-        invert=bool(advanced.get("invert")),
-    )
+        return zpl.build_job(img, stock, copies,
+                             **printsettings.zpl_values(stock, print_settings, advanced))
+    v = printsettings.tspl_values(stock, print_settings, advanced, family)
+    return tspl.build_job(img, stock, copies, invert=bool(advanced.get("invert")), **v)
+
+
+def darkness_test_job(stock: Stock, printer_cfg: dict, advanced: dict, family=None,
+                      print_settings: dict | None = None) -> tuple[bytes, list]:
+    """One job printing three labels at three darknesses, each saying which it is.
+
+    Returns (job, [(word, value)]). Only sent from the "Darkness test" button.
+    """
+    from . import printsettings, render
+    kind = printer_cfg.get("kind") or "tspl"
+    now = printsettings.effective_darkness(kind, stock, print_settings, advanced, family)
+    levels = printsettings.darkness_levels(kind, now)
+    out = b""
+    for word, value in levels:
+        img = render.render_text_label([f"{word}: {value}", "Darkness test"], stock)
+        img = printsettings.adjust_image(img, stock, print_settings)
+        ps = dict(printsettings.clean(print_settings))
+        ps["zpl_darkness" if kind == "zpl" else "darkness"] = value
+        out += build_job(img, stock, printer_cfg, advanced, 1, family, ps)
+    return out, levels
+
+
+def feed_job(stock: Stock, printer_cfg: dict, advanced: dict,
+             print_settings: dict | None = None) -> bytes:
+    """Feed one blank label. Only sent from the "Feed one blank label" button."""
+    from . import printsettings
+    if printer_cfg.get("kind") == "zpl":
+        return zpl.feed_job()
+    v = printsettings.tspl_values(stock, print_settings, advanced or {})
+    return tspl.feed_job(stock, v["gap_mm"], v["media"])
 
 
 def send(cfg: dict, data: bytes, image=None, copies: int = 1) -> str:

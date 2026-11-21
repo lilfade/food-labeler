@@ -18,6 +18,10 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `templates.py` | per-template text blocks and the auto-fit layout engine |
 | `lettering.py` | font registry (bundled + user fonts), font loading (variable fonts too), which block gets which font, per-font minimum sizes, legal-text rule |
 | `fontget.py` | *Get more fonts*: find and download a Google Fonts family from github.com/google/fonts, add a local font file, install/remove user fonts |
+| `pictures.py` | pictures on labels: reading files (EXIF, transparency, CMYK, 16-bit, animations, size limits), the embedded picture dict, colour → black and white (threshold with Otsu, Floyd–Steinberg dither), *My pictures* |
+| `qrcodes.py` | QR codes: what they hold (link / phone / email / text), segno matrix, whole-dot module sizes, minimum size |
+| `extras.py` | places a picture and/or QR code on a label (above, left, right, corners; inside the circle on round labels), text flowing around them, the Picture label, shrinking them before the wording |
+| `printsettings.py` | per-printer print settings (darkness, speed, nudge, upside down, gap, media, after printing) → TSPL/ZPL values; nudging/turning the picture |
 | `render.py` | draws a layout as the exact 1-bit printer bitmap; on-screen preview; PNG export |
 | `tspl.py` | TSPL job builder (LP610BT and clones) |
 | `zpl.py` | ZPL job builder (Zebra), plus a decoder used by tests and `--selftest` |
@@ -32,9 +36,10 @@ one file (`FoodLabeler.exe` on Windows, `food-labeler` on Linux).
 | `app.py` | main window: form, preview, printer menu, PRINT |
 | `dialogs.py` | all other windows: pickers, save/open, settings, printers, USB devices, report |
 | `font_dialogs.py` | Lettering, the font list (names drawn in their own font), Get more fonts |
+| `picture_dialogs.py` | Picture on the label, My pictures, QR code, Print settings windows |
 | `widgets.py` | big-button Tk building blocks: `Modal`, `button`, `ask`/`tell`, calendar, toggles |
 
-Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py` and `widgets.py` imports Tk, so
+Nothing outside `app.py`, `dialogs.py`, `bakery_dialogs.py`, `font_dialogs.py`, `picture_dialogs.py` and `widgets.py` imports Tk, so
 everything else is tested headless.
 
 ## Data flow
@@ -50,15 +55,18 @@ everything else is tested headless.
  templates.build_blocks()         fields → text Blocks with preferred/minimum sizes
  lettering.apply()                each Block gets its font (doc.lettering); minimums × font's
                                   min_scale; required wording forced to a readable sans
+ extras.layout_with_extras()      (only with a picture / QR code / Picture label) places them
+                                  and takes their space out of the Region
  templates.layout() / fit()       blocks → placed Lines that fit the Region
    │                              (rectangle inside margins, or circle on round labels;
    │                               a QR code is an exclusion the text flows around)
    ▼
- render.draw_layout()             Lines (+ QR) → mode "1" image, stock.w × stock.h dots
+ render.draw_layout()             pictures, Lines, QR → mode "1" image, stock.w × stock.h dots
    │                 ╲
    │                  ╲──────────▶ render.preview()  scaled copy for the screen
    ▼
- printers.build_job()             picks the language for the chosen printer
+ printsettings.adjust_image()     the printer's nudge / upside down (on the picture, not commands)
+ printers.build_job()             picks the language for the chosen printer; print settings →
    ├── tspl.build_job()           SIZE/GAP/DENSITY/SPEED/CLS + BITMAP + PRINT
    └── zpl.build_job()            ^XA … ^GFA (hex bitmap) … ^PQ … ^XZ
    │
@@ -103,6 +111,51 @@ before anything is sent (`printers.too_wide_message`). *Save as picture*
 writes the printer's dots (each as 2 × 2 pixels) with the PNG dpi set to
 dpi × 2, so it prints at the real size. The preview scales the bitmap to the
 window, so it looks the same at either resolution.
+
+### Pictures and QR codes
+
+A label may carry a picture (`LabelDoc.picture`, see `pictures.py`) and a QR
+code (`LabelDoc.qr`, see `qrcodes.py`). The picture is kept as the original
+(colour, with transparency, at most 2000 px on its longest side) and turned
+into dots only when drawn, at the final size and the printer's resolution:
+greyscale + LANCZOS resize first, then a threshold (*Logo*, Otsu's value
+unless the user moved *Lighter/Darker*) or Floyd–Steinberg dither (*Photo*,
+with brightness/contrast); *Swap black and white* inverts, transparent parts
+are always paper and *Remove the background* makes near-white paper too.
+Results are cached per picture, settings and size, because the label is
+redrawn on every key press.
+
+`extras.arrange()` gives each item its box: *Above the name* is a band
+across the top (several items side by side), *Left/Right side* a column
+(at most 45 % of the width) whose height is the text area, the corners just
+their box; the space becomes `Region.top` or a `Region.exclusions` entry,
+so wrapping flows around it. On round labels everything goes above, inside
+the circle, and pictures are masked to the circle. QR codes are drawn from
+segno's matrix with an integer module (≥ 3 dots at 203 dpi, scaled for 300)
+and a 4-module quiet zone that is kept white; a size that can't give that
+is refused with a plain message. If the text doesn't fit, `fit()` shrinks
+it as usual (never below each block's minimum, so legal wording keeps its
+size); only then are the picture and code made 15 % smaller at a time, down
+to 6 mm / 3-dot modules, and if it still doesn't fit the overflow names the
+picture or QR code. The *Picture label* (`template == "picture"`) puts one
+picture in the area left after its words (bottom 28 %) and any QR column:
+*Fit inside* keeps it whole (and inside the circle), *Fill the label* covers
+the area and cuts off what sticks out.
+
+*My pictures* is `<data>/pictures/` (one PNG per picture plus
+`pictures.json`); choosing one gives exactly the same embedded PNG.
+
+### Print settings
+
+`printers[<id>]["print"]` in settings.json holds only what the user changed
+in *Print settings…* (`printsettings.clean` checks ranges). Darkness, speed
+and gap come first, then the older per-size Advanced values, the model's
+defaults and the size's defaults. Media type and *after printing* are sent
+(`GAP`/`BLINE`/`GAP 0`, `OFFSET`; `^MN`, `^TA`) only once the user has set
+them, so with nothing set every job is byte-identical to earlier versions.
+Nudge and upside down change the picture (`adjust_image`), not printer
+commands. *Darkness test* (three labels in one job) and *Feed one blank
+label* (`FORMFEED` / `~PH`) are only sent from their buttons.
 
 ### Layout auto-shrink
 
@@ -216,7 +269,8 @@ fsync + rename).
 
 | file | where | format |
 |------|-------|--------|
-| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}`, plus optional `"lettering": {"name", "other"}` (font family names; only written when not the standard look) |
+| `*.label` | wherever the user saves (default `Documents/My Food Labels`) | JSON: `{"app": "easy-labels", "version": 1, "template", "stock", "fields", "copies"}`, plus optional `"lettering": {"name", "other"}` (font family names; only written when not the standard look), `"picture": {"png" (base64), "name", "place", "size", "mode", "threshold", "brightness", "contrast", "invert", "remove_bg"}` and `"qr": {"what", "value", "caption", "place", "size"}` (only written when the label has them) |
+| `pictures/` | data folder | *My pictures*: `<id>.png` files and `pictures.json` `{"format": "food-labeler-pictures", "version": 1, "pictures": [{"id", "name", "file"}]}` |
 | `fonts/<folder>/` | data folder | fonts the user added: the font file(s), license, `font.json` `{"format": "food-labeler-font", "version": 1, "name", "regular", "bold", "variable", "category", "license", "source", "min_scale"}` |
 | `settings.json` | data folder | JSON, merged over built-in defaults key by key (unknown keys and wrong types are ignored) |
 | `autosave.json` | data folder | `{"doc": <label>, "path": "...", "dirty": bool}` |
@@ -229,7 +283,9 @@ fsync + rename).
 | `my_products.json` | data folder | `{"format": "food-labeler-products", "version": 1, "products": [{"id", "name", "net", "ingredients", "contains", "no_allergens", "storage", "best_by_days", ...}]}`; also the backup file format |
 | `food-labeler.log` | data folder | text log, rotated at 512 kB (3 files) |
 
-`settings.json` also keeps the last lettering per kind of label
+`settings.json` keeps per printer (`printers[<id>]`) the nickname, Type,
+last label size, resolution choice (`"dpi"`) and print settings (`"print"`).
+It also keeps the last lettering per kind of label
 (`"lettering": {"simple": {"name", "other"}, ...}`) as the default for new
 labels.
 
@@ -239,7 +295,12 @@ not change the format version (still 1): 1.0.0 files open unchanged, and a
 cottage label opened in 1.0.0 falls back to a simple label instead of being
 refused. `tests/test_cottage.py` keeps 1.0.0 files of every kind opening. Lettering
 (1.2.0) is likewise an optional key: older files open in the standard
-lettering and save back byte for byte (`tests/test_fonts.py`).
+lettering and save back byte for byte (`tests/test_fonts.py`). So are
+`"picture"` and `"qr"` (1.2.0); a picture label opened in an older version
+falls back to a simple label. A package label's old `fields["qr"]` web
+address becomes a `"qr"` object when opened (the file on disk only changes
+when saved), and saving keeps writing the code's text to `fields["qr"]` so
+older versions still print the code (`tests/test_qr.py`).
 
 ## Settings locations
 

@@ -10,6 +10,15 @@ plus, only when it isn't the standard look, the optional
 lettering.py). Older versions ignore it, and files without it open in the
 standard lettering, so the format version is still 1.
 
+Likewise optional (1.2.0): ``"picture"`` (the label's picture, embedded as a
+base64 PNG with its placement and black-and-white settings, see pictures.py)
+and ``"qr"`` (what a QR code holds and where it goes, see qrcodes.py). They
+are only written when the label has them, so other labels save exactly as
+before. Package labels from earlier versions kept a web address in
+``fields["qr"]``; on open it becomes a ``"qr"`` object (the file itself is
+only changed when saved), and saving still writes the code's text into
+``fields["qr"]`` so earlier versions show the code too.
+
 Dates inside ``fields`` are ISO strings. Unknown fields are dropped on load
 and missing ones get defaults, so files survive template changes. Files from
 a newer format version are refused with a friendly message rather than
@@ -50,6 +59,7 @@ DATE_PAIRS = {
     "sticker": ("made", "best_by"),
     "free": (None, None),
     "cottage": ("made_on", "best_by"),
+    "picture": (None, None),
 }
 
 STORAGE_CHIPS = ["Store at room temperature", "Keep refrigerated", "Keep frozen",
@@ -80,7 +90,7 @@ def default_fields(template: str, today: dt.date | None = None) -> dict:
     if template == "sticker":
         return {"lot": default_lot(t), "made": iso,
                 "best_by": (t + dt.timedelta(days=7)).isoformat(), "count": ""}
-    if template == "free":
+    if template in ("free", "picture"):
         return {"text": ""}
     if template == "cottage":
         # Business details and the state's statements are not stored here: they
@@ -94,7 +104,7 @@ def default_fields(template: str, today: dt.date | None = None) -> dict:
             "contains": "", "note": "", "made_by": "", "kitchen": False}
 
 
-TEMPLATES = ["simple", "package", "sticker", "free", "cottage"]
+TEMPLATES = ["simple", "package", "sticker", "free", "cottage", "picture"]
 
 
 @dataclass
@@ -105,12 +115,15 @@ class LabelDoc:
     fields: dict = field(default_factory=lambda: default_fields("simple"))
     copies: int = 1
     lettering: dict = field(default_factory=dict)   # {} = standard look (DejaVu Sans)
+    picture: dict | None = None    # see pictures.py; None = no picture
+    qr: dict | None = None         # see qrcodes.py; None = no QR code
 
     # ---- convenience -------------------------------------------------
     def copy(self) -> "LabelDoc":
-        """Deep copy (fields are nested dicts)."""
+        """Deep copy (fields are nested dicts; the picture data string is shared)."""
         return LabelDoc(self.template, self.stock, copy.deepcopy(self.fields), self.copies,
-                        dict(self.lettering))
+                        dict(self.lettering), dict(self.picture) if self.picture else None,
+                        dict(self.qr) if self.qr else None)
 
     def title(self) -> str:
         """Short name for window titles and file names: first line of the main field."""
@@ -133,7 +146,7 @@ class LabelDoc:
             new["food"] = name
         elif template in ("package", "cottage"):
             new["product"] = name
-        elif template == "free":
+        elif template in ("free", "picture"):
             new["text"] = name
         if old.get("contains") and "contains" in new:
             new["contains"] = old["contains"]
@@ -148,6 +161,14 @@ class LabelDoc:
         for k in ("net", "ingredients"):
             if old.get(k) and k in new:
                 new[k] = old[k]
+        # a picture keeps going, placed the way the new kind of label places it
+        if self.picture:
+            pic = dict(self.picture)
+            if template == "picture" and pic.get("place") not in ("fit", "fill"):
+                pic.update(place="fit", size=100)
+            elif template != "picture" and pic.get("place") in ("fit", "fill"):
+                pic.update(place="above", size=35)
+            self.picture = pic
         self.template = template
         self.fields = new
 
@@ -191,6 +212,16 @@ class LabelDoc:
         lt = clean_lettering(self.lettering)
         if lt:
             out["lettering"] = lt
+        from . import pictures, qrcodes
+        pic = pictures.clean(self.picture)
+        if pic:
+            out["picture"] = pic
+        qr = qrcodes.clean(self.qr)
+        if qr:
+            out["qr"] = qr
+            if self.template == "package" and "qr" in out["fields"]:
+                # earlier versions read the code from here
+                out["fields"]["qr"] = qrcodes.payload(qr)
         return out
 
     @classmethod
@@ -215,10 +246,37 @@ class LabelDoc:
                 if k in fields:
                     fields[k] = v
         stock = data.get("stock") if data.get("stock") in stocks.STOCKS else stocks.DEFAULT_STOCK
+        from . import pictures, qrcodes
+        qr = qrcodes.clean(data.get("qr"))
+        if template == "package" and str(fields.get("qr") or "").strip():
+            if qr is None:
+                qr = legacy_qr(fields["qr"])
+            fields["qr"] = ""
         doc = cls(template, stock, fields, data.get("copies", 1),
-                  clean_lettering(data.get("lettering")))
+                  clean_lettering(data.get("lettering")), pictures.clean(data.get("picture")),
+                  qr)
         doc.clamp_copies()
         return doc
+
+    def snapshot(self) -> str:
+        """Like dumps(), but a picture is replaced by a short reference, so the undo
+        history doesn't keep a copy of a big picture for every change."""
+        d = self.to_dict()
+        if "picture" in d:
+            from . import pictures
+            key = pictures.digest(d["picture"])
+            _BLOBS[key] = d["picture"]["png"]
+            d["picture"] = dict(d["picture"], png="@" + key)
+        return json.dumps(d, indent=2, ensure_ascii=False)
+
+    @classmethod
+    def from_snapshot(cls, text: str) -> "LabelDoc":
+        """Undo: the document a snapshot() was made from."""
+        data = json.loads(text)
+        pic = data.get("picture")
+        if isinstance(pic, dict) and str(pic.get("png", "")).startswith("@"):
+            pic["png"] = _BLOBS.get(pic["png"][1:], "")
+        return cls.from_dict(data)
 
     def dumps(self) -> str:
         return json.dumps(self.to_dict(), indent=2, ensure_ascii=False)
@@ -230,6 +288,20 @@ class LabelDoc:
         except (ValueError, TypeError):
             raise LabelFileError("This label file is damaged and can't be opened.") from None
         return cls.from_dict(data)
+
+
+_BLOBS: dict[str, str] = {}       # picture data by digest, for undo snapshots
+
+
+def legacy_qr(text: str) -> dict:
+    """The QR object for a package label's old ``fields["qr"]`` text (top-right corner,
+    about the size it used to be)."""
+    import re
+    t = str(text).strip()
+    looks_like_link = bool(re.match(r"^[a-z][a-z0-9+.-]*:", t, re.I)) or (
+        " " not in t and "." in t)
+    return {"what": "link" if looks_like_link else "text", "value": t, "caption": "",
+            "place": "corner_right", "size": 42}
 
 
 def clean_lettering(value) -> dict:

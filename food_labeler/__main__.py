@@ -1,7 +1,7 @@
 """Command-line entry point: ``python -m food_labeler [--selftest | --version | FILE]``.
 
 ``--selftest`` renders every template on every label size it allows (and one
-label at 300 dpi), builds
+label at 300 dpi, one with a picture and a QR code), builds
 TSPL and ZPL jobs from the pictures and checks they decode back to the same
 bits — without opening a window or touching any printer. It exits 0 if all
 is well; the build scripts and the release workflow run it on the finished
@@ -29,7 +29,7 @@ def selftest() -> int:
         for sid in templates.ALLOWED_STOCKS[t]:
             doc = model.LabelDoc(t, sid, model.default_fields(t))
             key = {"simple": "food", "package": "product", "sticker": "lot", "free": "text",
-                   "cottage": "product"}[t]
+                   "cottage": "product", "picture": "text"}[t]
             doc.fields[key] = "Selftest Soup"
             res = render.render(doc, {})
             st = stocks.get(sid)
@@ -52,6 +52,21 @@ def selftest() -> int:
     zjob = zpl.build_job(res.image, st, 1)
     assert b"^PW1200\n^LL600\n" in zjob
     assert zpl.decode_gfa(zjob).crop((0, 0, st.w, st.h)).tobytes() == res.image.tobytes()
+    count += 1
+    # a picture and a QR code (300 dpi): picture converted, code drawn in whole dots
+    from PIL import Image, ImageDraw
+    from . import pictures, qrcodes
+    im = Image.new("RGBA", (200, 100), (0, 0, 0, 0))
+    ImageDraw.Draw(im).ellipse((10, 10, 90, 90), fill=(200, 40, 40, 255))
+    doc = model.LabelDoc("simple", "large", model.default_fields("simple"))
+    doc.fields["food"] = "Selftest Soup"
+    doc.picture = pictures.new_picture(pictures.normalise(im), "selftest", place="left")
+    doc.qr = dict(qrcodes.DEFAULTS, value="example.com")
+    doc = model.LabelDoc.loads(doc.dumps())
+    res = render.render(doc, {}, dpi=300)
+    assert not res.overflow and res.layout.images and res.layout.qr, res.message
+    assert res.layout.qr[2] >= qrcodes.min_module(300)
+    assert res.image.convert("L").histogram()[0] > 0
     count += 1
     # every bundled font is there, draws, and has a real bold where it should
     from . import lettering

@@ -23,6 +23,8 @@ from food_labeler import bakery, cottage, model, printers, render, stocks, templ
 
 BASELINE = Path(__file__).resolve().parent / "data" / "render_baseline_203.json"
 TODAY = dt.date(2026, 11, 20)
+# the kinds of label the baseline was made with (later kinds have their own tests)
+TEMPLATES = ["simple", "package", "sticker", "free", "cottage"]
 
 SAMPLE = {
     "simple": {"food": "Chicken Noodle Soup", "made_on": "2026-11-20", "use_by": "2026-11-25",
@@ -62,7 +64,7 @@ def docs():
     """(name, LabelDoc, ctx) for every case."""
     rules = cottage.CottageRules()
     out = []
-    for t in model.TEMPLATES:
+    for t in TEMPLATES:
         for sid in templates.ALLOWED_STOCKS[t]:
             ctx = _ctx(rules, "NE") if t == "cottage" else CTX
             d = model.LabelDoc(t, sid, model.default_fields(t, TODAY))

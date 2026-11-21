@@ -48,7 +48,11 @@ def draw_layout(lay: Layout, w: int, h: int) -> Image.Image:
     more even strokes and spacing, so that is what we use.
     """
     img = Image.new("1", (w, h), 1)
+    for (x, y, pic) in lay.images:          # pictures, already black and white
+        img.paste(pic, (x, y))
     d = ImageDraw.Draw(img)
+    if lay.qr_box:                           # the QR code's quiet zone stays paper
+        d.rectangle(lay.qr_box, fill=1)
     for ln in lay.lines:
         d.text((ln.x, ln.y), ln.text, font=templates.font(ln.size, ln.bold, ln.font), fill=0,
                anchor="la")

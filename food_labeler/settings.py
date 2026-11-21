@@ -38,7 +38,8 @@ DEFAULTS = {
     # Printers the user has used, keyed by stable identity (see printers.Printer.id):
     # {"nickname": str, "kind": "" | "tspl" | "zpl", "stock": str,
     #  "manual": bool, "method": str, "target": str,   (manual = network, added by hand)
-    #  "dpi": 203 | 300}   (only when the user chose a resolution other than the detected one)
+    #  "dpi": 203 | 300,   (only when the user chose a resolution other than the detected one)
+    #  "print": {...}}      (Print settings…: darkness, speed, nudge, … see printsettings.py)
     "printers": {},
     "selected": "",              # id of the printer chosen in the dropdown
     "advanced": {

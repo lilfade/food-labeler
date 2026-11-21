@@ -54,17 +54,31 @@ def pack_bitmap(img: Image.Image, invert: bool = False) -> tuple[int, int, bytes
 
 
 def header(stock: Stock, density: int | None = None, speed: int | None = None,
-           gap_mm: float | None = None) -> bytes:
-    """Setup commands for one label. None means "use the stock's default".
+           gap_mm: float | None = None, media: str | None = None,
+           offset_mm: float | None = None) -> bytes:
+    """Setup commands for one label. None means "use the stock's default" (and,
+    for media and offset, "send nothing", exactly as before they existed).
 
-    density is clamped to TSPL's 0–15 and speed to 1–6.
+    density is clamped to TSPL's 0–15 and speed to 1–6. media: "gap" (GAP),
+    "mark" (BLINE: black marks on the back) or "continuous" (GAP 0). offset_mm:
+    extra feed after printing (OFFSET; 0 = stop at the tear bar).
     """
     d = stock.density if density is None else max(0, min(15, int(density)))
     s = stock.speed if speed is None else max(1, min(6, int(speed)))
     g = stock.gap_mm if gap_mm is None else float(gap_mm)
+    if media == "mark":
+        gapline = f"BLINE {mm(g)} mm,0 mm"
+    elif media == "continuous":
+        gapline = "GAP 0 mm,0 mm"
+    else:
+        gapline = f"GAP {mm(g)} mm,0 mm"
     lines = [
         f"SIZE {mm(stock.w_mm)} mm,{mm(stock.h_mm)} mm",
-        f"GAP {mm(g)} mm,0 mm",
+        gapline,
+    ]
+    if offset_mm is not None:
+        lines.append(f"OFFSET {mm(max(0.0, min(10.0, float(offset_mm))))} mm")
+    lines += [
         "DIRECTION 1,0",
         "REFERENCE 0,0",
         f"DENSITY {d}",
@@ -76,13 +90,19 @@ def header(stock: Stock, density: int | None = None, speed: int | None = None,
 
 def build_job(img: Image.Image, stock: Stock, copies: int = 1, density: int | None = None,
               speed: int | None = None, gap_mm: float | None = None,
-              invert: bool = False) -> bytes:
+              invert: bool = False, media: str | None = None,
+              offset_mm: float | None = None) -> bytes:
     """Complete TSPL job printing ``img`` (stock.w x stock.h dots) ``copies`` times."""
     copies = max(1, min(200, int(copies)))
     row_bytes, h, data = pack_bitmap(img, invert)
-    return (header(stock, density, speed, gap_mm)
+    return (header(stock, density, speed, gap_mm, media, offset_mm)
             + f"BITMAP 0,0,{row_bytes},{h},0,".encode("ascii") + data + CRLF
             + f"PRINT {copies},1".encode("ascii") + CRLF)
+
+
+def feed_job(stock: Stock, gap_mm: float | None = None, media: str | None = None) -> bytes:
+    """Feed one blank label (FORMFEED). Only sent from its button."""
+    return header(stock, gap_mm=gap_mm, media=media) + b"FORMFEED" + CRLF
 
 
 def calibrate_job(stock: Stock, gap_mm: float | None = None) -> bytes:

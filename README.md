@@ -97,7 +97,8 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 
 - **Kind of label → Change…**: *Simple food label*, *Package label* (with
   ingredients and your kitchen's name and address), *Date sticker*,
-  *Free text*, or *Cottage food label* (for home bakers, see below).
+  *Free text*, *Picture label* (one big picture), or *Cottage food label*
+  (for home bakers, see below).
 - **Label size → Change…**: pick the size of the labels in your printer.
 - **Save** keeps the label so you can print it again. Saved labels appear
   under **My saved labels** at the top — one click opens them. When you open
@@ -105,6 +106,22 @@ Get the newest version from the **[Releases page](../../releases/latest)**:
 - **Undo** takes back the last change.
 - **A−** and **A+** make all the writing on the screen smaller or bigger.
 - **Save as picture** makes a picture of the label to send to someone.
+- **Picture → Add a picture…** puts your logo (or any picture) on the label:
+  above the name, on the left or right side, or in the top-left corner, as
+  big as you like. Thermal printers only print black, so you choose how it
+  turns black and white: *Logo / drawing (solid black)* with a *Lighter ↔
+  Darker* slider, or *Photo (tiny dots)*. The picture on the right is exactly
+  what prints. **Keep in My pictures** makes your logo one click next time.
+  The picture is saved inside the label file. If there isn't room, the
+  writing your state asks for keeps its size and the picture gets smaller.
+- **Kind of label → Picture label** is one big picture (a logo sticker or a
+  round seal) with a line of words under it if you want.
+- **QR code → Add a QR code…** adds a code people can scan with their
+  phone: your website, your phone number, your email, or some text (for
+  example how to reheat it), with words under it like *Scan for our menu*.
+  What the code holds is shown in small print under the label picture. If
+  the code would be too small to scan, Food Labeler says so instead of
+  printing it.
 - If the writing doesn't fit, a message tells you which part is too long.
   Use shorter words or a bigger label.
 - Your work is kept safe automatically, even if the computer switches off.
@@ -198,6 +215,14 @@ Details for helpers: [docs/cottage-rules.md](docs/cottage-rules.md).
 - **My printers…** lets you give printers names like *White label printer*.
   **Which one is it?** prints a tiny label saying which printer it is.
 - **Look for printers again** if you just plugged one in.
+- **Print settings…** (next to *My printers…*) is kept for each printer:
+  *Darkness* (lighter or darker), *Speed* (slower is sharper), *Nudge the
+  print* if it isn't in the middle of the label, *Print upside down*, the
+  kind of labels in the printer (with gaps, with black marks, or a
+  continuous roll), and whether it stops so you can tear the label off.
+  **Darkness test** prints 3 labels (lighter, now, darker) so you can pick
+  the best; **Feed one blank label** moves the roll on. **Reset to normal**
+  puts everything back.
 - **Sharpness** (in **My printers…**): most label printers are *Normal
   (203 dpi)*, and Food Labeler picks that for you. Only change it to
   *Sharp (300 dpi)* if your printer (or its box) says 300 dpi. Your labels
@@ -212,8 +237,13 @@ Go to **Settings → Advanced…**, tick **Invert colours**, and press **Save**.
 Some printers use the opposite colours; this switch fixes that.
 
 **The printing is too pale or too dark.**
-**Settings → Advanced…** has a *Darkness* slider: move it towards *Darker*
-or *Lighter* and press **Save**.
+Press **Print settings…** (next to *My printers…*) and move *Darkness*
+towards *Darker* or *Lighter*, then **Save**. Not sure which is best? Press
+**Darkness test**.
+
+**The printing is not in the middle of the label, or comes out upside down.**
+**Print settings…** → *Nudge the print* moves it left, right, up or down;
+*Print upside down* turns it round.
 
 **My printer isn't found.**
 1. Check the printer is switched on and its cable is plugged in.

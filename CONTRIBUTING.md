@@ -60,9 +60,14 @@ FOOD_LABELER_DRY_RUN=/tmp/jobs .venv/bin/python -m food_labeler
 ```
 
 `tools/render_samples.py` redraws `docs/samples/*.png` (the exact printer
-bitmaps for every template and size, the fonts sheet and
-`dpi-203-vs-300.png`) — run it after changing a template and look at the
-result.
+bitmaps for every template and size, the fonts sheet, `dpi-203-vs-300.png`,
+`picture-*.png` and `qr-*.png`) — run it after changing a template and look
+at the result.
+
+`tests/test_qr.py` decodes the printed QR codes with `zxing-cpp` (in
+`requirements-dev.txt`); without it those checks are skipped and the module
+geometry is still compared with segno's matrix exactly. Picture tests use
+pictures drawn in the test, so no photos are kept in the repository.
 
 ## Building the programs
 

@@ -29,6 +29,7 @@ DETAIL_FIELDS = [
     ("zip", "ZIP code"),
     ("phone", "Phone number"),
     ("email", "Email address"),
+    ("website", "Website (if you have one, for a QR code)"),
     ("permit", "Permit or registration number (if you have one)"),
     ("county", "County (only if your state's wording asks for it)"),
 ]

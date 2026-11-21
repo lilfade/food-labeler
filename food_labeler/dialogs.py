@@ -37,7 +37,20 @@ SAMPLE_FIELDS = {
     "free": {"text": "Happy\nBirthday!"},
     "cottage": {"product": "Lemon Shortbread", "net": "8 oz", "ingredients": "Butter (cream, "
                 "salt), flour, sugar, lemon", "contains": "Milk, Wheat"},
+    "picture": {"text": "Thank you!"},
 }
+
+
+def sample_picture(doc) -> dict | None:
+    """The picture for the Picture label preview: the label's own, else the seal."""
+    from . import pictures
+    if doc.picture:
+        return dict(doc.picture, place="fit", size=100)
+    try:
+        im = Image.open(Path(__file__).resolve().parent / "assets" / "seal-header-2x.png")
+        return pictures.new_picture(pictures.normalise(im), "seal", place="fit", size=100)
+    except (OSError, pictures.PictureError):
+        return None
 KIND_CHOICES = [
     ("Label printer like the LP610BT", "tspl"),
     ("Zebra label printer", "zpl"),
@@ -76,6 +89,8 @@ class TemplatePicker(Modal):
             stock = doc.stock if doc.stock in templates.ALLOWED_STOCKS[t] else "large"
             d = model.LabelDoc(t, stock, model.default_fields(t))
             d.fields.update(SAMPLE_FIELDS[t])
+            if t == "picture":
+                d.picture = sample_picture(doc)
             res = render.render(d, ctx)
             img = render.preview(res, 300, 170, highlight=False)
             ph = ImageTk.PhotoImage(img)
@@ -390,6 +405,11 @@ class AdvancedDialog(Modal):
                 tk.Radiobutton(b, text=printers.DPI_LABELS[v], variable=self.dpi, value=v,
                                font="ui", bg=BG, activebackground=BG).pack(anchor="w")
 
+        tk.Label(b, text=("The darkness, speed and gap below are for each label size on every "
+                          "printer. “Print settings…” next to the printer keeps them per "
+                          "printer, and those come first."),
+                 font="small", bg=BG, fg=MUTED, wraplength=700, justify="left").pack(
+            anchor="w", pady=(8, 0))
         fam = p.family if p is not None else None
         d0 = adv["density"].get(st.id)
         if d0 is None:

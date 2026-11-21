@@ -45,6 +45,7 @@ PROFILE_DEFAULTS = {
     "zip": "",
     "phone": "",
     "email": "",
+    "website": "",               # for a QR code ("A website link"); not printed as text
     "permit": "",
     "permit_label": "Permit #",
     "county": "",
