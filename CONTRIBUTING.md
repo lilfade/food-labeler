@@ -57,6 +57,8 @@ Labels*) or GitHub leaves them off.
   rules and how to update them.
 - [docs/fonts.md](docs/fonts.md): bundled fonts, their sources and fonts
   users add.
+- [docs/bluetooth-and-phones.md](docs/bluetooth-and-phones.md): notes on
+  printing over Bluetooth and on a phone version (research, not built yet).
 - [docs/samples](docs/samples): sample printouts of every label kind and size.
 
 ## Website

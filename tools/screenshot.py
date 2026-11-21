@@ -289,6 +289,10 @@ def roll_notice():
     from food_labeler import printers
     p = printers.Printer(id="usb:1-1.4", kind="tspl", model="4B-LP610BT", method="device",
                          target="/dev/usb/lp0", port="USB port 1-1.4", vidpid="0483:2025")
+    # match it to its known model, exactly as a real USB scan does
+    from food_labeler import known
+    printers.classify(p, known.KnownPrinters(),
+                      {"MFG": "Polono", "CMD": "TSPL2", "MDL": "4B-LP610BT"})
     app.found = [p]
     cfg.printer_info("usb:1-1.4")["roll"] = {"stock": "medium", "media": "gap",
                                              "date": "2026-11-01", "same": []}
